@@ -9,3 +9,10 @@
 
 # Add any project specific keep options here:
 -keep class org.webrtc.** { *; }
+-keep class live.videosdk.** { *; }
+-keep class com.twilio.** { *; }
+-keep class io.socket.** { *; }
+-keep class okhttp3.** { *; }
+-keep class okio.** { *; }
+-dontwarn live.videosdk.**
+-dontwarn org.webrtc.**

@@ -62,26 +62,33 @@ export default function LearnerBookingsScreen({ navigation }) {
     }
   };
 
-  // Check if booking date is in the past
-  const isDatePast = (dateStr) => {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
+  // Check if booking date+time is in the past
+  const isSessionPast = (dateStr, timeStr) => {
+    const now = new Date();
     const [year, month, day] = dateStr.split('-').map(Number);
-    const bookingDate = new Date(year, month - 1, day);
-    return bookingDate < today;
+    const sessionDate = new Date(year, month - 1, day);
+    if (timeStr) {
+      const [hours, minutes] = timeStr.split(':').map(Number);
+      sessionDate.setHours(hours, minutes, 0, 0);
+    } else {
+      sessionDate.setHours(23, 59, 59, 999);
+    }
+    return sessionDate < now;
   };
 
   // Split bookings into upcoming and history
   const upcomingBookings = bookings.filter(b => {
     const dateStr = b.availability_slots?.date;
+    const timeStr = b.availability_slots?.start_time;
     if (!dateStr) return false;
-    return !isDatePast(dateStr) && (b.status === 'pending' || b.status === 'confirmed');
+    return !isSessionPast(dateStr, timeStr) && (b.status === 'pending' || b.status === 'confirmed');
   });
 
   const historyBookings = bookings.filter(b => {
     const dateStr = b.availability_slots?.date;
+    const timeStr = b.availability_slots?.start_time;
     if (!dateStr) return true; // Include if no date
-    return isDatePast(dateStr) || b.status === 'completed' || b.status === 'cancelled' || b.status === 'rejected';
+    return isSessionPast(dateStr, timeStr) || b.status === 'completed' || b.status === 'cancelled' || b.status === 'rejected';
   });
 
   const renderBooking = (item, isUpcoming) => {
