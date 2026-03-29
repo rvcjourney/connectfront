@@ -8,7 +8,7 @@ import ParticipantLimitViewer from "./OneToOne/ParticipantLimitViewer";
 import WaitingToJoinView from "./Components/WaitingToJoinView";
 import React from "react";
 
-export default function MeetingContainer({ webcamEnabled, meetingType }) {
+export default function MeetingContainer({ webcamEnabled, meetingType, onParticipantCountChange, isHost }) {
   const [isJoined, setJoined] = useState(false);
   const [participantLimit, setParticipantLimit] = useState(false);
 
@@ -24,6 +24,15 @@ export default function MeetingContainer({ webcamEnabled, meetingType }) {
       }
     },
   });
+
+  // Track participant count and notify parent
+  useEffect(() => {
+    const participantCount = participants.size + 1; // +1 for self
+    console.log(`👥 Participants joined: ${participantCount}`);
+    if (onParticipantCountChange) {
+      onParticipantCountChange(participantCount);
+    }
+  }, [participants.size, onParticipantCountChange]);
 
   useEffect(() => {
     if (isJoined) {
@@ -51,7 +60,7 @@ export default function MeetingContainer({ webcamEnabled, meetingType }) {
     ) : participantLimit ? (
       <ParticipantLimitViewer />
     ) : (
-      <OneToOneMeetingViewer />
+      <OneToOneMeetingViewer isHost={isHost} />
     )
   ) : (
     <WaitingToJoinView />

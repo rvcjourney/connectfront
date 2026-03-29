@@ -49,7 +49,7 @@ import Blink from "../../../components/Blink";
 import VideosdkRPK from "../../../../VideosdkRPK";
 import ParticipantStatsViewer from "../Components/ParticipantStatsViewer";
 
-export default function OneToOneMeetingViewer() {
+export default function OneToOneMeetingViewer({ isHost }) {
   const {
     join,
     participants,
@@ -139,7 +139,7 @@ export default function OneToOneMeetingViewer() {
         style={{
           flexDirection: "row",
           alignItems: "center",
-          width: "100%",
+          width: "90%",
         }}
       >
         {(recordingState === Constants.recordingEvents.RECORDING_STARTED ||
@@ -242,29 +242,33 @@ export default function OneToOneMeetingViewer() {
         placement="left"
       >
         <MenuItem
-          title={"Leave"}
-          description={"Only you will leave the call"}
-          icon={<Leave width={22} height={22} />}
+          title={"Leave call"}
+          // description={"Leave call"}
+          // icon={<Leave width={22} height={22} />}
           onPress={() => {
             leave();
             moreOptionsMenu.current.close();
           }}
         />
-        <View
-          style={{
-            height: 1,
-            backgroundColor: colors.primary["600"],
-          }}
-        />
-        <MenuItem
-          title={"End"}
-          description={"End call for all participants"}
-          icon={<EndForAll />}
-          onPress={() => {
-            end();
-            moreOptionsMenu.current.close();
-          }}
-        />
+        {isHost && (
+          <>
+            <View
+              style={{
+                height: 1,
+                backgroundColor: colors.primary["600"],
+              }}
+            />
+            <MenuItem
+              title={"End call"}
+              // description={"End call"}
+              // icon={<EndForAll />}
+              onPress={() => {
+                end();
+                moreOptionsMenu.current.close();
+              }}
+            />
+          </>
+        )}
       </Menu>
       <Menu
         ref={audioDeviceMenuRef}

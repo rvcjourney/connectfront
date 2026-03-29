@@ -21,6 +21,14 @@ import Send from "./Send";
 import NetworkIcon from "./NetworkIcon";
 import Speaker from "./Speaker";
 
+import Home from "./Home";
+import Bookings from "./Bookings";
+import Settings from "./Settings";
+import Phone from "./Phone";
+import Earnings from "./Earnings";
+import Search from "./Search";
+import Close from "./Close";
+
 
 export {
   MicOff,
@@ -42,5 +50,12 @@ export {
   Recording,
   Participants,
   NetworkIcon,
-  Speaker
+  Speaker,
+  Home,
+  Bookings,
+  Settings,
+  Phone,
+  Earnings,
+  Search,
+  Close
 };

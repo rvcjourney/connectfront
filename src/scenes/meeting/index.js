@@ -1,34 +1,59 @@
 import React, { useEffect, useState } from "react";
-import { Platform, NativeModules, PermissionsAndroid } from "react-native";
+import { Platform, NativeModules, PermissionsAndroid, StyleSheet } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import colors from "../../styles/colors";
 import {
   MeetingConsumer,
   MeetingProvider,
 } from "@videosdk.live/react-native-sdk";
+import { UNIFIED_THEME } from "../../unifiedTheme";
+import { LoadingOverlay } from "../../components/LoadingOverlay";
 import MeetingContainer from "./MeetingContainer";
 import { SCREEN_NAMES } from "../../navigators/screenNames";
+
 const { ForegroundServiceModule } = NativeModules;
 
 const requestPermissions = async () => {
   if (Platform.OS !== "android") return true;
 
   try {
-    const permissions = [
+    // Core permissions required for video call
+    const corePermissions = [
       PermissionsAndroid.PERMISSIONS.RECORD_AUDIO,
       PermissionsAndroid.PERMISSIONS.CAMERA,
-      PermissionsAndroid.PERMISSIONS.POST_NOTIFICATIONS
     ];
-    const granted = await PermissionsAndroid.requestMultiple(permissions);
-    const allGranted = Object.values(granted).every(
-      (permission) => permission === PermissionsAndroid.RESULTS.GRANTED
+
+    // Optional: POST_NOTIFICATIONS (may not exist on older Android versions)
+    const optionalPermissions = [];
+    if (PermissionsAndroid.PERMISSIONS.POST_NOTIFICATIONS) {
+      optionalPermissions.push(PermissionsAndroid.PERMISSIONS.POST_NOTIFICATIONS);
+    }
+
+    const allPermissions = [...corePermissions, ...optionalPermissions];
+
+    console.log("🔐 Requesting permissions:", allPermissions);
+
+    const granted = await PermissionsAndroid.requestMultiple(allPermissions);
+
+    console.log("📋 Permission results:", granted);
+
+    // Check if core permissions are granted
+    const coreGranted = corePermissions.every(
+      (permission) => granted[permission] === PermissionsAndroid.RESULTS.GRANTED
     );
 
-    console.log(allGranted ? "permissions granted" : "permissions denied");
-
-    return allGranted;
+    if (coreGranted) {
+      console.log("✅ Core permissions granted (Camera + Microphone)");
+      return true;
+    } else {
+      console.log("❌ Core permissions denied");
+      // Log which permissions were denied
+      corePermissions.forEach((perm) => {
+        console.log(`  - ${perm}: ${granted[perm]}`);
+      });
+      return false;
+    }
   } catch (err) {
-    console.error("Error requesting permissions:", err);
+    console.error("❌ Error requesting permissions:", err);
     return false;
   }
 };
@@ -82,15 +107,21 @@ export default function ({ navigation, route }) {
     return (
       <SafeAreaView
         edges={["top", "bottom"]}
-        style={{ flex: 1, backgroundColor: colors.primary[900], padding: 12 }}
-      />
+        style={styles.safeArea}
+      >
+        <LoadingOverlay
+          visible={true}
+          message="Requesting permissions"
+          backdropOpacity={0}
+        />
+      </SafeAreaView>
     );
   }
 
   return (
     <SafeAreaView
       edges={["top", "bottom"]}
-      style={{ flex: 1, backgroundColor: colors.primary[900], padding: 12 }}
+      style={styles.safeArea}
     >
       <MeetingProvider
         config={{
@@ -121,3 +152,11 @@ export default function ({ navigation, route }) {
     </SafeAreaView>
   );
 }
+
+const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: UNIFIED_THEME.colors.primary.light,
+    padding: UNIFIED_THEME.spacing.md,
+  },
+});

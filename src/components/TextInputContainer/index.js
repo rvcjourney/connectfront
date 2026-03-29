@@ -1,34 +1,17 @@
 import React from "react";
-import { View, TextInput } from "react-native";
-import colors from "../../styles/colors";
-import { ROBOTO_FONTS } from "../../styles/fonts";
+import { View, TextInput, StyleSheet } from "react-native";
+import { UNIFIED_THEME } from "../../unifiedTheme";
+
 const TextInputContainer = ({ placeholder, value, setValue }) => {
   return (
-    <View
-      style={{
-        height: 50,
-        justifyContent: "center",
-        alignItems: "center",
-        backgroundColor: "#202427",
-        borderRadius: 12,
-        marginVertical: 12,
-      }}
-    >
+    <View style={styles.container}>
       <TextInput
-        style={{
-          margin: 8,
-          padding: 8,
-          width: "90%",
-          textAlign: "center",
-          fontSize: 16,
-          color: colors.primary[100],
-          fontFamily: ROBOTO_FONTS.RobotoBold,
-        }}
+        style={styles.input}
         multiline={true}
         numberOfLines={1}
-        cursorColor={"#5568FE"}
+        cursorColor={UNIFIED_THEME.colors.accent.primary}
         placeholder={placeholder}
-        placeholderTextColor={"#9A9FA5"}
+        placeholderTextColor={UNIFIED_THEME.colors.text.muted}
         onChangeText={(text) => {
           setValue(text);
         }}
@@ -37,5 +20,27 @@ const TextInputContainer = ({ placeholder, value, setValue }) => {
     </View>
   );
 };
+
+const styles = StyleSheet.create({
+  container: {
+    height: 50,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: UNIFIED_THEME.colors.component.input,
+    borderRadius: UNIFIED_THEME.borderRadius.md,
+    borderWidth: 1,
+    borderColor: UNIFIED_THEME.colors.border.light,
+    marginVertical: UNIFIED_THEME.spacing.md,
+  },
+  input: {
+    margin: UNIFIED_THEME.spacing.sm,
+    padding: UNIFIED_THEME.spacing.sm,
+    width: "90%",
+    textAlign: "center",
+    fontSize: UNIFIED_THEME.typography.bodyLg.fontSize,
+    fontWeight: UNIFIED_THEME.typography.bodyLg.fontWeight,
+    color: UNIFIED_THEME.colors.text.primary,
+  },
+});
 
 export default TextInputContainer;
