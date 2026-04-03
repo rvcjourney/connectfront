@@ -15,13 +15,15 @@ import { UNIFIED_THEME } from '../../unifiedTheme';
 import Button from '../../components/Button';
 import { LoadingOverlay } from '../../components/LoadingOverlay';
 import { authApi } from '../../api/authApi';
+import { profileApi } from '../../api/profileApi';
 
-export default function SignupScreen({ navigation, route }) {
-  const { role } = route.params;
+export default function SignupScreen({ navigation }) {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [loading, setLoading] = useState(false);
 
   const handleSignup = async () => {
@@ -44,24 +46,29 @@ export default function SignupScreen({ navigation, route }) {
 
     setLoading(true);
     try {
-      const result = await authApi.signUp({
+      const { user } = await authApi.signUp({
         email: email.trim(),
         password,
         name: name.trim(),
-        role,
+        role: 'both',
       });
-      Toast.show('Account created! Check your email to verify.');
-      // AuthContext will handle navigation after verification
+
+      // Create both mentor and learner profiles
+      if (user?.id) {
+        await Promise.all([
+          profileApi.createMentorProfile(user.id),
+          profileApi.createLearnerProfile(user.id),
+        ]);
+      }
+
+      Toast.show('Account created! Please sign in.');
+      navigation.navigate('Login_Screen');
     } catch (error) {
       Toast.show(error.message);
     } finally {
       setLoading(false);
     }
   };
-
-  const roleLabel = role === 'mentor' ? 'Mentor' : 'Learner';
-  const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   return (
     <LinearGradient
@@ -80,12 +87,11 @@ export default function SignupScreen({ navigation, route }) {
         >
           {/* Header */}
           <View style={styles.header}>
-            <Text style={styles.title}>Create {roleLabel} Account</Text>
+            <Text style={styles.title}>Create Account</Text>
           </View>
 
           {/* Form */}
           <View style={styles.formContainer}>
-            {/* Full Name Input */}
             <View style={styles.inputWrapper}>
               <MaterialIcons
                 name="person"
@@ -103,7 +109,6 @@ export default function SignupScreen({ navigation, route }) {
               />
             </View>
 
-            {/* Email Input */}
             <View style={styles.inputWrapper}>
               <MaterialIcons
                 name="email"
@@ -123,7 +128,6 @@ export default function SignupScreen({ navigation, route }) {
               />
             </View>
 
-            {/* Password Input */}
             <View style={styles.inputWrapper}>
               <MaterialIcons
                 name="lock"
@@ -153,7 +157,6 @@ export default function SignupScreen({ navigation, route }) {
               </TouchableOpacity>
             </View>
 
-            {/* Confirm Password Input */}
             <View style={styles.inputWrapper}>
               <MaterialIcons
                 name="lock-outline"
@@ -202,13 +205,12 @@ export default function SignupScreen({ navigation, route }) {
             </TouchableOpacity>
           </View>
 
-          {/* Back Button */}
           <TouchableOpacity
             onPress={() => navigation.goBack()}
             disabled={loading}
             style={styles.backButton}
           >
-            <Text style={styles.backButtonText}>← Back to Role Selection</Text>
+            <Text style={styles.backButtonText}>← Back</Text>
           </TouchableOpacity>
         </ScrollView>
       </SafeAreaView>
@@ -219,35 +221,18 @@ export default function SignupScreen({ navigation, route }) {
 }
 
 const styles = StyleSheet.create({
-  background: {
-    flex: 1,
-  },
-
-  overlay: {
-    flex: 1,
-  },
-
+  background: { flex: 1 },
+  overlay: { flex: 1 },
   scrollContent: {
     flexGrow: 1,
     justifyContent: 'center',
     paddingHorizontal: UNIFIED_THEME.spacing.lg,
     paddingVertical: UNIFIED_THEME.spacing.lg,
   },
-
   header: {
     alignItems: 'center',
     marginBottom: UNIFIED_THEME.spacing.xxxl,
   },
-
-  iconBackground: {
-    width: 70,
-    height: 70,
-    borderRadius: 35,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: UNIFIED_THEME.spacing.lg,
-  },
-
   title: {
     ...UNIFIED_THEME.typography.headingLg,
     color: UNIFIED_THEME.colors.text.primary,
@@ -255,17 +240,9 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     marginBottom: UNIFIED_THEME.spacing.sm,
   },
-
-  subtitle: {
-    ...UNIFIED_THEME.typography.bodySm,
-    color: UNIFIED_THEME.colors.text.secondary,
-    textAlign: 'center',
-  },
-
   formContainer: {
     marginBottom: UNIFIED_THEME.spacing.xxxl,
   },
-
   inputWrapper: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -277,26 +254,15 @@ const styles = StyleSheet.create({
     marginBottom: UNIFIED_THEME.spacing.lg,
     height: 50,
   },
-
-  inputIcon: {
-    marginRight: UNIFIED_THEME.spacing.md,
-  },
-
+  inputIcon: { marginRight: UNIFIED_THEME.spacing.md },
   input: {
     flex: 1,
     color: UNIFIED_THEME.colors.text.primary,
     ...UNIFIED_THEME.typography.bodySm,
     padding: 0,
   },
-
-  eyeIcon: {
-    padding: UNIFIED_THEME.spacing.sm,
-  },
-
-  signupBtn: {
-    marginTop: UNIFIED_THEME.spacing.lg,
-  },
-
+  eyeIcon: { padding: UNIFIED_THEME.spacing.sm },
+  signupBtn: { marginTop: UNIFIED_THEME.spacing.lg },
   footer: {
     flexDirection: 'row',
     justifyContent: 'center',
@@ -304,23 +270,19 @@ const styles = StyleSheet.create({
     marginBottom: UNIFIED_THEME.spacing.xl,
     gap: UNIFIED_THEME.spacing.sm,
   },
-
   footerText: {
     ...UNIFIED_THEME.typography.bodySm,
     color: UNIFIED_THEME.colors.text.secondary,
   },
-
   signinLink: {
     ...UNIFIED_THEME.typography.bodySm,
     color: UNIFIED_THEME.colors.accent.primary,
     fontWeight: '600',
   },
-
   backButton: {
     alignSelf: 'center',
     paddingVertical: UNIFIED_THEME.spacing.md,
   },
-
   backButtonText: {
     ...UNIFIED_THEME.typography.bodySm,
     color: UNIFIED_THEME.colors.accent.secondary,

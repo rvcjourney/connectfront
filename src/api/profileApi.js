@@ -61,13 +61,13 @@ export const profileApi = {
     try {
       const { data, error } = await supabase
         .from('mentor_profiles')
-        .update({
-          ...(specialization && { specialization }),
-          ...(bio !== undefined && { bio }),
-          ...(experienceYears !== undefined && { experience_years: experienceYears }),
-          ...(pricePerHour !== undefined && { price_per_hour: pricePerHour }),
-        })
-        .eq('id', userId)
+        .upsert({
+          id: userId,
+          specialization: specialization || '',
+          bio: bio || '',
+          experience_years: experienceYears ?? 0,
+          price_per_hour: pricePerHour ?? 0,
+        }, { onConflict: 'id' })
         .select()
         .single();
 
@@ -97,11 +97,11 @@ export const profileApi = {
     try {
       const { data, error } = await supabase
         .from('learner_profiles')
-        .update({
-          ...(bio !== undefined && { bio }),
-          ...(interests && { interests }),
-        })
-        .eq('id', userId)
+        .upsert({
+          id: userId,
+          bio: bio || '',
+          interests: interests ?? [],
+        }, { onConflict: 'id' })
         .select()
         .single();
 
@@ -112,18 +112,24 @@ export const profileApi = {
     }
   },
 
-  uploadAvatar: async ({ userId, imageUri, fileName }) => {
+  uploadAvatar: async ({ userId, base64, mimeType, fileName }) => {
     try {
-      const fileExt = fileName.split('.').pop();
+      const fileExt = (fileName || 'avatar.jpg').split('.').pop();
       const filePath = `${userId}/avatar.${fileExt}`;
 
-      // Upload to storage
-      const response = await fetch(imageUri);
-      const blob = await response.blob();
+      // Decode base64 → ArrayBuffer (works with both file:// and content:// URIs)
+      const binaryStr = atob(base64);
+      const bytes = new Uint8Array(binaryStr.length);
+      for (let i = 0; i < binaryStr.length; i++) {
+        bytes[i] = binaryStr.charCodeAt(i);
+      }
 
       const { error: uploadError } = await supabase.storage
         .from('avatars')
-        .upload(filePath, blob, { upsert: true });
+        .upload(filePath, bytes.buffer, {
+          contentType: mimeType || 'image/jpeg',
+          upsert: true,
+        });
 
       if (uploadError) throw uploadError;
 
@@ -137,6 +143,47 @@ export const profileApi = {
       });
 
       return data.publicUrl;
+    } catch (error) {
+      throw new Error(getSupabaseErrorMessage(error));
+    }
+  },
+
+  createMentorProfile: async (userId) => {
+    try {
+      const { data, error } = await supabase
+        .from('mentor_profiles')
+        .upsert({
+          id: userId,
+          specialization: '',
+          bio: '',
+          experience_years: 0,
+          price_per_hour: 0,
+          rating: 0,
+          total_sessions: 0,
+          category: '',
+        }, { onConflict: 'id' })
+        .select()
+        .single();
+      if (error) throw error;
+      return data;
+    } catch (error) {
+      throw new Error(getSupabaseErrorMessage(error));
+    }
+  },
+
+  createLearnerProfile: async (userId) => {
+    try {
+      const { data, error } = await supabase
+        .from('learner_profiles')
+        .upsert({
+          id: userId,
+          bio: '',
+          interests: [],
+        }, { onConflict: 'id' })
+        .select()
+        .single();
+      if (error) throw error;
+      return data;
     } catch (error) {
       throw new Error(getSupabaseErrorMessage(error));
     }

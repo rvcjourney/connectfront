@@ -124,7 +124,7 @@ export default function MentorDashboardScreen() {
         }
       >
         {/* Welcome Header */}
-        <Text style={styles.welcomeHeader}>Welcome to Connectiqo</Text>
+        {/* <Text style={styles.welcomeHeader}>Connectiqo Profile</Text> */}
 
         {/* Profile Card */}
         <View style={styles.profileCard}>

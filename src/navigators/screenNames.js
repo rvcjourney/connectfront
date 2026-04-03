@@ -5,27 +5,29 @@ export const SCREEN_NAMES = {
 
   // Auth
   Welcome: "Welcome_Screen",
-  RoleSelect: "RoleSelect_Screen",
   Signup: "Signup_Screen",
   Login: "Login_Screen",
 
-  // Learner tabs
-  LearnerHome: "LearnerHome_Screen",
-  LearnerBrowse: "LearnerBrowse_Screen",
-  LearnerBookings: "LearnerBookings_Screen",
-  LearnerProfile: "LearnerProfile_Screen",
-  LearnerSettings: "LearnerSettings_Screen",
+  // Unified bottom tabs
+  UnifiedHome: "UnifiedHome_Screen",
+  MentorSection: "MentorSection_Screen",
+  LearnerSection: "LearnerSection_Screen",
+  UnifiedSettings: "UnifiedSettings_Screen",
 
-  // Mentor tabs
-  MentorDashboard: "MentorDashboard_Screen",
-  MentorCalls: "MentorCalls_Screen",
-  MentorEarnings: "MentorEarnings_Screen",
-  MentorSettings: "MentorSettings_Screen",
-  MentorAvailability: "MentorAvailability_Screen",
-  MentorProfileEdit: "MentorProfileEdit_Screen",
+  // Mentor top tabs
+  MentorDashboard: "MentorDashboard_Tab",
+  MentorCalls: "MentorCalls_Tab",
+  MentorEarnings: "MentorEarnings_Tab",
+  MentorAvailabilityTab: "MentorAvailability_Tab",
 
-  // Shared overlays
+  // Learner top tabs
+  LearnerSearch: "LearnerSearch_Tab",
+  LearnerBookings: "LearnerBookings_Tab",
+
+  // Modal overlays (shared)
+  EditProfile: "EditProfile_Screen",
   MentorProfile: "MentorProfile_Screen",
   Booking: "Booking_Screen",
   VideoCall: "VideoCall_Screen",
+  MentorAvailability: "MentorAvailability_Screen",
 };

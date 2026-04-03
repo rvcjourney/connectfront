@@ -1,4 +1,4 @@
-import React, { createContext, useState, useEffect } from 'react';
+import { createContext, useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 
 export const AuthContext = createContext();
@@ -118,7 +118,6 @@ export const AuthProvider = ({ children }) => {
     session,
     user,
     profile,
-    role: profile?.role,
     loading,
     signOut,
     refreshProfile: () => user && fetchProfile(user.id),

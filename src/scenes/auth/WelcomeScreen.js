@@ -1,4 +1,4 @@
-import React from 'react';
+import React from 'react'; // eslint-disable-line
 import {
   View,
   Text,
@@ -45,7 +45,7 @@ export default function WelcomeScreen({ navigation }) {
         {/* Get Started Button */}
         <TouchableOpacity
           style={styles.button}
-          onPress={() => navigation.navigate('RoleSelect_Screen')}
+          onPress={() => navigation.navigate('Signup_Screen')}
           activeOpacity={0.8}
         >
           <LinearGradient

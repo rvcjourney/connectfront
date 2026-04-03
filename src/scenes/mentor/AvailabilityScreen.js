@@ -213,16 +213,6 @@ export default function MentorAvailabilityScreen({ navigation }) {
     <SafeScreen scrollable={true} padding={UNIFIED_THEME.spacing.lg} hasBottomTabs={false}>
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity
-          onPress={() => navigation.goBack()}
-          style={styles.backButton}
-        >
-          <MaterialIcons
-            name="chevron-left"
-            size={28}
-            color={UNIFIED_THEME.colors.text.primary}
-          />
-        </TouchableOpacity>
         <View style={{ flex: 1 }}>
           <Text style={styles.title}>Set Your Availability</Text>
           <Text style={styles.subtitle}>Select dates and times when you're available</Text>

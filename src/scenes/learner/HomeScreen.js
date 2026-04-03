@@ -15,8 +15,10 @@ import { LoadingOverlay } from '../../components/LoadingOverlay';
 import { SearchBar } from '../../components/SearchBar';
 import { mentorApi } from '../../api/mentorApi';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
+import { useAuth } from '../../hooks/useAuth';
 
 export default function LearnerHomeScreen({ navigation }) {
+  const { profile } = useAuth();
   const [mentorsByCategory, setMentorsByCategory] = useState({});
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -30,7 +32,12 @@ export default function LearnerHomeScreen({ navigation }) {
     try {
       setLoading(true);
       const grouped = await mentorApi.getMentorsByCategory();
-      setMentorsByCategory(grouped);
+      const filtered = {};
+      Object.entries(grouped).forEach(([category, mentors]) => {
+        const withoutSelf = mentors.filter(m => m.id !== profile?.id);
+        if (withoutSelf.length > 0) filtered[category] = withoutSelf;
+      });
+      setMentorsByCategory(filtered);
     } catch (error) {
       console.error('Error loading mentors:', error);
       Toast.show('Failed to load mentors');
@@ -150,8 +157,6 @@ export default function LearnerHomeScreen({ navigation }) {
       </ScrollView>
     </View>
   );
-
-  const categories = Object.keys(mentorsByCategory).sort();
 
   return (
     <SafeScreen
