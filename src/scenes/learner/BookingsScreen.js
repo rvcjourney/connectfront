@@ -4,14 +4,20 @@ import {
   Text,
   StyleSheet,
   RefreshControl,
+  Platform,
 } from 'react-native';
+import LinearGradient from 'react-native-linear-gradient';
 import Toast from 'react-native-simple-toast';
+import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import { SafeScreen } from '../../components/SafeScreen';
 import { UNIFIED_THEME } from '../../unifiedTheme';
 import { LoadingOverlay } from '../../components/LoadingOverlay';
 import { BookingCard } from '../../components/BookingCard';
+import { SectionHeader } from '../../components/SectionHeader';
 import { useAuth } from '../../hooks/useAuth';
 import { bookingApi } from '../../api/bookingApi';
+
+const T = UNIFIED_THEME;
 
 export default function LearnerBookingsScreen({ navigation }) {
   const { profile } = useAuth();
@@ -27,12 +33,10 @@ export default function LearnerBookingsScreen({ navigation }) {
     if (!profile?.id) return;
     try {
       setLoading(true);
-      console.log('📚 Loading learner bookings for ID:', profile.id);
       const data = await bookingApi.getBookingsByLearner(profile.id);
-      console.log('📚 Loaded learner bookings:', data);
       setBookings(data || []);
     } catch (error) {
-      console.error('❌ Error loading bookings:', error);
+      console.error('Error loading learner bookings:', error);
       Toast.show('Failed to load bookings: ' + error.message);
     } finally {
       setLoading(false);
@@ -45,14 +49,14 @@ export default function LearnerBookingsScreen({ navigation }) {
     setRefreshing(false);
   };
 
-  const handleJoinCall = (booking) => {
+  const handleJoinCall = booking => {
     navigation.navigate('VideoCall_Screen', {
       bookingId: booking.id,
       isHost: false,
     });
   };
 
-  const handleCancelBooking = async (booking) => {
+  const handleCancelBooking = async booking => {
     try {
       await bookingApi.cancelBooking(booking.id);
       Toast.show('Booking cancelled');
@@ -62,7 +66,6 @@ export default function LearnerBookingsScreen({ navigation }) {
     }
   };
 
-  // Check if booking date+time is in the past
   const isSessionPast = (dateStr, timeStr) => {
     const now = new Date();
     const [year, month, day] = dateStr.split('-').map(Number);
@@ -76,19 +79,26 @@ export default function LearnerBookingsScreen({ navigation }) {
     return sessionDate < now;
   };
 
-  // Split bookings into upcoming and history
   const upcomingBookings = bookings.filter(b => {
     const dateStr = b.availability_slots?.date;
     const timeStr = b.availability_slots?.start_time;
     if (!dateStr) return false;
-    return !isSessionPast(dateStr, timeStr) && (b.status === 'pending' || b.status === 'confirmed');
+    return (
+      !isSessionPast(dateStr, timeStr) &&
+      (b.status === 'pending' || b.status === 'confirmed')
+    );
   });
 
   const historyBookings = bookings.filter(b => {
     const dateStr = b.availability_slots?.date;
     const timeStr = b.availability_slots?.start_time;
-    if (!dateStr) return true; // Include if no date
-    return isSessionPast(dateStr, timeStr) || b.status === 'completed' || b.status === 'cancelled' || b.status === 'rejected';
+    if (!dateStr) return true;
+    return (
+      isSessionPast(dateStr, timeStr) ||
+      b.status === 'completed' ||
+      b.status === 'cancelled' ||
+      b.status === 'rejected'
+    );
   });
 
   const renderBooking = (item, isUpcoming) => {
@@ -113,105 +123,182 @@ export default function LearnerBookingsScreen({ navigation }) {
     );
   };
 
-  const renderSection = (title, bookingsList, isUpcoming) => {
-    return (
-      <View key={title} style={styles.section}>
-        <Text style={styles.sectionTitle}>{title}</Text>
-        {bookingsList.length > 0 ? (
-          <View style={styles.cardsContainer}>
-            {bookingsList.map(booking => renderBooking(booking, isUpcoming))}
-          </View>
-        ) : (
-          <View style={styles.noSessionContainer}>
-            <Text style={styles.noSessionText}>
-              {isUpcoming ? 'No Upcoming Sessions' : 'No History Sessions'}
-            </Text>
-          </View>
-        )}
-      </View>
-    );
-  };
-
-  return (
-    <SafeScreen scrollable={true} padding={UNIFIED_THEME.spacing.lg} hasBottomTabs={true} refreshControl={
-      <RefreshControl
-        refreshing={refreshing}
-        onRefresh={handleRefresh}
-        tintColor={UNIFIED_THEME.colors.primary.light}
-      />
-    }>
-      <View style={styles.header}>
-        <Text style={styles.title}>My Bookings</Text>
-      </View>
-
-      {/* Upcoming Sessions */}
-      {renderSection('📅 Upcoming Sessions', upcomingBookings, true)}
-
-      {/* History Sessions */}
-      {renderSection('📋 History Sessions', historyBookings, false)}
-
-      {/* Empty State */}
-      {upcomingBookings.length === 0 && historyBookings.length === 0 && !loading && (
-        <View style={styles.emptyContainer}>
-          <Text style={styles.emptyTitle}>No bookings yet</Text>
-          <Text style={styles.emptySubtitle}>Find a mentor to book your first session</Text>
+  const renderSection = (title, subtitle, bookingsList, isUpcoming) => (
+    <View key={title} style={styles.section}>
+      <SectionHeader title={title} subtitle={subtitle} count={bookingsList.length} />
+      {bookingsList.length > 0 ? (
+        <View style={styles.cardsContainer}>
+          {bookingsList.map(booking => renderBooking(booking, isUpcoming))}
+        </View>
+      ) : (
+        <View style={styles.placeholderCard}>
+          <MaterialIcons
+            name={isUpcoming ? 'event-available' : 'history'}
+            size={22}
+            color={T.colors.text.muted}
+          />
+          <Text style={styles.placeholderText}>
+            {isUpcoming ? 'No upcoming sessions' : 'No past sessions yet'}
+          </Text>
         </View>
       )}
+    </View>
+  );
 
-      <LoadingOverlay visible={loading || refreshing} message={refreshing ? "Refreshing bookings..." : "Loading bookings..."} />
+  const fullyEmpty =
+    upcomingBookings.length === 0 && historyBookings.length === 0 && !loading;
+
+  return (
+    <SafeScreen
+      scrollable={true}
+      padding={T.spacing.lg}
+      hasBottomTabs={true}
+      includeTopInset={false}
+      refreshControl={
+        <RefreshControl
+          refreshing={refreshing}
+          onRefresh={handleRefresh}
+          tintColor={T.colors.accent.secondary}
+        />
+      }
+    >
+      <View style={styles.hero}>
+        <LinearGradient
+          colors={[
+            'rgba(94, 234, 212, 0.14)',
+            'rgba(167, 139, 250, 0.12)',
+            'rgba(2, 0, 20, 0.5)',
+          ]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={StyleSheet.absoluteFill}
+        />
+        <View style={styles.heroRim} pointerEvents="none" />
+        <View style={styles.heroIconRow}>
+          <MaterialIcons name="menu-book" size={22} color={T.colors.accent.secondary} />
+        </View>
+        <Text style={styles.heroTitle}>My bookings</Text>
+        <Text style={styles.heroSubtitle}>
+          Join calls on time, and review your session history here.
+        </Text>
+      </View>
+
+      {fullyEmpty ? (
+        <View style={styles.emptyWrap}>
+          <View style={styles.emptyIconCircle}>
+            <MaterialIcons name="calendar-month" size={40} color={T.colors.accent.primary} />
+          </View>
+          <Text style={styles.emptyTitle}>No bookings yet</Text>
+          <Text style={styles.emptySubtitle}>
+            Browse mentors from Search and book your first session.
+          </Text>
+        </View>
+      ) : (
+        <>
+          {renderSection(
+            'Upcoming',
+            'Sessions you can join or manage',
+            upcomingBookings,
+            true,
+          )}
+          {renderSection(
+            'History',
+            'Completed and past sessions',
+            historyBookings,
+            false,
+          )}
+        </>
+      )}
+
+      <LoadingOverlay
+        visible={loading || refreshing}
+        message={refreshing ? 'Refreshing bookings…' : 'Loading bookings…'}
+      />
     </SafeScreen>
   );
 }
 
 const styles = StyleSheet.create({
-  header: {
-    marginBottom: UNIFIED_THEME.spacing.lg,
+  hero: {
+    borderRadius: T.borderRadius.xl,
+    overflow: 'hidden',
+    padding: T.spacing.lg,
+    marginBottom: T.spacing.lg,
+    borderWidth: 1,
+    borderColor: T.colors.border.light,
+    backgroundColor: T.colors.primary.dark,
+    ...Platform.select({
+      ios: T.shadows.medium,
+      android: { elevation: 6 },
+    }),
   },
-  title: {
-    ...UNIFIED_THEME.typography.headingMd,
-    color: UNIFIED_THEME.colors.text.primary,
+  heroRim: {
+    ...StyleSheet.absoluteFillObject,
+    borderRadius: T.borderRadius.xl,
+    borderWidth: 1,
+    borderColor: T.colors.tabBar.rimBorder,
+    margin: 1,
+  },
+  heroIconRow: {
+    marginBottom: T.spacing.sm,
+  },
+  heroTitle: {
+    ...T.typography.headingMd,
+    color: T.colors.text.primary,
+    marginBottom: T.spacing.sm,
+  },
+  heroSubtitle: {
+    ...T.typography.bodyMd,
+    color: T.colors.text.muted,
+    lineHeight: 22,
   },
   section: {
-    marginBottom: UNIFIED_THEME.spacing.xl,
-  },
-  sectionTitle: {
-    ...UNIFIED_THEME.typography.bodyMd,
-    color: UNIFIED_THEME.colors.text.primary,
-    fontWeight: '700',
-    marginBottom: UNIFIED_THEME.spacing.md,
+    marginBottom: T.spacing.xl,
   },
   cardsContainer: {
-    gap: UNIFIED_THEME.spacing.md,
+    gap: T.spacing.md,
   },
-  noSessionContainer: {
-    backgroundColor: UNIFIED_THEME.colors.component.input,
-    borderRadius: 12,
-    paddingVertical: UNIFIED_THEME.spacing.lg,
-    paddingHorizontal: UNIFIED_THEME.spacing.md,
+  placeholderCard: {
+    flexDirection: 'row',
     alignItems: 'center',
+    gap: T.spacing.md,
+    backgroundColor: T.colors.component.card,
+    borderRadius: T.borderRadius.lg,
+    paddingVertical: T.spacing.lg,
+    paddingHorizontal: T.spacing.lg,
     borderWidth: 1,
-    borderColor: UNIFIED_THEME.colors.border.light,
+    borderColor: T.colors.border.light,
   },
-  noSessionText: {
-    ...UNIFIED_THEME.typography.bodyMd,
-    color: UNIFIED_THEME.colors.text.secondary,
-    fontStyle: 'italic',
+  placeholderText: {
+    ...T.typography.bodyMd,
+    color: T.colors.text.muted,
+    flex: 1,
   },
-  emptyContainer: {
+  emptyWrap: {
+    alignItems: 'center',
+    paddingVertical: T.spacing.xxxl,
+    paddingHorizontal: T.spacing.lg,
+  },
+  emptyIconCircle: {
+    width: 88,
+    height: 88,
+    borderRadius: 44,
+    backgroundColor: T.colors.component.card,
+    borderWidth: 1,
+    borderColor: T.colors.border.light,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingVertical: UNIFIED_THEME.spacing.xl * 2,
-    paddingHorizontal: UNIFIED_THEME.spacing.lg,
+    marginBottom: T.spacing.lg,
   },
   emptyTitle: {
-    ...UNIFIED_THEME.typography.bodyMd,
-    color: UNIFIED_THEME.colors.text.primary,
-    marginBottom: UNIFIED_THEME.spacing.sm,
-    fontWeight: '600',
+    ...T.typography.headingSm,
+    color: T.colors.text.primary,
+    marginBottom: T.spacing.sm,
   },
   emptySubtitle: {
-    ...UNIFIED_THEME.typography.bodySm,
-    color: UNIFIED_THEME.colors.text.secondary,
+    ...T.typography.bodyMd,
+    color: T.colors.text.muted,
     textAlign: 'center',
+    lineHeight: 22,
   },
 });

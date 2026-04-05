@@ -3,27 +3,32 @@ import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
-  SafeAreaView,
   ScrollView,
   FlatList,
   StyleSheet,
   TouchableOpacity,
   RefreshControl,
+  Dimensions,
 } from 'react-native';
 import { LineChart } from 'react-native-chart-kit';
 import Toast from 'react-native-simple-toast';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import { UNIFIED_THEME } from '../../unifiedTheme';
 import { LoadingOverlay } from '../../components/LoadingOverlay';
-import { StatCard } from '../../components/StatCard';
 import { useAuth } from '../../hooks/useAuth';
 import { earningsApi } from '../../api/earningsApi';
 import { formatCurrency } from '../../utils/formatCurrency';
 import { formatDate } from '../../utils/dateHelpers';
 
+const T = UNIFIED_THEME;
 const PERIODS = ['week', 'month', 'year'];
 
-export default function MentorEarningsScreen({ navigation }) {
+const chartWidth = Math.min(
+  Dimensions.get('window').width - T.spacing.lg * 2 - 8,
+  360,
+);
+
+export default function MentorEarningsScreen() {
   const { profile } = useAuth();
   const [activePeriod, setActivePeriod] = useState('month');
   const [totalEarnings, setTotalEarnings] = useState(0);
@@ -44,11 +49,9 @@ export default function MentorEarningsScreen({ navigation }) {
     try {
       setLoading(true);
 
-      // Load total earnings
       const total = await earningsApi.getTotalEarnings(profile.id);
       setTotalEarnings(total?.total || 0);
 
-      // Load period-specific earnings
       let data = [];
       if (activePeriod === 'week') {
         data = await earningsApi.getEarningsByWeek(profile.id);
@@ -60,9 +63,8 @@ export default function MentorEarningsScreen({ navigation }) {
 
       setPeriodEarnings(data || []);
 
-      // Prepare chart data (last 7/30 entries)
       const chartValues = data?.slice(-7).map(d => parseFloat(d.amount || 0)) || [];
-      const chartLabels = data?.slice(-7).map((d, i) => String(i)) || [];
+      const chartLabels = data?.slice(-7).map((d, i) => String(i + 1)) || [];
 
       setChartData({
         labels: chartLabels,
@@ -73,7 +75,6 @@ export default function MentorEarningsScreen({ navigation }) {
         ],
       });
 
-      // Prepare transactions (most recent earnings)
       const txns = data?.slice().reverse().slice(0, 10) || [];
       setTransactions(txns);
     } catch (error) {
@@ -92,20 +93,33 @@ export default function MentorEarningsScreen({ navigation }) {
 
   const renderTransaction = ({ item }) => (
     <View style={styles.transactionRow}>
+      <View style={styles.transactionIcon}>
+        <MaterialIcons
+          name="trending-up"
+          size={20}
+          color={T.colors.accent.success}
+        />
+      </View>
       <View style={styles.transactionInfo}>
         <Text style={styles.transactionDate}>
           {item.created_at ? formatDate(item.created_at) : 'Date unknown'}
         </Text>
-        <Text style={styles.transactionDetails}>
-          Session with learner • Booking #{item.booking_id?.slice(0, 8)}
+        <Text style={styles.transactionDetails} numberOfLines={1}>
+          Session payout · Booking #{item.booking_id?.slice(0, 8) || '—'}
         </Text>
       </View>
-      <Text style={styles.transactionAmount}>+{formatCurrency(item.amount)}</Text>
+      <Text style={styles.transactionAmount}>
+        +{formatCurrency(item.amount)}
+      </Text>
     </View>
   );
 
+  const hasChartPoints =
+    chartData.datasets?.[0]?.data &&
+    chartData.datasets[0].data.some(n => n > 0);
+
   return (
-    <SafeScreen scrollable={true} padding={UNIFIED_THEME.spacing.lg}>
+    <SafeScreen scrollable={true} padding={T.spacing.lg} includeTopInset={false}>
       <ScrollView
         style={styles.content}
         showsVerticalScrollIndicator={false}
@@ -113,88 +127,98 @@ export default function MentorEarningsScreen({ navigation }) {
           <RefreshControl
             refreshing={refreshing}
             onRefresh={handleRefresh}
-            tintColor={UNIFIED_THEME.colors.primary.light}
+            tintColor={T.colors.accent.secondary}
           />
         }
       >
-        {/* Header */}
-        <View style={styles.header}>
-          <Text style={styles.title}>Earnings</Text>
+        <View style={styles.pageIntro}>
+          <Text style={styles.eyebrow}>Earnings</Text>
+          <Text style={styles.pageTitle}>Revenue</Text>
+          <Text style={styles.pageSubtitle}>
+            Track totals and recent payouts from completed sessions.
+          </Text>
         </View>
 
-        {/* Total Earnings */}
-        <View style={styles.totalSection}>
-          <Text style={styles.totalLabel}>Total Earnings</Text>
+        <View style={styles.totalCard}>
+          <Text style={styles.totalLabel}>Lifetime earnings</Text>
           <Text style={styles.totalAmount}>{formatCurrency(totalEarnings)}</Text>
         </View>
 
-        {/* Period Selector */}
+        <Text style={styles.periodLabel}>Period</Text>
         <View style={styles.periodSelector}>
-          {PERIODS.map(period => (
-            <TouchableOpacity
-              key={period}
-              style={[
-                styles.periodButton,
-                activePeriod === period && styles.periodButtonActive,
-              ]}
-              onPress={() => setActivePeriod(period)}
-            >
-              <Text
-                style={[
-                  styles.periodText,
-                  activePeriod === period && styles.periodTextActive,
-                ]}
+          {PERIODS.map(period => {
+            const active = activePeriod === period;
+            return (
+              <TouchableOpacity
+                key={period}
+                style={[styles.periodButton, active && styles.periodButtonActive]}
+                onPress={() => setActivePeriod(period)}
+                activeOpacity={0.8}
               >
-                {period.charAt(0).toUpperCase() + period.slice(1)}
-              </Text>
-            </TouchableOpacity>
-          ))}
+                <Text
+                  style={[styles.periodText, active && styles.periodTextActive]}
+                >
+                  {period.charAt(0).toUpperCase() + period.slice(1)}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
         </View>
 
-        {/* Chart */}
-        {chartData.datasets?.[0]?.data && chartData.datasets[0].data.length > 0 ? (
+        {hasChartPoints ? (
           <View style={styles.chartContainer}>
             <LineChart
               data={chartData}
-              width={400}
-              height={220}
+              width={chartWidth}
+              height={200}
+              withDots
+              withInnerLines={false}
+              withOuterLines={false}
+              fromZero
               chartConfig={{
-                backgroundColor: UNIFIED_THEME.colors.component.input,
-                backgroundGradientFrom: UNIFIED_THEME.colors.component.input,
-                backgroundGradientTo: UNIFIED_THEME.colors.component.input,
-                color: () => UNIFIED_THEME.colors.primary.light,
-                strokeWidth: 2,
-                useShadowColorFromDataset: false,
+                backgroundColor: T.colors.component.card,
+                backgroundGradientFrom: T.colors.component.card,
+                backgroundGradientTo: T.colors.component.input,
+                decimalPlaces: 0,
+                color: () => T.colors.accent.secondary,
+                labelColor: () => T.colors.text.muted,
+                propsForDots: {
+                  r: '4',
+                  strokeWidth: '1',
+                  stroke: T.colors.accent.primary,
+                },
               }}
               style={styles.chart}
             />
           </View>
         ) : (
           <View style={styles.noChartContainer}>
-            <Text style={styles.noChartText}>No earnings data available</Text>
+            <MaterialIcons
+              name="show-chart"
+              size={40}
+              color={T.colors.text.muted}
+            />
+            <Text style={styles.noChartText}>No data for this period</Text>
+            <Text style={styles.noChartHint}>
+              Complete sessions to see trends here.
+            </Text>
           </View>
         )}
 
-        {/* Transactions */}
-        <View style={styles.transactionsSection}>
-          <Text style={styles.transactionsTitle}>Recent Transactions</Text>
-
-          {transactions.length > 0 ? (
-            <FlatList
-              data={transactions}
-              renderItem={renderTransaction}
-              keyExtractor={(item, index) => `${item.id || index}`}
-              scrollEnabled={false}
-              nestedScrollEnabled={false}
-            />
-          ) : (
-            <View style={styles.noTransactionsContainer}>
-              <Text style={styles.noTransactionsText}>
-                No transactions yet
-              </Text>
-            </View>
-          )}
-        </View>
+        <Text style={styles.transactionsHeading}>Recent activity</Text>
+        {transactions.length > 0 ? (
+          <FlatList
+            data={transactions}
+            renderItem={renderTransaction}
+            keyExtractor={(item, index) => `${item.id || index}`}
+            scrollEnabled={false}
+            nestedScrollEnabled={false}
+          />
+        ) : (
+          <View style={styles.noTransactionsContainer}>
+            <Text style={styles.noTransactionsText}>No transactions yet</Text>
+          </View>
+        )}
       </ScrollView>
 
       <LoadingOverlay visible={loading} message="Loading earnings..." />
@@ -203,125 +227,166 @@ export default function MentorEarningsScreen({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: UNIFIED_THEME.colors.primary.light,
-  },
   content: {
     flex: 1,
   },
-  header: {
-    paddingHorizontal: UNIFIED_THEME.spacing.lg,
-    paddingVertical: UNIFIED_THEME.spacing.md,
+  pageIntro: {
+    marginBottom: T.spacing.lg,
   },
-  title: {
-    ...UNIFIED_THEME.typography.headingMd,
-    color: UNIFIED_THEME.colors.text.primary,
+  eyebrow: {
+    ...T.typography.labelSm,
+    color: T.colors.accent.secondary,
+    letterSpacing: 1.2,
+    textTransform: 'uppercase',
+    marginBottom: T.spacing.xs,
   },
-  totalSection: {
-    backgroundColor: UNIFIED_THEME.colors.component.input,
-    marginHorizontal: UNIFIED_THEME.spacing.lg,
-    marginBottom: UNIFIED_THEME.spacing.lg,
-    padding: UNIFIED_THEME.spacing.lg,
-    borderRadius: 12,
+  pageTitle: {
+    ...T.typography.headingLg,
+    color: T.colors.text.primary,
+    fontWeight: '800',
+    marginBottom: T.spacing.sm,
+  },
+  pageSubtitle: {
+    ...T.typography.bodyMd,
+    color: T.colors.text.secondary,
+    lineHeight: 22,
+  },
+  totalCard: {
+    backgroundColor: T.colors.component.card,
+    marginBottom: T.spacing.lg,
+    padding: T.spacing.xl,
+    borderRadius: T.borderRadius.lg,
     borderWidth: 1,
-    borderColor: UNIFIED_THEME.colors.primary.light,
+    borderColor: T.colors.border.light,
     alignItems: 'center',
+    ...T.shadows.small,
   },
   totalLabel: {
-    ...UNIFIED_THEME.typography.bodySm,
-    color: UNIFIED_THEME.colors.text.secondary,
-    marginBottom: UNIFIED_THEME.spacing.sm,
+    ...T.typography.labelMd,
+    color: T.colors.text.secondary,
+    marginBottom: T.spacing.sm,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
   totalAmount: {
-    ...UNIFIED_THEME.typography.headingMd,
-    color: UNIFIED_THEME.colors.success,
-    fontWeight: '700',
+    ...T.typography.headingLg,
+    color: T.colors.accent.success,
+    fontWeight: '800',
+  },
+  periodLabel: {
+    ...T.typography.labelMd,
+    color: T.colors.text.muted,
+    marginBottom: T.spacing.sm,
   },
   periodSelector: {
     flexDirection: 'row',
-    justifyContent: 'center',
-    gap: UNIFIED_THEME.spacing.md,
-    marginBottom: UNIFIED_THEME.spacing.lg,
+    flexWrap: 'wrap',
+    gap: T.spacing.sm,
+    marginBottom: T.spacing.lg,
   },
   periodButton: {
-    paddingHorizontal: UNIFIED_THEME.spacing.lg,
-    paddingVertical: UNIFIED_THEME.spacing.sm,
-    borderRadius: 20,
+    paddingHorizontal: T.spacing.lg,
+    paddingVertical: T.spacing.sm,
+    borderRadius: T.borderRadius.round,
     borderWidth: 1,
-    borderColor: UNIFIED_THEME.colors.primary.light,
+    borderColor: T.colors.border.light,
+    backgroundColor: T.colors.component.input,
   },
   periodButtonActive: {
-    backgroundColor: UNIFIED_THEME.colors.primary.light,
+    backgroundColor: T.colors.component.buttonSecondary,
+    borderColor: T.colors.border.default,
   },
   periodText: {
-    ...UNIFIED_THEME.typography.bodySm,
-    color: UNIFIED_THEME.colors.text.primary,
+    ...T.typography.labelMd,
+    color: T.colors.text.secondary,
     fontWeight: '600',
   },
   periodTextActive: {
-    color: UNIFIED_THEME.colors.primary.light,
+    color: T.colors.accent.primary,
+    fontWeight: '700',
   },
   chartContainer: {
     alignItems: 'center',
-    marginBottom: UNIFIED_THEME.spacing.lg,
+    marginBottom: T.spacing.xl,
   },
   chart: {
-    marginVertical: UNIFIED_THEME.spacing.md,
-    borderRadius: 12,
+    marginVertical: T.spacing.sm,
+    borderRadius: T.borderRadius.lg,
+    overflow: 'hidden',
   },
   noChartContainer: {
-    height: 220,
+    minHeight: 180,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: UNIFIED_THEME.spacing.lg,
+    marginBottom: T.spacing.xl,
+    backgroundColor: T.colors.component.card,
+    borderRadius: T.borderRadius.lg,
+    borderWidth: 1,
+    borderColor: T.colors.border.light,
+    padding: T.spacing.xl,
   },
   noChartText: {
-    ...UNIFIED_THEME.typography.bodySm,
-    color: UNIFIED_THEME.colors.text.secondary,
-  },
-  transactionsSection: {
-    paddingHorizontal: UNIFIED_THEME.spacing.lg,
-    marginBottom: UNIFIED_THEME.spacing.lg,
-  },
-  transactionsTitle: {
-    ...UNIFIED_THEME.typography.bodyMd,
-    color: UNIFIED_THEME.colors.text.primary,
+    ...T.typography.bodyMd,
+    color: T.colors.text.primary,
     fontWeight: '600',
-    marginBottom: UNIFIED_THEME.spacing.md,
+    marginTop: T.spacing.md,
+  },
+  noChartHint: {
+    ...T.typography.bodySm,
+    color: T.colors.text.muted,
+    marginTop: T.spacing.xs,
+    textAlign: 'center',
+  },
+  transactionsHeading: {
+    ...T.typography.headingSm,
+    fontSize: 17,
+    color: T.colors.text.primary,
+    fontWeight: '700',
+    marginBottom: T.spacing.md,
   },
   transactionRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: UNIFIED_THEME.spacing.md,
-    borderBottomWidth: 1,
-    borderBottomColor: UNIFIED_THEME.colors.primary.light,
+    paddingVertical: T.spacing.md,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: T.colors.border.light,
+    gap: T.spacing.md,
+  },
+  transactionIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: T.colors.component.input,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: T.colors.border.light,
   },
   transactionInfo: {
     flex: 1,
+    minWidth: 0,
   },
   transactionDate: {
-    ...UNIFIED_THEME.typography.bodyMd,
-    color: UNIFIED_THEME.colors.text.primary,
+    ...T.typography.bodyMd,
+    color: T.colors.text.primary,
     fontWeight: '600',
-    marginBottom: 4,
+    marginBottom: 2,
   },
   transactionDetails: {
-    ...UNIFIED_THEME.typography.bodySm,
-    color: UNIFIED_THEME.colors.text.secondary,
+    ...T.typography.bodySm,
+    color: T.colors.text.muted,
   },
   transactionAmount: {
-    ...UNIFIED_THEME.typography.bodyMd,
-    color: UNIFIED_THEME.colors.success,
-    fontWeight: '600',
+    ...T.typography.labelMd,
+    color: T.colors.accent.success,
+    fontWeight: '700',
   },
   noTransactionsContainer: {
     alignItems: 'center',
-    paddingVertical: UNIFIED_THEME.spacing.xl,
+    paddingVertical: T.spacing.xl,
   },
   noTransactionsText: {
-    ...UNIFIED_THEME.typography.bodySm,
-    color: UNIFIED_THEME.colors.text.secondary,
+    ...T.typography.bodySm,
+    color: T.colors.text.muted,
   },
 });

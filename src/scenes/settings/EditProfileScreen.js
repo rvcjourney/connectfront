@@ -584,7 +584,7 @@ const styles = StyleSheet.create({
     borderBottomColor: UNIFIED_THEME.colors.border.light,
   },
   dropdownItemLast: { borderBottomWidth: 0 },
-  dropdownItemActive: { backgroundColor: 'rgba(248, 85, 156, 0.1)' },
+  dropdownItemActive: { backgroundColor: 'rgba(167, 139, 250, 0.12)' },
   dropdownItemText: {
     fontSize: 14,
     color: UNIFIED_THEME.colors.text.primary,

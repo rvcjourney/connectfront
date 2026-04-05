@@ -1,8 +1,7 @@
 import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
-import { UNIFIED_THEME } from '../unifiedTheme';
+import { CosmicBottomTabBar } from '../components/CosmicBottomTabBar';
 import { SCREEN_NAMES } from './screenNames';
 import HomeScreen from '../scenes/home/HomeScreen';
 import { MentorSectionNavigator } from './MentorSectionNavigator';
@@ -12,25 +11,20 @@ import UnifiedSettingsScreen from '../scenes/settings/UnifiedSettingsScreen';
 const BottomTab = createBottomTabNavigator();
 
 export const UnifiedTabNavigator = () => {
-  const insets = useSafeAreaInsets();
-
   return (
     <BottomTab.Navigator
+      tabBar={(props) => <CosmicBottomTabBar {...props} />}
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: UNIFIED_THEME.colors.accent.primary,
-        tabBarInactiveTintColor: UNIFIED_THEME.colors.text.muted,
+        tabBarShowLabel: true,
         tabBarStyle: {
-          backgroundColor: UNIFIED_THEME.colors.primary.dark,
-          borderTopColor: UNIFIED_THEME.colors.border.light,
-          borderTopWidth: 1,
-          height: 60 + (insets.bottom || 0),
-          paddingBottom: insets.bottom,
-          paddingTop: 0,
-        },
-        tabBarLabelStyle: {
-          fontSize: 11,
-          fontWeight: '600',
+          position: 'absolute',
+          backgroundColor: 'transparent',
+          borderTopWidth: 0,
+          borderTopColor: 'transparent',
+          elevation: 0,
+          shadowOpacity: 0,
+          height: 'auto',
         },
       }}
     >
@@ -39,8 +33,8 @@ export const UnifiedTabNavigator = () => {
         component={HomeScreen}
         options={{
           tabBarLabel: 'Home',
-          tabBarIcon: ({ color }) => (
-            <MaterialIcons name="home" size={24} color={color} />
+          tabBarIcon: ({ color, size }) => (
+            <MaterialIcons name="home" size={size} color={color} />
           ),
         }}
       />
@@ -49,8 +43,8 @@ export const UnifiedTabNavigator = () => {
         component={MentorSectionNavigator}
         options={{
           tabBarLabel: 'Mentor',
-          tabBarIcon: ({ color }) => (
-            <MaterialIcons name="school" size={24} color={color} />
+          tabBarIcon: ({ color, size }) => (
+            <MaterialIcons name="school" size={size} color={color} />
           ),
         }}
       />
@@ -59,8 +53,8 @@ export const UnifiedTabNavigator = () => {
         component={LearnerSectionNavigator}
         options={{
           tabBarLabel: 'Learner',
-          tabBarIcon: ({ color }) => (
-            <MaterialIcons name="menu-book" size={24} color={color} />
+          tabBarIcon: ({ color, size }) => (
+            <MaterialIcons name="menu-book" size={size} color={color} />
           ),
         }}
       />
@@ -69,8 +63,8 @@ export const UnifiedTabNavigator = () => {
         component={UnifiedSettingsScreen}
         options={{
           tabBarLabel: 'Settings',
-          tabBarIcon: ({ color }) => (
-            <MaterialIcons name="settings" size={24} color={color} />
+          tabBarIcon: ({ color, size }) => (
+            <MaterialIcons name="settings" size={size} color={color} />
           ),
         }}
       />

@@ -8,22 +8,23 @@ export const StatCard = ({
   label,
   value,
   unit = '',
-  color = UNIFIED_THEME.colors.primary.light,
+  color = UNIFIED_THEME.colors.accent.secondary,
 }) => {
   return (
-    <View style={[styles.container, { borderColor: color }]}>
-      <View style={styles.header}>
-        <MaterialIcons
-          name={icon}
-          size={24}
-          color={color}
-          style={styles.icon}
-        />
-        <Text style={styles.label}>{label}</Text>
+    <View style={[styles.container, { borderLeftColor: color }]}>
+      <View style={styles.topRow}>
+        {icon ? (
+          <View style={[styles.iconWrap, { borderColor: color }]}>
+            <MaterialIcons name={icon} size={20} color={color} />
+          </View>
+        ) : null}
+        <Text style={styles.label} numberOfLines={2}>
+          {label}
+        </Text>
       </View>
-      <View style={styles.valueContainer}>
+      <View style={styles.valueRow}>
         <Text style={[styles.value, { color }]}>{value}</Text>
-        {unit && <Text style={styles.unit}>{unit}</Text>}
+        {unit ? <Text style={styles.unit}>{unit}</Text> : null}
       </View>
     </View>
   );
@@ -31,38 +32,49 @@ export const StatCard = ({
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: UNIFIED_THEME.colors.component.input,
-    borderRadius: 12,
-    padding: UNIFIED_THEME.spacing.md,
-    borderWidth: 0.2,
     flex: 1,
-    marginHorizontal: UNIFIED_THEME.spacing.sm,
-    marginVertical: UNIFIED_THEME.spacing.sm,
+    backgroundColor: UNIFIED_THEME.colors.component.card,
+    borderRadius: UNIFIED_THEME.borderRadius.sm,
+    padding: UNIFIED_THEME.spacing.md,
+    borderWidth: 1,
+    borderColor: UNIFIED_THEME.colors.border.light,
+    borderLeftWidth: 3,
+    minWidth: 0,
   },
-  header: {
+  topRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: UNIFIED_THEME.spacing.md,
+    gap: UNIFIED_THEME.spacing.sm,
+    marginBottom: UNIFIED_THEME.spacing.sm,
   },
-  icon: {
-    marginRight: UNIFIED_THEME.spacing.sm,
+  iconWrap: {
+    width: 36,
+    height: 36,
+    borderRadius: UNIFIED_THEME.borderRadius.sm,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: UNIFIED_THEME.colors.component.input,
+    borderWidth: 1,
   },
   label: {
-    ...UNIFIED_THEME.typography.bodySm,
+    ...UNIFIED_THEME.typography.labelSm,
     color: UNIFIED_THEME.colors.text.secondary,
     flex: 1,
+    fontWeight: '600',
   },
-  valueContainer: {
+  valueRow: {
     flexDirection: 'row',
     alignItems: 'baseline',
+    flexWrap: 'wrap',
   },
   value: {
-    ...UNIFIED_THEME.typography.headingMd,
+    ...UNIFIED_THEME.typography.headingSm,
     fontWeight: '700',
+    fontSize: 20,
   },
   unit: {
     ...UNIFIED_THEME.typography.bodySm,
-    color: UNIFIED_THEME.colors.text.secondary,
-    marginLeft: UNIFIED_THEME.spacing.sm,
+    color: UNIFIED_THEME.colors.text.muted,
+    marginLeft: UNIFIED_THEME.spacing.xs,
   },
 });

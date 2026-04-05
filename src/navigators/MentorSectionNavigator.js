@@ -1,6 +1,6 @@
 import React from 'react'; // eslint-disable-line
 import { createMaterialTopTabNavigator } from '@react-navigation/material-top-tabs';
-import { UNIFIED_THEME } from '../unifiedTheme';
+import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import { SCREEN_NAMES } from './screenNames';
 import { CapsuleTabBar } from '../components/CapsuleTabBar';
 import MentorDashboardScreen from '../scenes/mentor/HomeScreen';
@@ -10,6 +10,17 @@ import MentorAvailabilityScreen from '../scenes/mentor/AvailabilityScreen';
 
 const TopTab = createMaterialTopTabNavigator();
 
+const tabIcon =
+  (name) =>
+  ({ color, focused }) =>
+    (
+      <MaterialIcons
+        name={name}
+        size={focused ? 22 : 20}
+        color={color}
+      />
+    );
+
 export const MentorSectionNavigator = () => {
   return (
     <TopTab.Navigator
@@ -18,28 +29,40 @@ export const MentorSectionNavigator = () => {
         swipeEnabled: true,
         lazy: true,
       }}
-      style={{ backgroundColor: UNIFIED_THEME.colors.primary.light }}
-      sceneContainerStyle={{ backgroundColor: UNIFIED_THEME.colors.primary.light }}
+      style={{ backgroundColor: 'transparent' }}
+      sceneContainerStyle={{ backgroundColor: 'transparent' }}
     >
       <TopTab.Screen
         name={SCREEN_NAMES.MentorDashboard}
         component={MentorDashboardScreen}
-        options={{ tabBarLabel: 'Profile' }}
+        options={{
+          tabBarLabel: 'Profile',
+          tabBarIcon: tabIcon('person'),
+        }}
       />
       <TopTab.Screen
         name={SCREEN_NAMES.MentorCalls}
         component={MentorCallsScreen}
-        options={{ tabBarLabel: 'Calls' }}
+        options={{
+          tabBarLabel: 'Sessions',
+          tabBarIcon: tabIcon('video-call'),
+        }}
       />
       <TopTab.Screen
         name={SCREEN_NAMES.MentorEarnings}
         component={MentorEarningsScreen}
-        options={{ tabBarLabel: 'Earnings' }}
+        options={{
+          tabBarLabel: 'Earnings',
+          tabBarIcon: tabIcon('payments'),
+        }}
       />
       <TopTab.Screen
         name={SCREEN_NAMES.MentorAvailabilityTab}
         component={MentorAvailabilityScreen}
-        options={{ tabBarLabel: 'Availability' }}
+        options={{
+          tabBarLabel: 'Schedule',
+          tabBarIcon: tabIcon('calendar-today'),
+        }}
       />
     </TopTab.Navigator>
   );

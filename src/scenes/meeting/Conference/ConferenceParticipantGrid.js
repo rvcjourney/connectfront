@@ -1,5 +1,6 @@
 import React, { useRef, useState } from "react";
-import { View, Dimensions, ActivityIndicator } from "react-native";
+import { View, Dimensions } from "react-native";
+import { CosmicLoader } from "../../../components/LoadingSpinner";
 import BottomSheet from "../../../components/BottomSheet";
 import { useOrientation } from "../../../utils/useOrientation";
 import ParticipantStatsViewer from "../Components/ParticipantStatsViewer";
@@ -81,7 +82,7 @@ function ConferenceParticipantGrid({ participantIds, isPresenting }) {
                     alignItems: "center",
                   }}
                 >
-                  <ActivityIndicator size={"large"} />
+                  <CosmicLoader size={56} />
                 </View>
               )}
             </BottomSheet>

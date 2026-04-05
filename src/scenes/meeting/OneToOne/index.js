@@ -4,10 +4,10 @@ import {
   Text,
   Clipboard,
   TouchableOpacity,
-  ActivityIndicator,
   Dimensions,
   Platform,
 } from "react-native";
+import { CosmicLoader } from "../../../components/LoadingSpinner";
 import {
   useMeeting,
   getAudioDeviceList,
@@ -232,7 +232,7 @@ export default function OneToOneMeetingViewer({ isHost }) {
           <View
             style={{ flex: 1, justifyContent: "center", alignItems: "center" }}
           >
-            <ActivityIndicator size={"large"} />
+            <CosmicLoader size={56} />
           </View>
         )}
       </View>

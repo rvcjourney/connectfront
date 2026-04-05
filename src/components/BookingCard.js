@@ -1,16 +1,25 @@
 import React from 'react';
-import { View, Text, Image, TouchableOpacity, StyleSheet } from 'react-native';
+import {
+  View,
+  Text,
+  Image,
+  TouchableOpacity,
+  StyleSheet,
+  Platform,
+} from 'react-native';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import { UNIFIED_THEME } from '../unifiedTheme';
-import { formatDateTime, formatDate, formatTime } from '../utils/dateHelpers';
+import { formatDate, formatTime } from '../utils/dateHelpers';
+
+const T = UNIFIED_THEME.colors;
 
 const STATUS_COLORS = {
-  pending: UNIFIED_THEME.colors.accent.warning,
-  confirmed: UNIFIED_THEME.colors.primary.light,
-  completed: UNIFIED_THEME.colors.accent.success,
-  cancelled: UNIFIED_THEME.colors.text.secondary,
-  booked: UNIFIED_THEME.colors.text.success,
-  failed: UNIFIED_THEME.colors.text.secondary,
+  pending: T.accent.warning,
+  confirmed: T.accent.secondary,
+  completed: T.accent.success,
+  cancelled: T.text.muted,
+  booked: T.accent.success,
+  failed: T.text.muted,
 };
 
 const STATUS_ICONS = {
@@ -18,10 +27,13 @@ const STATUS_ICONS = {
   confirmed: 'check-circle',
   completed: 'done-all',
   cancelled: 'cancel',
-  booked: 'check',
+  booked: 'event-available',
   failed: 'error',
 };
 
+/**
+ * Session / booking row — flat cosmic panel (left status beam, square avatar, full-width CTA).
+ */
 export const BookingCard = ({
   booking,
   isMentor = false,
@@ -30,211 +42,244 @@ export const BookingCard = ({
   onPressCancel,
   statusLabel = null,
 }) => {
-  // Show learner info when isMentor or when explicitly requested
   const showLearnerDetails = isMentor || showLearnerInfo;
 
-  // Handle different data structures from API
   const getOtherUserInfo = () => {
     if (showLearnerDetails) {
-      // For mentors viewing learner info
       return {
         name: booking.profiles?.name || 'Unknown Learner',
         avatar: booking.profiles?.avatar_url,
       };
-    } else {
-      // For learners viewing mentor info
-      return {
-        name: booking.profiles?.name || 'Unknown Mentor',
-        avatar: booking.profiles?.avatar_url,
-      };
     }
+    return {
+      name: booking.profiles?.name || 'Unknown Mentor',
+      avatar: booking.profiles?.avatar_url,
+    };
   };
 
   const otherUser = getOtherUserInfo();
   const avatarUrl = otherUser.avatar;
   const name = otherUser.name;
 
+  const rawStatus = (statusLabel || booking.status || 'pending').toLowerCase();
   const displayStatus = statusLabel || booking.status || 'pending';
-  const statusColor = STATUS_COLORS[displayStatus] || UNIFIED_THEME.colors.text.secondary;
-  const statusIcon = STATUS_ICONS[displayStatus] || 'help';
+  const statusColor = STATUS_COLORS[rawStatus] || T.text.secondary;
+  const statusIcon = STATUS_ICONS[rawStatus] || 'help';
 
   const date = booking.availability_slots?.date;
   const time = booking.availability_slots?.start_time;
 
-  // Can join if there's a join handler AND (status is pending/confirmed for mentors OR status is confirmed for learners)
-  const canJoin = onPressJoin && (booking.status === 'pending' || booking.status === 'confirmed');
-  const canCancel = onPressCancel && (booking.status === 'pending' || booking.status === 'confirmed');
+  const canJoin =
+    onPressJoin && (booking.status === 'pending' || booking.status === 'confirmed');
+  const canCancel =
+    onPressCancel && (booking.status === 'pending' || booking.status === 'confirmed');
+
+  const statusTitle =
+    typeof displayStatus === 'string'
+      ? displayStatus.charAt(0).toUpperCase() + displayStatus.slice(1)
+      : displayStatus;
 
   return (
-    <View style={styles.container}>
-      <View style={styles.header}>
+    <View style={[styles.card, { borderLeftColor: statusColor }]}>
+      <View style={styles.topRow}>
         {avatarUrl ? (
           <Image source={{ uri: avatarUrl }} style={styles.avatar} />
         ) : (
           <View style={[styles.avatar, styles.avatarPlaceholder]}>
-            <MaterialIcons
-              name="person"
-              size={24}
-              color={UNIFIED_THEME.colors.primary.light}
-            />
+            <MaterialIcons name="person" size={22} color={T.accent.secondary} />
           </View>
         )}
 
-        <View style={styles.info}>
+        <View style={styles.main}>
           <Text style={styles.name} numberOfLines={1}>
             {name}
           </Text>
-          <Text style={styles.dateTime}>
-            {date && time ? `${formatDate(date)} at ${formatTime(time)}` : 'Date pending'}
-          </Text>
+          <View style={styles.metaRow}>
+            <MaterialIcons name="event" size={14} color={T.text.muted} />
+            <Text style={styles.dateTime}>
+              {date && time
+                ? `${formatDate(date)} · ${formatTime(time)}`
+                : 'Date pending'}
+            </Text>
+          </View>
         </View>
 
-        <View style={[styles.statusBadge, { borderColor: statusColor }]}>
-          <MaterialIcons name={statusIcon} size={14} color={statusColor} />
-          <Text style={[styles.statusText, { color: statusColor }]}>
-            {displayStatus.charAt(0).toUpperCase() + displayStatus.slice(1)}
+        <View style={styles.statusBlock}>
+          <MaterialIcons name={statusIcon} size={16} color={statusColor} />
+          <Text style={[styles.statusText, { color: statusColor }]} numberOfLines={1}>
+            {statusTitle}
           </Text>
         </View>
       </View>
 
-      {booking.message && isMentor && (
-        <View style={styles.messageSection}>
-          <Text style={styles.messageLabel}>📝 Learning Goal:</Text>
-          <Text style={styles.messageText}>{booking.message}</Text>
+      {booking.message && isMentor ? (
+        <View style={styles.goalStrip}>
+          <View style={styles.goalAccent} />
+          <View style={styles.goalBody}>
+            <View style={styles.goalLabelRow}>
+              <MaterialIcons name="menu-book" size={14} color={T.accent.secondary} />
+              <Text style={styles.goalLabel}>Learning goal</Text>
+            </View>
+            <Text style={styles.goalText}>{booking.message}</Text>
+          </View>
         </View>
-      )}
+      ) : null}
 
       <View style={styles.actions}>
-        {canJoin && onPressJoin && (
+        {canJoin && onPressJoin ? (
           <TouchableOpacity
-            style={styles.joinButton}
+            style={styles.joinBtn}
             onPress={onPressJoin}
-            activeOpacity={0.7}
+            activeOpacity={0.85}
           >
-            <MaterialIcons
-              name="videocam"
-              size={16}
-              color={UNIFIED_THEME.colors.accent.success}
-            />
-            <Text style={styles.joinButtonText}>
-              {isMentor ? 'Start Call' : 'Join Call'}
+            <MaterialIcons name="videocam" size={18} color={T.accent.success} />
+            <Text style={styles.joinBtnText}>
+              {isMentor ? 'Start call' : 'Join call'}
             </Text>
           </TouchableOpacity>
-        )}
-
-        {/* {canCancel && onPressCancel && (
+        ) : null}
+        {canCancel && onPressCancel ? (
           <TouchableOpacity
-            style={styles.cancelButton}
+            style={styles.cancelBtn}
             onPress={onPressCancel}
-            activeOpacity={0.7}
+            activeOpacity={0.85}
           >
-            <Text style={styles.cancelButtonText}>Cancel</Text>
+            <Text style={styles.cancelBtnText}>Cancel</Text>
           </TouchableOpacity>
-        )} */}
+        ) : null}
       </View>
     </View>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
-    backgroundColor: UNIFIED_THEME.colors.component.input,
-    borderRadius: 12,
+  card: {
+    backgroundColor: T.component.card,
+    borderRadius: UNIFIED_THEME.borderRadius.sm,
     padding: UNIFIED_THEME.spacing.md,
-    marginHorizontal: UNIFIED_THEME.spacing.md,
-    marginVertical: UNIFIED_THEME.spacing.sm,
     borderWidth: 1,
-    borderColor: UNIFIED_THEME.colors.primary.light,
+    borderColor: T.border.light,
+    borderLeftWidth: 3,
+    ...Platform.select({
+      ios: UNIFIED_THEME.shadows.small,
+      android: { elevation: 2 },
+    }),
   },
-  header: {
+  topRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: UNIFIED_THEME.spacing.md,
+    gap: UNIFIED_THEME.spacing.md,
   },
   avatar: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    marginRight: UNIFIED_THEME.spacing.md,
+    width: 52,
+    height: 52,
+    borderRadius: UNIFIED_THEME.borderRadius.sm,
+    borderWidth: 1,
+    borderColor: T.border.light,
   },
   avatarPlaceholder: {
-    backgroundColor: UNIFIED_THEME.colors.primary.light,
+    backgroundColor: T.component.input,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  info: {
+  main: {
     flex: 1,
+    minWidth: 0,
   },
   name: {
-    ...UNIFIED_THEME.typography.bodyMd,
-    color: UNIFIED_THEME.colors.text.primary,
-    fontWeight: '600',
+    ...UNIFIED_THEME.typography.labelMd,
+    color: T.text.primary,
+    fontWeight: '700',
     marginBottom: 4,
+  },
+  metaRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
   },
   dateTime: {
     ...UNIFIED_THEME.typography.bodySm,
-    color: UNIFIED_THEME.colors.text.secondary,
+    color: T.text.muted,
+    flex: 1,
   },
-  statusBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: UNIFIED_THEME.spacing.sm,
-    paddingVertical: 4,
-    borderRadius: 8,
-    borderWidth: 1,
+  statusBlock: {
+    alignItems: 'flex-end',
+    maxWidth: '32%',
+    gap: 2,
   },
   statusText: {
-    ...UNIFIED_THEME.typography.bodySm,
-    fontWeight: '600',
-    marginLeft: 4,
+    ...UNIFIED_THEME.typography.labelSm,
+    fontWeight: '700',
+    textAlign: 'right',
   },
-  actions: {
+  goalStrip: {
     flexDirection: 'row',
-    justifyContent: 'flex-end',
-    gap: UNIFIED_THEME.spacing.sm,
+    marginTop: UNIFIED_THEME.spacing.md,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: T.border.light,
+    paddingTop: UNIFIED_THEME.spacing.md,
   },
-  joinButton: {
+  goalAccent: {
+    width: 3,
+    alignSelf: 'stretch',
+    minHeight: 40,
+    backgroundColor: T.accent.secondary,
+    borderRadius: 1,
+    marginRight: UNIFIED_THEME.spacing.sm,
+    opacity: 0.85,
+  },
+  goalBody: {
+    flex: 1,
+    minWidth: 0,
+  },
+  goalLabelRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: UNIFIED_THEME.colors.primary.light,
-    paddingHorizontal: UNIFIED_THEME.spacing.md,
-    paddingVertical: 8,
-    borderRadius: 8,
-  },
-  joinButtonText: {
-    ...UNIFIED_THEME.typography.bodySm,
-    color: UNIFIED_THEME.colors.accent.success,
-    fontWeight: '600',
-    marginLeft: 4,
-  },
-  cancelButton: {
-    backgroundColor: UNIFIED_THEME.colors.primary.light,
-    paddingHorizontal: UNIFIED_THEME.spacing.md,
-    paddingVertical: 8,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: UNIFIED_THEME.colors.text.secondary,
-  },
-  cancelButtonText: {
-    ...UNIFIED_THEME.typography.bodySm,
-    color: UNIFIED_THEME.colors.text.secondary,
-    fontWeight: '600',
-  },
-  messageSection: {
-    backgroundColor: UNIFIED_THEME.colors.primary.dark,
-    padding: UNIFIED_THEME.spacing.md,
-    borderRadius: 8,
-    marginBottom: UNIFIED_THEME.spacing.md,
-  },
-  messageLabel: {
-    ...UNIFIED_THEME.typography.bodySm,
-    color: UNIFIED_THEME.colors.text.secondary,
-    fontWeight: '600',
+    gap: 6,
     marginBottom: UNIFIED_THEME.spacing.xs,
   },
-  messageText: {
+  goalLabel: {
+    ...UNIFIED_THEME.typography.labelSm,
+    color: T.text.secondary,
+    fontWeight: '700',
+  },
+  goalText: {
     ...UNIFIED_THEME.typography.bodySm,
-    color: UNIFIED_THEME.colors.text.primary,
-    lineHeight: 18,
+    color: T.text.primary,
+    lineHeight: 20,
+  },
+  actions: {
+    marginTop: UNIFIED_THEME.spacing.md,
+    gap: UNIFIED_THEME.spacing.sm,
+  },
+  joinBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: UNIFIED_THEME.spacing.sm,
+    paddingVertical: UNIFIED_THEME.spacing.sm + 2,
+    paddingHorizontal: UNIFIED_THEME.spacing.md,
+    borderRadius: UNIFIED_THEME.borderRadius.sm,
+    backgroundColor: 'rgba(52, 211, 153, 0.12)',
+    borderWidth: 1,
+    borderColor: T.accent.success,
+  },
+  joinBtnText: {
+    ...UNIFIED_THEME.typography.labelMd,
+    color: T.accent.success,
+    fontWeight: '800',
+  },
+  cancelBtn: {
+    alignItems: 'center',
+    paddingVertical: UNIFIED_THEME.spacing.sm,
+    borderRadius: UNIFIED_THEME.borderRadius.sm,
+    borderWidth: 1,
+    borderColor: T.border.light,
+    backgroundColor: T.component.input,
+  },
+  cancelBtnText: {
+    ...UNIFIED_THEME.typography.bodySm,
+    color: T.text.secondary,
+    fontWeight: '600',
   },
 });

@@ -1,95 +1,187 @@
-import { useEffect, useRef } from "react";
-import { View, Animated, StyleSheet } from "react-native";
-import { UNIFIED_THEME } from "../unifiedTheme";
+import { useEffect, useRef } from 'react';
+import { View, Animated, StyleSheet, Easing } from 'react-native';
+import { UNIFIED_THEME } from '../unifiedTheme';
 
 /**
- * Bouncing dots animation with theme colors
+ * Cosmic-themed loader: dual-tone orbit rings + soft pulsing core.
  */
-export const PulsingDots = ({ size = 16, color = "primary" }) => {
-  const anim1 = useRef(new Animated.Value(0)).current;
-  const anim2 = useRef(new Animated.Value(0)).current;
-  const anim3 = useRef(new Animated.Value(0)).current;
-
-  const getColor = () => {
-    switch (color) {
-      case "primary":
-        return UNIFIED_THEME.colors.accent.primary;
-      case "secondary":
-        return UNIFIED_THEME.colors.accent.secondary;
-      default:
-        return UNIFIED_THEME.colors.accent.primary;
-    }
-  };
+export function CosmicLoader({ size = 56 }) {
+  const spin = useRef(new Animated.Value(0)).current;
+  const spinReverse = useRef(new Animated.Value(0)).current;
+  const corePulse = useRef(new Animated.Value(0.5)).current;
+  const coreScale = useRef(new Animated.Value(1)).current;
 
   useEffect(() => {
-    const createAnimation = (animValue, delay) => {
-      return Animated.loop(
-        Animated.sequence([
-          Animated.delay(delay),
-          Animated.timing(animValue, {
-            toValue: -20,
-            duration: 500,
-            useNativeDriver: true,
-          }),
-          Animated.timing(animValue, {
-            toValue: 0,
-            duration: 500,
-            useNativeDriver: true,
-          }),
-        ])
-      );
-    };
+    Animated.loop(
+      Animated.timing(spin, {
+        toValue: 1,
+        duration: 1000,
+        easing: Easing.linear,
+        useNativeDriver: true,
+      }),
+    ).start();
 
-    createAnimation(anim1, 0).start();
-    createAnimation(anim2, 150).start();
-    createAnimation(anim3, 300).start();
-  }, [anim1, anim2, anim3]);
+    Animated.loop(
+      Animated.timing(spinReverse, {
+        toValue: 1,
+        duration: 1600,
+        easing: Easing.linear,
+        useNativeDriver: true,
+      }),
+    ).start();
+
+    Animated.loop(
+      Animated.sequence([
+        Animated.parallel([
+          Animated.timing(corePulse, {
+            toValue: 1,
+            duration: 700,
+            easing: Easing.inOut(Easing.sin),
+            useNativeDriver: true,
+          }),
+          Animated.timing(coreScale, {
+            toValue: 1.15,
+            duration: 700,
+            easing: Easing.inOut(Easing.sin),
+            useNativeDriver: true,
+          }),
+        ]),
+        Animated.parallel([
+          Animated.timing(corePulse, {
+            toValue: 0.35,
+            duration: 700,
+            easing: Easing.inOut(Easing.sin),
+            useNativeDriver: true,
+          }),
+          Animated.timing(coreScale, {
+            toValue: 1,
+            duration: 700,
+            easing: Easing.inOut(Easing.sin),
+            useNativeDriver: true,
+          }),
+        ]),
+      ]),
+    ).start();
+  }, []);
+
+  const rotate = spin.interpolate({
+    inputRange: [0, 1],
+    outputRange: ['0deg', '360deg'],
+  });
+  const rotateRev = spinReverse.interpolate({
+    inputRange: [0, 1],
+    outputRange: ['360deg', '0deg'],
+  });
+
+  const borderW = Math.max(3, size * 0.1);
+  const innerRing = size * 0.72;
+  const ringInset = (size - innerRing) / 2;
 
   return (
-    <View style={styles.dotsContainer}>
+    <View style={[styles.wrap, { width: size, height: size }]}>
       <Animated.View
         style={[
-          styles.dot,
+          styles.ringOuter,
           {
             width: size,
             height: size,
-            backgroundColor: getColor(),
-            transform: [{ translateY: anim1 }],
+            transform: [{ rotate }],
           },
         ]}
-      />
+      >
+        <View
+          style={[
+            styles.ring,
+            {
+              width: size,
+              height: size,
+              borderRadius: size / 2,
+              borderWidth: borderW,
+              borderColor: 'rgba(167, 139, 250, 0.12)',
+              borderTopColor: UNIFIED_THEME.colors.accent.primary,
+              borderRightColor: UNIFIED_THEME.colors.accent.secondary,
+            },
+          ]}
+        />
+      </Animated.View>
+
       <Animated.View
         style={[
-          styles.dot,
+          styles.ringInnerSlot,
           {
-            width: size,
-            height: size,
-            backgroundColor: getColor(),
-            transform: [{ translateY: anim2 }],
+            width: innerRing,
+            height: innerRing,
+            left: ringInset,
+            top: ringInset,
+            transform: [{ rotate: rotateRev }],
           },
         ]}
-      />
+      >
+        <View
+          style={[
+            styles.ring,
+            {
+              width: innerRing,
+              height: innerRing,
+              borderRadius: innerRing / 2,
+              borderWidth: borderW * 0.65,
+              borderColor: 'rgba(94, 234, 212, 0.1)',
+              borderBottomColor: UNIFIED_THEME.colors.accent.secondary,
+              borderLeftColor: 'rgba(240, 216, 117, 0.65)',
+            },
+          ]}
+        />
+      </Animated.View>
+
       <Animated.View
         style={[
-          styles.dot,
+          styles.core,
           {
-            width: size,
-            height: size,
-            backgroundColor: getColor(),
-            transform: [{ translateY: anim3 }],
+            width: size * 0.22,
+            height: size * 0.22,
+            borderRadius: size * 0.11,
+            opacity: corePulse,
+            transform: [{ scale: coreScale }],
+            backgroundColor: UNIFIED_THEME.colors.accent.secondary,
+            shadowColor: UNIFIED_THEME.colors.accent.primary,
           },
         ]}
       />
     </View>
   );
-};
+}
+
+/**
+ * @deprecated Use CosmicLoader; kept for any legacy imports.
+ */
+export const PulsingDots = ({ size = 16 }) => (
+  <CosmicLoader size={Math.max(52, Math.round(size * 2.75))} />
+);
 
 const styles = StyleSheet.create({
-  dotsContainer: {
-    flexDirection: "row",
-    justifyContent: "center",
-    alignItems: "center",
-    gap: 12,
-    height: 50,
+  wrap: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  ringOuter: {
+    position: 'absolute',
+    left: 0,
+    top: 0,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  ringInnerSlot: {
+    position: 'absolute',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  ring: {
+    position: 'absolute',
+  },
+  core: {
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.9,
+    shadowRadius: 10,
+    elevation: 8,
   },
 });

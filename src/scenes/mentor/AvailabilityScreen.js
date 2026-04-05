@@ -200,31 +200,54 @@ export default function MentorAvailabilityScreen({ navigation }) {
   const firstDay = getFirstDayOfMonth(currentDate);
   const days = Array(firstDay).fill(null).concat(Array.from({ length: daysInMonth }, (_, i) => i + 1));
 
-  console.log(`📅 Calendar info: ${monthYear}, daysInMonth=${daysInMonth}, firstDay=${firstDay}, currentDate=${formatDate(currentDate)}`);
-
-  const monthYear = currentDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
-
   const calendarDays = [];
   for (let i = 0; i < days.length; i += 7) {
     calendarDays.push(days.slice(i, i + 7));
   }
 
+  const monthYear = currentDate.toLocaleDateString('en-US', {
+    month: 'long',
+    year: 'numeric',
+  });
+
   return (
-    <SafeScreen scrollable={true} padding={UNIFIED_THEME.spacing.lg} hasBottomTabs={false}>
+    <SafeScreen
+      scrollable={true}
+      padding={UNIFIED_THEME.spacing.lg}
+      hasBottomTabs={false}
+      includeTopInset={false}
+    >
       {/* Header */}
       <View style={styles.header}>
         <View style={{ flex: 1 }}>
-          <Text style={styles.title}>Set Your Availability</Text>
-          <Text style={styles.subtitle}>Select dates and times when you're available</Text>
+          <Text style={styles.eyebrow}>Availability</Text>
+          <Text style={styles.title}>When you can teach</Text>
+          <Text style={styles.subtitle}>
+            Pick dates, then choose hour-long slots. Save to publish your calendar.
+          </Text>
         </View>
       </View>
       <View style={styles.limitationInfo}>
-        <Text style={styles.limitationText}>
-          📅 You can set availability for the next 30 days only
-        </Text>
-        <Text style={styles.limitationText}>
-          ⏰ Past times on today are disabled
-        </Text>
+        <View style={styles.limitationRow}>
+          <MaterialIcons
+            name="date-range"
+            size={18}
+            color={UNIFIED_THEME.colors.accent.secondary}
+          />
+          <Text style={styles.limitationText}>
+            Availability can be set for the next 30 days only.
+          </Text>
+        </View>
+        <View style={styles.limitationRow}>
+          <MaterialIcons
+            name="schedule"
+            size={18}
+            color={UNIFIED_THEME.colors.accent.primary}
+          />
+          <Text style={styles.limitationText}>
+            Past time slots on today are disabled automatically.
+          </Text>
+        </View>
       </View>
 
       {/* Calendar */}
@@ -275,8 +298,6 @@ export default function MentorAvailabilityScreen({ navigation }) {
               const hasSlots = allSlots[dateStr]?.length > 0;
               const allowed = isDateAllowed(dateStr);
 
-              console.log(`📅 Calendar day ${day} → ${dateStr}, allowed=${allowed}, hasSlots=${hasSlots}`);
-
               return (
                 <TouchableOpacity
                   key={`day-${day}`}
@@ -287,7 +308,6 @@ export default function MentorAvailabilityScreen({ navigation }) {
                     !allowed && styles.dayButtonDisabled,
                   ]}
                   onPress={() => {
-                    console.log(`🖱️ Clicked day ${day} → dateStr=${dateStr}`);
                     allowed && handleSelectDate(dateStr);
                   }}
                   disabled={!allowed}
@@ -391,8 +411,16 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: UNIFIED_THEME.spacing.xl,
+    marginBottom: UNIFIED_THEME.spacing.lg,
     gap: UNIFIED_THEME.spacing.md,
+  },
+
+  eyebrow: {
+    ...UNIFIED_THEME.typography.labelSm,
+    color: UNIFIED_THEME.colors.accent.secondary,
+    letterSpacing: 1.2,
+    textTransform: 'uppercase',
+    marginBottom: UNIFIED_THEME.spacing.xs,
   },
 
   backButton: {
@@ -405,37 +433,45 @@ const styles = StyleSheet.create({
   },
 
   title: {
-    ...UNIFIED_THEME.typography.headingMd,
+    ...UNIFIED_THEME.typography.headingLg,
     color: UNIFIED_THEME.colors.text.primary,
-    fontWeight: '700',
-    marginBottom: UNIFIED_THEME.spacing.xs,
+    fontWeight: '800',
+    marginBottom: UNIFIED_THEME.spacing.sm,
   },
   subtitle: {
-    ...UNIFIED_THEME.typography.bodySm,
+    ...UNIFIED_THEME.typography.bodyMd,
     color: UNIFIED_THEME.colors.text.secondary,
+    lineHeight: 22,
   },
   limitationInfo: {
-    backgroundColor: UNIFIED_THEME.colors.component.input,
-    borderLeftWidth: 3,
-    borderLeftColor: UNIFIED_THEME.colors.accent.primary,
+    backgroundColor: UNIFIED_THEME.colors.component.card,
+    borderWidth: 1,
+    borderColor: UNIFIED_THEME.colors.border.light,
     paddingVertical: UNIFIED_THEME.spacing.md,
-    paddingHorizontal: UNIFIED_THEME.spacing.lg,
-    borderRadius: 8,
+    paddingHorizontal: UNIFIED_THEME.spacing.md,
+    borderRadius: UNIFIED_THEME.borderRadius.lg,
     marginBottom: UNIFIED_THEME.spacing.lg,
+    gap: UNIFIED_THEME.spacing.md,
+  },
+  limitationRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: UNIFIED_THEME.spacing.sm,
   },
   limitationText: {
     ...UNIFIED_THEME.typography.bodySm,
-    color: UNIFIED_THEME.colors.text.primary,
-    marginBottom: UNIFIED_THEME.spacing.sm,
+    color: UNIFIED_THEME.colors.text.secondary,
+    flex: 1,
+    lineHeight: 20,
     fontWeight: '500',
   },
   calendarContainer: {
-    backgroundColor: UNIFIED_THEME.colors.component.input,
-    borderRadius: 12,
+    backgroundColor: UNIFIED_THEME.colors.component.card,
+    borderRadius: UNIFIED_THEME.borderRadius.lg,
     padding: UNIFIED_THEME.spacing.md,
     marginBottom: UNIFIED_THEME.spacing.lg,
     borderWidth: 1,
-    borderColor: UNIFIED_THEME.colors.primary.light,
+    borderColor: UNIFIED_THEME.colors.border.light,
   },
   monthHeader: {
     flexDirection: 'row',
@@ -476,16 +512,18 @@ const styles = StyleSheet.create({
   dayButton: {
     width: '13.5%',
     aspectRatio: 1,
-    backgroundColor: UNIFIED_THEME.colors.primary.light,
-    borderRadius: 8,
+    backgroundColor: UNIFIED_THEME.colors.component.input,
+    borderRadius: UNIFIED_THEME.borderRadius.sm,
     justifyContent: 'center',
     alignItems: 'center',
     position: 'relative',
+    borderWidth: 1,
+    borderColor: UNIFIED_THEME.colors.border.light,
   },
   dayButtonSelected: {
     backgroundColor: UNIFIED_THEME.colors.accent.primary,
     borderWidth: 2,
-    borderColor: UNIFIED_THEME.colors.primary.light,
+    borderColor: UNIFIED_THEME.colors.border.default,
   },
   dayButtonWithSlots: {
     borderWidth: 1,
@@ -501,7 +539,8 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   dayNumberSelected: {
-    color: UNIFIED_THEME.colors.text.primary,
+    color: UNIFIED_THEME.colors.text.onAccent,
+    fontWeight: '800',
   },
   dayNumberDisabled: {
     color: UNIFIED_THEME.colors.text.muted,
@@ -520,7 +559,7 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   slotCountSelected: {
-    color: UNIFIED_THEME.colors.primary.light,
+    color: UNIFIED_THEME.colors.text.onAccent,
   },
   timeSlotsContainer: {
     marginBottom: UNIFIED_THEME.spacing.lg,
@@ -544,14 +583,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: UNIFIED_THEME.spacing.sm,
     marginVertical: UNIFIED_THEME.spacing.xs,
     backgroundColor: UNIFIED_THEME.colors.component.input,
-    borderRadius: 8,
+    borderRadius: UNIFIED_THEME.borderRadius.sm,
     borderWidth: 1,
-    borderColor: UNIFIED_THEME.colors.primary.light,
+    borderColor: UNIFIED_THEME.colors.border.light,
     justifyContent: 'center',
     alignItems: 'center',
   },
   timeSlotSelected: {
-    backgroundColor: UNIFIED_THEME.colors.accent.primary, // Pink
+    backgroundColor: UNIFIED_THEME.colors.accent.primary,
     borderColor: UNIFIED_THEME.colors.accent.secondary,
   },
   timeSlotDisabled: {
@@ -566,21 +605,24 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   timeSlotTextSelected: {
-    color: UNIFIED_THEME.colors.text.primary,
+    color: UNIFIED_THEME.colors.text.onAccent,
+    fontWeight: '700',
   },
   timeSlotTextDisabled: {
     color: UNIFIED_THEME.colors.text.muted,
   },
   selectedSummary: {
     backgroundColor: UNIFIED_THEME.colors.accent.success,
-    borderRadius: 8,
+    borderRadius: UNIFIED_THEME.borderRadius.md,
     paddingVertical: UNIFIED_THEME.spacing.md,
     paddingHorizontal: UNIFIED_THEME.spacing.lg,
     marginBottom: UNIFIED_THEME.spacing.lg,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.2)',
   },
   selectedSummaryText: {
     ...UNIFIED_THEME.typography.bodySm,
-    color: UNIFIED_THEME.colors.text.primary,
+    color: UNIFIED_THEME.colors.text.onAccent,
     textAlign: 'center',
     fontWeight: '600',
   },

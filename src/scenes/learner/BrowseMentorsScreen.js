@@ -3,16 +3,22 @@ import {
   View,
   Text,
   ScrollView,
-  TouchableOpacity,
   StyleSheet,
-  Image,
   RefreshControl,
+  Platform,
 } from 'react-native';
+import LinearGradient from 'react-native-linear-gradient';
 import Toast from 'react-native-simple-toast';
+import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import { SafeScreen } from '../../components/SafeScreen';
 import { UNIFIED_THEME } from '../../unifiedTheme';
 import { LoadingOverlay } from '../../components/LoadingOverlay';
+import { SectionHeader } from '../../components/SectionHeader';
+import { LearnerMentorCard } from '../../components/LearnerMentorCard';
 import { mentorApi } from '../../api/mentorApi';
+import { SCREEN_NAMES } from '../../navigators/screenNames';
+
+const T = UNIFIED_THEME;
 
 export default function BrowseMentorsScreen({ navigation }) {
   const [mentorsByCategory, setMentorsByCategory] = useState({});
@@ -42,215 +48,204 @@ export default function BrowseMentorsScreen({ navigation }) {
     setRefreshing(false);
   };
 
-  const handleMentorPress = (mentor) => {
-    navigation.navigate('MentorProfile', {
+  const handleMentorPress = mentor => {
+    navigation.navigate(SCREEN_NAMES.MentorProfile, {
       mentorId: mentor.id,
-      mentorName: mentor.profiles?.name || 'Mentor',
     });
   };
 
-  const renderMentorCard = (mentor) => (
-    <TouchableOpacity
-      key={mentor.id}
-      style={styles.mentorCard}
-      onPress={() => handleMentorPress(mentor)}
-    >
-      {/* Avatar */}
-      {mentor.profiles?.avatar_url ? (
-        <Image source={{ uri: mentor.profiles.avatar_url }} style={styles.avatar} />
-      ) : (
-        <View style={[styles.avatar, styles.avatarPlaceholder]}>
-          <Text style={styles.avatarText}>
-            {mentor.profiles?.name?.charAt(0).toUpperCase() || '?'}
-          </Text>
-        </View>
-      )}
-
-      {/* Rating */}
-      <View style={styles.ratingBadge}>
-        <Text style={styles.ratingText}>⭐ {mentor.rating || 'N/A'}</Text>
-      </View>
-
-      {/* Info */}
-      <Text style={styles.mentorName} numberOfLines={1}>
-        {mentor.profiles?.name || 'Unknown'}
-      </Text>
-      <Text style={styles.mentorSpecialization} numberOfLines={2}>
-        {mentor.specialization || 'Specialist'}
-      </Text>
-      <Text style={styles.mentorPrice}>
-        ₹{mentor.price_per_hour || '0'}/hr
-      </Text>
-
-      {/* Sessions */}
-      <Text style={styles.mentorSessions}>
-        {mentor.total_sessions || 0} sessions
-      </Text>
-    </TouchableOpacity>
+  const categories = Object.keys(mentorsByCategory).sort();
+  const totalMentors = categories.reduce(
+    (sum, c) => sum + mentorsByCategory[c].length,
+    0,
   );
 
   const renderCategorySection = (category, mentors) => (
     <View key={category} style={styles.section}>
-      <Text style={styles.categoryTitle}>✨ {category}</Text>
+      <SectionHeader title={category} subtitle="Tap a card to view full profile" count={mentors.length} />
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
-        style={styles.mentorsList}
+        contentContainerStyle={styles.mentorsRow}
       >
-        {mentors.map(mentor => renderMentorCard(mentor))}
+        {mentors.map(mentor => (
+          <LearnerMentorCard
+            key={mentor.id}
+            mentor={mentor}
+            onPress={handleMentorPress}
+            showSessionCount
+          />
+        ))}
       </ScrollView>
     </View>
   );
 
-  const categories = Object.keys(mentorsByCategory).sort();
-
   return (
     <SafeScreen
       scrollable={true}
-      padding={UNIFIED_THEME.spacing.lg}
+      padding={T.spacing.lg}
       hasBottomTabs={true}
+      includeTopInset={false}
       refreshControl={
         <RefreshControl
           refreshing={refreshing}
           onRefresh={handleRefresh}
-          tintColor={UNIFIED_THEME.colors.primary.light}
+          tintColor={T.colors.accent.secondary}
         />
       }
     >
-      <View style={styles.header}>
-        <Text style={styles.title}>Discover Mentors</Text>
-        <Text style={styles.subtitle}>Find mentors by expertise</Text>
+      <View style={styles.hero}>
+        <LinearGradient
+          colors={[
+            'rgba(167, 139, 250, 0.2)',
+            'rgba(94, 234, 212, 0.1)',
+            'rgba(2, 0, 20, 0.45)',
+          ]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={StyleSheet.absoluteFill}
+        />
+        <View style={styles.heroRim} pointerEvents="none" />
+        <Text style={styles.heroTitle}>Discover mentors</Text>
+        <Text style={styles.heroSubtitle}>
+          Explore experts by category. Open a profile to book a session.
+        </Text>
+        <View style={styles.heroStats}>
+          <View style={styles.heroStat}>
+            <Text style={styles.heroStatValue}>{categories.length}</Text>
+            <Text style={styles.heroStatLabel}>Categories</Text>
+          </View>
+          <View style={styles.heroStatDivider} />
+          <View style={styles.heroStat}>
+            <Text style={styles.heroStatValue}>{totalMentors}</Text>
+            <Text style={styles.heroStatLabel}>Mentors</Text>
+          </View>
+        </View>
       </View>
 
       {categories.length > 0 ? (
         <View style={styles.content}>
           {categories.map(category =>
-            renderCategorySection(category, mentorsByCategory[category])
+            renderCategorySection(category, mentorsByCategory[category]),
           )}
         </View>
       ) : (
         !loading && (
-          <View style={styles.emptyContainer}>
-            <Text style={styles.emptyTitle}>No Mentors Available</Text>
-            <Text style={styles.emptySubtitle}>
-              Check back soon for amazing mentors
-            </Text>
+          <View style={styles.emptyWrap}>
+            <View style={styles.emptyIconCircle}>
+              <MaterialIcons name="groups" size={36} color={T.colors.accent.secondary} />
+            </View>
+            <Text style={styles.emptyTitle}>No mentors available</Text>
+            <Text style={styles.emptySubtitle}>Check back soon for new experts.</Text>
           </View>
         )
       )}
 
       <LoadingOverlay
         visible={loading || refreshing}
-        message={refreshing ? 'Refreshing...' : 'Loading mentors...'}
+        message={refreshing ? 'Refreshing…' : 'Loading mentors…'}
       />
     </SafeScreen>
   );
 }
 
 const styles = StyleSheet.create({
-  header: {
-    marginBottom: UNIFIED_THEME.spacing.xl,
+  hero: {
+    borderRadius: T.borderRadius.xl,
+    overflow: 'hidden',
+    padding: T.spacing.lg,
+    marginBottom: T.spacing.lg,
+    borderWidth: 1,
+    borderColor: T.colors.border.light,
+    backgroundColor: T.colors.primary.dark,
+    ...Platform.select({
+      ios: T.shadows.medium,
+      android: { elevation: 6 },
+    }),
   },
-  title: {
-    ...UNIFIED_THEME.typography.headingLg,
-    color: UNIFIED_THEME.colors.text.primary,
-    marginBottom: UNIFIED_THEME.spacing.xs,
+  heroRim: {
+    ...StyleSheet.absoluteFillObject,
+    borderRadius: T.borderRadius.xl,
+    borderWidth: 1,
+    borderColor: T.colors.tabBar.rimBorder,
+    margin: 1,
   },
-  subtitle: {
-    ...UNIFIED_THEME.typography.bodySm,
-    color: UNIFIED_THEME.colors.text.secondary,
+  heroTitle: {
+    ...T.typography.headingMd,
+    color: T.colors.text.primary,
+    marginBottom: T.spacing.sm,
+  },
+  heroSubtitle: {
+    ...T.typography.bodyMd,
+    color: T.colors.text.muted,
+    lineHeight: 22,
+    marginBottom: T.spacing.lg,
+  },
+  heroStats: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(2, 0, 20, 0.45)',
+    borderRadius: T.borderRadius.lg,
+    paddingVertical: T.spacing.md,
+    paddingHorizontal: T.spacing.lg,
+    borderWidth: 1,
+    borderColor: T.colors.border.light,
+  },
+  heroStat: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  heroStatDivider: {
+    width: 1,
+    height: 36,
+    backgroundColor: T.colors.border.light,
+    opacity: 0.6,
+  },
+  heroStatValue: {
+    ...T.typography.headingSm,
+    color: T.colors.accent.primary,
+    fontWeight: '800',
+  },
+  heroStatLabel: {
+    ...T.typography.labelSm,
+    color: T.colors.text.muted,
+    marginTop: 2,
   },
   content: {
     flex: 1,
+    paddingBottom: T.spacing.xl,
   },
   section: {
-    marginBottom: UNIFIED_THEME.spacing.xxl,
+    marginBottom: T.spacing.xxl,
   },
-  categoryTitle: {
-    ...UNIFIED_THEME.typography.bodyLg,
-    color: UNIFIED_THEME.colors.text.primary,
-    fontWeight: '600',
-    marginBottom: UNIFIED_THEME.spacing.md,
+  mentorsRow: {
+    paddingRight: T.spacing.lg,
+    paddingBottom: T.spacing.xs,
   },
-  mentorsList: {
-    paddingHorizontal: 0,
+  emptyWrap: {
+    alignItems: 'center',
+    paddingVertical: T.spacing.xxxl,
+    paddingHorizontal: T.spacing.lg,
   },
-  mentorCard: {
-    width: 150,
-    marginRight: UNIFIED_THEME.spacing.md,
-    backgroundColor: UNIFIED_THEME.colors.component.input,
-    borderRadius: 12,
-    padding: UNIFIED_THEME.spacing.md,
+  emptyIconCircle: {
+    width: 88,
+    height: 88,
+    borderRadius: 44,
+    backgroundColor: T.colors.component.card,
     borderWidth: 1,
-    borderColor: UNIFIED_THEME.colors.border.light,
-    alignItems: 'center',
-  },
-  avatar: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    marginBottom: UNIFIED_THEME.spacing.md,
-    backgroundColor: UNIFIED_THEME.colors.primary.light,
-  },
-  avatarPlaceholder: {
+    borderColor: T.colors.border.light,
     justifyContent: 'center',
     alignItems: 'center',
-  },
-  avatarText: {
-    ...UNIFIED_THEME.typography.headingLg,
-    color: UNIFIED_THEME.colors.primary.light,
-    fontWeight: 'bold',
-  },
-  ratingBadge: {
-    position: 'absolute',
-    top: 8,
-    right: 8,
-    backgroundColor: UNIFIED_THEME.colors.accent.primary,
-    borderRadius: 8,
-    paddingHorizontal: UNIFIED_THEME.spacing.sm,
-    paddingVertical: 2,
-  },
-  ratingText: {
-    ...UNIFIED_THEME.typography.bodySm,
-    color: '#FFF',
-    fontWeight: '600',
-  },
-  mentorName: {
-    ...UNIFIED_THEME.typography.bodyMd,
-    color: UNIFIED_THEME.colors.text.primary,
-    fontWeight: '600',
-    textAlign: 'center',
-    marginBottom: UNIFIED_THEME.spacing.xs,
-  },
-  mentorSpecialization: {
-    ...UNIFIED_THEME.typography.bodySm,
-    color: UNIFIED_THEME.colors.text.secondary,
-    textAlign: 'center',
-    marginBottom: UNIFIED_THEME.spacing.sm,
-  },
-  mentorPrice: {
-    ...UNIFIED_THEME.typography.bodyMd,
-    color: UNIFIED_THEME.colors.accent.primary,
-    fontWeight: '600',
-    marginBottom: UNIFIED_THEME.spacing.xs,
-  },
-  mentorSessions: {
-    ...UNIFIED_THEME.typography.bodySm,
-    color: UNIFIED_THEME.colors.text.secondary,
-  },
-  emptyContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingVertical: UNIFIED_THEME.spacing.xl,
+    marginBottom: T.spacing.lg,
   },
   emptyTitle: {
-    ...UNIFIED_THEME.typography.headingMd,
-    color: UNIFIED_THEME.colors.text.primary,
-    marginBottom: UNIFIED_THEME.spacing.sm,
+    ...T.typography.headingSm,
+    color: T.colors.text.primary,
+    marginBottom: T.spacing.sm,
   },
   emptySubtitle: {
-    ...UNIFIED_THEME.typography.bodyMd,
-    color: UNIFIED_THEME.colors.text.secondary,
+    ...T.typography.bodyMd,
+    color: T.colors.text.muted,
+    textAlign: 'center',
   },
 });

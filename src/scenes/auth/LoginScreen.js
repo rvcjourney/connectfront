@@ -9,9 +9,9 @@ import {
   ScrollView,
   Alert,
 } from 'react-native';
-import LinearGradient from 'react-native-linear-gradient';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import Toast from 'react-native-simple-toast';
+import CosmicBackground from '../../components/CosmicBackground';
 import { UNIFIED_THEME } from '../../unifiedTheme';
 import Button from '../../components/Button';
 import { LoadingOverlay } from '../../components/LoadingOverlay';
@@ -60,15 +60,7 @@ export default function LoginScreen({ navigation }) {
   };
 
   return (
-    <LinearGradient
-      colors={[
-        UNIFIED_THEME.colors.primary.dark,
-        UNIFIED_THEME.colors.primary.light,
-      ]}
-      start={{ x: 0, y: 0 }}
-      end={{ x: 1, y: 1 }}
-      style={styles.background}
-    >
+    <CosmicBackground style={styles.background}>
       <SafeAreaView style={styles.overlay}>
         <ScrollView
           contentContainerStyle={styles.scrollContent}
@@ -179,7 +171,7 @@ export default function LoginScreen({ navigation }) {
       </SafeAreaView>
 
       <LoadingOverlay visible={loading} message="Signing in..." />
-    </LinearGradient>
+    </CosmicBackground>
   );
 }
 

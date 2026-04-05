@@ -1,7 +1,12 @@
 import React from "react";
 import "react-native-gesture-handler";
-import { NavigationContainer } from "@react-navigation/native";
+import {
+  NavigationContainer,
+  DefaultTheme,
+} from "@react-navigation/native";
+import { UNIFIED_THEME } from "./src/unifiedTheme";
 import { LogBox } from "react-native";
+import { SafeAreaProvider } from "react-native-safe-area-context";
 import { ErrorBoundary } from "./src/components/ErrorBoundary";
 import { AuthProvider } from "./src/contexts/AuthContext";
 import { NotificationProvider } from "./src/contexts/NotificationContext";
@@ -12,6 +17,16 @@ LogBox.ignoreLogs([
   "Warning: Non-serializable values detected",
   "Animated: `useNativeDriver`"
 ]);
+
+const navigationTheme = {
+  ...DefaultTheme,
+  colors: {
+    ...DefaultTheme.colors,
+    background: "transparent",
+    card: "transparent",
+    border: UNIFIED_THEME.colors.border.light,
+  },
+};
 
 export default function App() {
   const navigationRef = React.useRef();
@@ -27,13 +42,15 @@ export default function App() {
         });
       }}
     >
-      <AuthProvider>
-        <NotificationProvider>
-          <NavigationContainer ref={navigationRef}>
-            <RootNavigator />
-          </NavigationContainer>
-        </NotificationProvider>
-      </AuthProvider>
+      <SafeAreaProvider>
+        <AuthProvider>
+          <NotificationProvider>
+            <NavigationContainer ref={navigationRef} theme={navigationTheme}>
+              <RootNavigator />
+            </NavigationContainer>
+          </NotificationProvider>
+        </AuthProvider>
+      </SafeAreaProvider>
     </ErrorBoundary>
   );
 }

@@ -1,12 +1,23 @@
 import React from 'react';
 import { createMaterialTopTabNavigator } from '@react-navigation/material-top-tabs';
-import { UNIFIED_THEME } from '../unifiedTheme';
+import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import { SCREEN_NAMES } from './screenNames';
 import { CapsuleTabBar } from '../components/CapsuleTabBar';
 import LearnerHomeScreen from '../scenes/learner/HomeScreen';
 import LearnerBookingsScreen from '../scenes/learner/BookingsScreen';
 
 const TopTab = createMaterialTopTabNavigator();
+
+const tabIcon =
+  (name) =>
+  ({ color, focused }) =>
+    (
+      <MaterialIcons
+        name={name}
+        size={focused ? 22 : 20}
+        color={color}
+      />
+    );
 
 export const LearnerSectionNavigator = () => {
   return (
@@ -16,18 +27,24 @@ export const LearnerSectionNavigator = () => {
         swipeEnabled: true,
         lazy: true,
       }}
-      style={{ backgroundColor: UNIFIED_THEME.colors.primary.light }}
-      sceneContainerStyle={{ backgroundColor: UNIFIED_THEME.colors.primary.light }}
+      style={{ backgroundColor: 'transparent' }}
+      sceneContainerStyle={{ backgroundColor: 'transparent' }}
     >
       <TopTab.Screen
         name={SCREEN_NAMES.LearnerSearch}
         component={LearnerHomeScreen}
-        options={{ tabBarLabel: 'Search' }}
+        options={{
+          tabBarLabel: 'Discover',
+          tabBarIcon: tabIcon('explore'),
+        }}
       />
       <TopTab.Screen
         name={SCREEN_NAMES.LearnerBookings}
         component={LearnerBookingsScreen}
-        options={{ tabBarLabel: 'Bookings' }}
+        options={{
+          tabBarLabel: 'Bookings',
+          tabBarIcon: tabIcon('event-note'),
+        }}
       />
     </TopTab.Navigator>
   );

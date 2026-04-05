@@ -17,7 +17,7 @@ const config = {
     }),
   },
   resolver: {
-    assetExts: ['png', 'jpg', 'jpeg', 'gif', 'webp'],
+    assetExts: ['png', 'jpg', 'jpeg', 'gif', 'webp', 'mp4', 'mov', 'm4v'],
     platforms: ['ios', 'android', 'native', 'web'],
     sourceExts: ['js', 'json', 'ts', 'tsx', 'jsx'],
     resolverMainFields: ['react-native', 'browser', 'main'],
