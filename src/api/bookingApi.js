@@ -192,6 +192,24 @@ export const bookingApi = {
     }
   },
 
+  setRecordingLinks: async ({ bookingId, recordingUrl, recordingPlaybackUrl }) => {
+    try {
+      const payload = {
+        recording_url: recordingUrl || null,
+        recording_playback_url: recordingPlaybackUrl || recordingUrl || null,
+      };
+
+      const { error } = await supabase
+        .from('bookings')
+        .update(payload)
+        .eq('id', bookingId);
+
+      if (error) throw error;
+    } catch (error) {
+      throw new Error(getSupabaseErrorMessage(error));
+    }
+  },
+
   cancelBooking: async (bookingId) => {
     try {
       // Get the booking to find the slot

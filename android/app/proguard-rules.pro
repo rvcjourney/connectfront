@@ -16,3 +16,11 @@
 -keep class okio.** { *; }
 -dontwarn live.videosdk.**
 -dontwarn org.webrtc.**
+-dontwarn com.jiangdg.usb.DeviceFilter
+-dontwarn com.jiangdg.usb.USBMonitor$OnDeviceConnectListener
+-dontwarn com.jiangdg.usb.USBMonitor$UsbControlBlock
+-dontwarn com.jiangdg.usb.USBMonitor
+-dontwarn com.jiangdg.utils.Size
+-dontwarn com.jiangdg.utils.XLogWrapper
+-dontwarn com.jiangdg.uvc.IFrameCallback
+-dontwarn com.jiangdg.uvc.UVCCamera
