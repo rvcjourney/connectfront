@@ -43,7 +43,7 @@ export const CapsuleTabBar = ({ state, descriptors, navigation }) => {
     };
 
     const iconColor = isFocused ? C.accent.primary : C.text.secondary;
-    const labelColor = isFocused ? C.text.primary : C.text.muted;
+    const labelColor = isFocused ? C.accent.primary : C.text.muted;
 
     const iconNode = options.tabBarIcon
       ? options.tabBarIcon({ focused: isFocused, color: iconColor })
@@ -59,7 +59,7 @@ export const CapsuleTabBar = ({ state, descriptors, navigation }) => {
             locations={[0, 0.5, 1]}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
-            style={styles.activeWash}
+            // style={styles.activeWash}
             pointerEvents="none"
           />
         ) : null}
@@ -103,19 +103,6 @@ export const CapsuleTabBar = ({ state, descriptors, navigation }) => {
           </View>
         </TouchableOpacity>
 
-        <View style={styles.beamRow}>
-          {isFocused ? (
-            <LinearGradient
-              colors={[C.accent.primary, C.accent.secondary, C.accent.primary]}
-              locations={[0, 0.5, 1]}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 0 }}
-              style={styles.beam}
-            />
-          ) : (
-            <View style={styles.beamSlot} />
-          )}
-        </View>
       </View>
     );
   };
@@ -164,7 +151,7 @@ export const CapsuleTabBar = ({ state, descriptors, navigation }) => {
       <View
         style={[
           styles.safeTop,
-          { paddingTop: insets.top + T.spacing.md },
+          { paddingTop: insets.top },
         ]}
       >
         <View style={styles.barShell}>
@@ -177,14 +164,14 @@ export const CapsuleTabBar = ({ state, descriptors, navigation }) => {
             />
           </View>
 
-          <LinearGradient
+          {/* <LinearGradient
             colors={TB.flatBarEdge}
             locations={[0, 0.35, 0.65, 1]}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 0 }}
             style={styles.auroraTop}
             pointerEvents="none"
-          />
+          /> */}
           <LinearGradient
             colors={TB.flatBarEdge}
             locations={[0, 0.35, 0.65, 1]}
@@ -287,13 +274,14 @@ const styles = StyleSheet.create({
     minWidth: 92,
     maxWidth: 118,
   },
-  activeWash: {
-    ...StyleSheet.absoluteFillObject,
-    marginHorizontal: 2,
-    marginVertical: 4,
-    borderRadius: T.borderRadius.md,
-    opacity: 0.95,
-  },
+  // activeWash: {
+  //   ...StyleSheet.absoluteFillObject,
+  //   marginHorizontal: 2,
+  //   marginVertical: 4,
+  //   borderRadius: T.borderRadius.md,
+  //   opacity: 0.95,
+  //   marginBottom: T.spacing.sm,
+  // },
   tabHit: {
     width: '100%',
     alignItems: 'center',

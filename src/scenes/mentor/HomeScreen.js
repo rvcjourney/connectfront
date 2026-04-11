@@ -158,12 +158,14 @@ export default function MentorDashboardScreen() {
       scrollable={true}
       padding={T.spacing.lg}
       includeTopInset={false}
+      hasBottomTabs={false}
       refreshControl={
         <RefreshControl
           refreshing={refreshing}
           onRefresh={handleRefresh}
           tintColor={T.colors.accent.secondary}
         />
+
       }
     >
       <View style={styles.hero}>
@@ -187,17 +189,49 @@ export default function MentorDashboardScreen() {
           pointerEvents="none"
         />
 
+
+
+        {/* Avatar pinned to top-right of hero card */}
+        <View style={styles.heroAvatarSmall}>
+          {profile?.avatar_url ? (
+            <Image source={{ uri: profile.avatar_url }} style={styles.avatarImg} />
+          ) : (
+            <View style={[styles.avatarImg, styles.avatarPh]}>
+              <Text style={styles.avatarLetter}>
+                {profile?.name?.charAt(0).toUpperCase() || '?'}
+              </Text>
+            </View>
+          )}
+        </View>
+
         <View style={styles.heroTopRow}>
           <View style={styles.heroBadge}>
             <MaterialIcons name="school" size={16} color={T.colors.accent.secondary} />
             <Text style={styles.heroBadgeText}>Mentor</Text>
           </View>
         </View>
-        <Text style={styles.heroGreeting}>Welcome back</Text>
+        {/* <Text style={styles.heroGreeting}>Welcome back</Text> */}
         <Text style={styles.heroTitle}>Hi, {firstName}</Text>
-        <Text style={styles.heroSubtitle}>
-          Track earnings, sessions, and what learners see on your profile.
+        <Text style={styles.specialization} numberOfLines={2}>
+          {mentorProfile?.specialization || 'Add your specialization'}
         </Text>
+        <Text style={styles.heroSubtitle}>
+          Track Upcoming session, earnings & Schedule your slots...
+        </Text>
+
+        {!profileComplete ? (
+          <TouchableOpacity
+            style={styles.completionStrip}
+            onPress={() => navigation.navigate(SCREEN_NAMES.EditProfile)}
+            activeOpacity={0.85}
+          >
+            <MaterialIcons name="bolt" size={20} color={T.colors.accent.warning} />
+            <Text style={styles.completionText}>
+              Complete Profile so learners can find and trust you.
+            </Text>
+            <MaterialIcons name="chevron-right" size={22} color={T.colors.text.muted} />
+          </TouchableOpacity>
+        ) : null}
 
         <View style={styles.heroSnapshot}>
           <View style={styles.snapshotItem}>
@@ -222,26 +256,8 @@ export default function MentorDashboardScreen() {
         </View>
       </View>
 
-      <View style={styles.quickStrip}>
-        {quickLinks.map((item, i) => (
-          <FragmentRow key={item.screen} showDivider={i > 0}>
-            <Pressable
-              onPress={() => goTab(item.screen)}
-              style={({ pressed }) => [
-                styles.quickCell,
-                pressed && { opacity: 0.85 },
-              ]}
-            >
-              <View style={styles.quickIconTile}>
-                <MaterialIcons name={item.icon} size={24} color={item.color} />
-              </View>
-              <Text style={styles.quickLabel}>{item.label}</Text>
-            </Pressable>
-          </FragmentRow>
-        ))}
-      </View>
 
-      <View style={styles.profileBlock}>
+      {/* <View style={styles.profileBlock}>
         <LinearGradient
           colors={TB.flatBarEdge}
           locations={[0, 0.35, 0.65, 1]}
@@ -274,34 +290,7 @@ export default function MentorDashboardScreen() {
             <MaterialIcons name="edit" size={18} color={T.colors.accent.secondary} />
           </Pressable>
         </View>
-
-        {!profileComplete ? (
-          <TouchableOpacity
-            style={styles.completionStrip}
-            onPress={() => navigation.navigate(SCREEN_NAMES.EditProfile)}
-            activeOpacity={0.85}
-          >
-            <MaterialIcons name="bolt" size={20} color={T.colors.accent.warning} />
-            <Text style={styles.completionText}>
-              Add specialization and a bio so learners can find and trust you.
-            </Text>
-            <MaterialIcons name="chevron-right" size={22} color={T.colors.text.muted} />
-          </TouchableOpacity>
-        ) : null}
-
         <View style={styles.profileBody}>
-          <View style={styles.avatarTile}>
-            {profile?.avatar_url ? (
-              <Image source={{ uri: profile.avatar_url }} style={styles.avatarImg} />
-            ) : (
-              <View style={[styles.avatarImg, styles.avatarPh]}>
-                <Text style={styles.avatarLetter}>
-                  {profile?.name?.charAt(0).toUpperCase() || '?'}
-                </Text>
-              </View>
-            )}
-          </View>
-
           <View style={styles.profileMain}>
             <View style={styles.nameRow}>
               <Text style={styles.mentorName} numberOfLines={1}>
@@ -350,37 +339,23 @@ export default function MentorDashboardScreen() {
               </Text>
             )}
           </View>
+
+          <View style={styles.avatarTile}>
+            {profile?.avatar_url ? (
+              <Image source={{ uri: profile.avatar_url }} style={styles.avatarImg} />
+            ) : (
+              <View style={[styles.avatarImg, styles.avatarPh]}>
+                <Text style={styles.avatarLetter}>
+                  {profile?.name?.charAt(0).toUpperCase() || '?'}
+                </Text>
+              </View>
+            )}
+          </View>
         </View>
-      </View>
+      </View> */}
 
       <SectionHeader
-        title="Performance"
-        subtitle="Totals from completed work and feedback."
-      />
-
-      <View style={styles.statsRow}>
-        <StatCard
-          label="Total earned"
-          value={formatCurrency(totalEarnings)}
-          icon="account-balance-wallet"
-          color={T.colors.accent.success}
-        />
-        <StatCard
-          label="Sessions done"
-          value={String(totalSessions)}
-          icon="event-available"
-          color={T.colors.accent.secondary}
-        />
-        <StatCard
-          label="Rating"
-          value={ratingDisplay}
-          icon="star"
-          color={T.colors.accent.warning}
-        />
-      </View>
-
-      <SectionHeader
-        title="Upcoming sessions"
+        title="Upcoming sessions.."
         subtitle="Pending and confirmed bookings with learners."
         count={todaySessions.length}
       />
@@ -395,9 +370,9 @@ export default function MentorDashboardScreen() {
             <MaterialIcons name="event-note" size={28} color={T.colors.accent.secondary} />
           </View>
           <Text style={styles.emptyTitle}>No upcoming sessions</Text>
-          <Text style={styles.emptySub}>
+          {/* <Text style={styles.emptySub}>
             New bookings will show up here. Use Sessions to join live calls when it is time.
-          </Text>
+          </Text> */}
           <Pressable
             style={({ pressed }) => [styles.emptyCta, pressed && { opacity: 0.85 }]}
             onPress={() => goTab(SCREEN_NAMES.MentorCalls)}
@@ -447,7 +422,8 @@ const styles = StyleSheet.create({
     marginBottom: T.spacing.lg,
     borderWidth: 1,
     borderColor: T.colors.border.light,
-    backgroundColor: T.colors.primary.dark,
+    // backgroundColor: T.colors.primary.dark,
+    backgroundColor: T.colors.component.card,
     borderLeftWidth: 3,
     borderLeftColor: T.colors.accent.secondary,
     ...Platform.select({
@@ -466,8 +442,32 @@ const styles = StyleSheet.create({
   },
   heroTopRow: {
     flexDirection: 'row',
+    alignItems: 'center',
     marginBottom: T.spacing.md,
     zIndex: 1,
+  },
+  heroMainRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: T.spacing.md,
+    zIndex: 1,
+  },
+  heroTextBlock: {
+    flex: 1,
+    minWidth: 0,
+  },
+  heroAvatarSmall: {
+    position: 'absolute',
+    top: T.spacing.lg,
+    right: T.spacing.lg,
+    width: 92,
+    height: 92,
+    borderRadius: T.borderRadius.sm,
+    overflow: 'hidden',
+    borderWidth: 2,
+    borderColor: T.colors.border.default,
+    backgroundColor: T.colors.primary.dark,
+    zIndex: 2,
   },
   heroBadge: {
     flexDirection: 'row',
@@ -514,7 +514,7 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: T.colors.border.light,
     paddingTop: T.spacing.md,
-    marginTop: -T.spacing.xs,
+    marginTop: T.spacing.sm,
     zIndex: 1,
   },
   snapshotItem: {
@@ -692,7 +692,7 @@ const styles = StyleSheet.create({
     height: 96,
     borderRadius: T.borderRadius.sm,
     overflow: 'hidden',
-    borderWidth: 2,
+    borderWidth: 1,
     borderColor: T.colors.border.default,
     backgroundColor: T.colors.primary.dark,
   },
@@ -824,11 +824,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: T.spacing.xxl,
     paddingHorizontal: T.spacing.lg,
-    backgroundColor: T.colors.component.card,
+    // backgroundColor: T.colors.component.card,
     borderRadius: T.borderRadius.sm,
     borderWidth: 1,
     borderColor: T.colors.border.light,
-    borderLeftWidth: 3,
+    // borderLeftWidth: 3,
     borderLeftColor: T.colors.accent.secondary,
     marginBottom: T.spacing.lg,
   },

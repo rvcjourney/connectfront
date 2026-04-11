@@ -127,7 +127,7 @@ export function CosmicBottomTabBar({ state, descriptors, navigation }) {
                       colors={[C.accent.primary, C.accent.secondary]}
                       start={{ x: 0, y: 0 }}
                       end={{ x: 1, y: 0 }}
-                      style={styles.activeIndicator}
+                      // style={styles.activeIndicator}
                     />
                   ) : (
                     <View style={styles.activeIndicatorSlot} />

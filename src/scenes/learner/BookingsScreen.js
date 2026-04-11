@@ -152,7 +152,7 @@ export default function LearnerBookingsScreen({ navigation }) {
     <SafeScreen
       scrollable={true}
       padding={T.spacing.lg}
-      hasBottomTabs={true}
+      hasBottomTabs={false}
       includeTopInset={false}
       refreshControl={
         <RefreshControl
@@ -196,14 +196,14 @@ export default function LearnerBookingsScreen({ navigation }) {
       ) : (
         <>
           {renderSection(
-            'Upcoming',
-            'Sessions you can join or manage',
+            'Upcoming Session',
+            'Join sessions at their scheduled time.',
             upcomingBookings,
             true,
           )}
           {renderSection(
-            'History',
-            'Completed and past sessions',
+            'Session History',
+            'A record of your past sessions.',
             historyBookings,
             false,
           )}

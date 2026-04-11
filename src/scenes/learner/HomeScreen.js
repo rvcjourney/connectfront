@@ -107,10 +107,10 @@ export default function LearnerHomeScreen({ navigation }) {
 
   const renderCategorySection = (category, mentors) => (
     <View key={category} style={styles.section}>
-      <View style={styles.sectionBar}>
+      <View>
         <SectionHeader
           title={category}
-          subtitle="Swipe for more mentors in this topic"
+          // subtitle="Swipe for more mentors in this topic"
           count={mentors.length}
         />
       </View>
@@ -135,7 +135,7 @@ export default function LearnerHomeScreen({ navigation }) {
     <SafeScreen
       scrollable={true}
       padding={T.spacing.lg}
-      hasBottomTabs={true}
+      hasBottomTabs={false}
       includeTopInset={false}
       refreshControl={
         <RefreshControl
@@ -316,20 +316,16 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
-    paddingBottom: T.spacing.xl,
+    paddingBottom: 80,
   },
   section: {
     marginBottom: T.spacing.xxl,
   },
-  sectionBar: {
-    borderLeftWidth: 3,
-    borderLeftColor: T.colors.border.default,
-    paddingLeft: T.spacing.sm,
-    marginBottom: T.spacing.xs,
-  },
+
   mentorsRow: {
+    paddingLeft: 2,
     paddingRight: T.spacing.lg,
-    paddingBottom: T.spacing.xs,
+    paddingBottom: T.spacing.sm,
   },
   emptyPanel: {
     alignItems: 'center',

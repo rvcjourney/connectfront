@@ -91,7 +91,7 @@ export default function MentorProfileScreen({ navigation, route }) {
               <MaterialIcons
                 name="person"
                 size={64}
-                color={UNIFIED_THEME.colors.primary.light}
+                color={UNIFIED_THEME.colors.accent.primary}
               />
             </View>
           )}
@@ -106,7 +106,7 @@ export default function MentorProfileScreen({ navigation, route }) {
           <View style={styles.ratingSection}>
             <StarRating rating={rating} size={18} />
             <Text style={styles.ratingValue}>{rating.toFixed(1)}</Text>
-            <Text style={styles.ratingCount}>({totalSessions} sessions)</Text>
+            {/* <Text style={styles.ratingCount}>({totalSessions} sessions)</Text> */}
           </View>
         </View>
 
@@ -190,7 +190,7 @@ const styles = StyleSheet.create({
   },
   specialization: {
     ...UNIFIED_THEME.typography.bodyMd,
-    color: UNIFIED_THEME.colors.primary.light,
+    color: UNIFIED_THEME.colors.accent.primary,
     marginBottom: UNIFIED_THEME.spacing.md,
   },
   ratingSection: {

@@ -72,7 +72,7 @@ export default function UnifiedSettingsScreen({ navigation }) {
   };
 
   return (
-    <SafeScreen scrollable={false} padding={UNIFIED_THEME.spacing.lg} hasBottomTabs={true}>
+    <SafeScreen scrollable={false} padding={UNIFIED_THEME.spacing.lg} hasBottomTabs={false}>
       <View style={styles.header}>
         <Text style={styles.title}>Settings</Text>
       </View>
@@ -130,6 +130,14 @@ export default function UnifiedSettingsScreen({ navigation }) {
             <View style={styles.menuLeft}>
               <MaterialIcons name="account-balance-wallet" size={20} color={UNIFIED_THEME.colors.accent.primary} />
               <Text style={styles.menuLabel}>Payments</Text>
+            </View>
+            <MaterialIcons name="chevron-right" size={22} color={UNIFIED_THEME.colors.text.secondary} />
+          </TouchableOpacity>
+
+          <TouchableOpacity style={styles.menuItem}>
+            <View style={styles.menuLeft}>
+              <MaterialIcons name="video-library" size={20} color={UNIFIED_THEME.colors.accent.primary} />
+              <Text style={styles.menuLabel}>Recorded Session</Text>
             </View>
             <MaterialIcons name="chevron-right" size={22} color={UNIFIED_THEME.colors.text.secondary} />
           </TouchableOpacity>

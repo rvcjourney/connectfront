@@ -156,6 +156,7 @@ export default function MentorCallsScreen({ navigation }) {
       scrollable={true}
       padding={T.spacing.lg}
       includeTopInset={false}
+      hasBottomTabs={false}
       refreshControl={
         <RefreshControl
           refreshing={refreshing}
@@ -164,7 +165,7 @@ export default function MentorCallsScreen({ navigation }) {
         />
       }
     >
-      <View style={styles.hero}>
+      {/* <View style={styles.hero}>
         <LinearGradient
           colors={TB.flatBarEdge}
           locations={[0, 0.4, 0.7, 1]}
@@ -192,18 +193,18 @@ export default function MentorCallsScreen({ navigation }) {
         <Text style={styles.pageSubtitle}>
           Join upcoming calls as host. Each card shows the learner and session time.
         </Text>
-      </View>
+      </View> */}
 
       {renderSection(
-        'Upcoming',
-        'Sessions you can start when it is time.',
+        'Upcoming Session',
+        'Start your sessions at their scheduled time.',
         upcomingBookings,
         true,
       )}
 
       {renderSection(
-        'History',
-        'Past and completed sessions for your records.',
+        'Session History',
+        'A record of your past sessions.',
         historyBookings,
         false,
       )}

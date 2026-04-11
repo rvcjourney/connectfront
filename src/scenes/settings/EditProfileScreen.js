@@ -18,8 +18,26 @@ import { useAuth } from '../../hooks/useAuth';
 import { profileApi } from '../../api/profileApi';
 
 const CATEGORIES = [
-  'Technology', 'Business', 'Design', 'Marketing',
-  'Finance', 'Health', 'Education', 'Other',
+  'Technology',
+  'Software Development',
+  'AI & Machine Learning',
+  'Data Science',
+  'Cybersecurity',
+  'Cloud Computing',
+  'Business',
+  'Entrepreneurship',
+  'Product Management',
+  'Finance & Investing',
+  'Digital Marketing',
+  'Content Creation',
+  'Design & UX',
+  'Photography & Video',
+  'Personal Development',
+  'Health & Wellness',
+  'Education & Coaching',
+  'Legal',
+  'Sales',
+  'Other',
 ];
 
 const SectionHeader = ({ icon, title, accent }) => (

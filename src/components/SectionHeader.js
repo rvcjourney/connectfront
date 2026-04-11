@@ -7,6 +7,7 @@ export const SectionHeader = ({ title, subtitle, count = null }) => {
     <View style={styles.container}>
       <View style={styles.textBlock}>
         <Text style={styles.title}>{title}</Text>
+        <View style={styles.horizontalLine} />
         {subtitle ? <Text style={styles.subtitle}>{subtitle}</Text> : null}
       </View>
       {count !== null ? (
@@ -36,6 +37,11 @@ const styles = StyleSheet.create({
     fontSize: 17,
     color: UNIFIED_THEME.colors.text.primary,
     fontWeight: '700',
+  },
+  horizontalLine: {
+    height: 1,
+    backgroundColor: UNIFIED_THEME.colors.accent.primary, // light gray line
+    // marginTop: 8,
   },
   subtitle: {
     ...UNIFIED_THEME.typography.bodySm,

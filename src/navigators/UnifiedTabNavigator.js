@@ -25,6 +25,7 @@ export const UnifiedTabNavigator = () => {
           elevation: 0,
           shadowOpacity: 0,
           height: 'auto',
+          
         },
       }}
     >

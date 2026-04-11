@@ -119,7 +119,7 @@ export default function MentorEarningsScreen() {
     chartData.datasets[0].data.some(n => n > 0);
 
   return (
-    <SafeScreen scrollable={true} padding={T.spacing.lg} includeTopInset={false}>
+    <SafeScreen scrollable={true} hasBottomTabs={false} padding={T.spacing.lg} includeTopInset={false}>
       <ScrollView
         style={styles.content}
         showsVerticalScrollIndicator={false}
@@ -132,15 +132,15 @@ export default function MentorEarningsScreen() {
         }
       >
         <View style={styles.pageIntro}>
-          <Text style={styles.eyebrow}>Earnings</Text>
-          <Text style={styles.pageTitle}>Revenue</Text>
+          {/* <Text style={styles.eyebrow}>Earnings</Text> */}
+          <Text style={styles.pageTitle}>Earnings</Text>
           <Text style={styles.pageSubtitle}>
             Track totals and recent payouts from completed sessions.
           </Text>
         </View>
 
         <View style={styles.totalCard}>
-          <Text style={styles.totalLabel}>Lifetime earnings</Text>
+          <Text style={styles.totalLabel}>Total Earnings</Text>
           <Text style={styles.totalAmount}>{formatCurrency(totalEarnings)}</Text>
         </View>
 
@@ -242,8 +242,8 @@ const styles = StyleSheet.create({
   },
   pageTitle: {
     ...T.typography.headingLg,
-    color: T.colors.text.primary,
-    fontWeight: '800',
+    color: T.colors.accent.secondary,
+    fontWeight: '600',
     marginBottom: T.spacing.sm,
   },
   pageSubtitle: {

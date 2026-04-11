@@ -109,7 +109,7 @@ export default function HomeScreen() {
   });
 
   return (
-    <SafeScreen scrollable={false} padding={0}>
+    <SafeScreen scrollable={false} padding={0} hasBottomTabs={false}>
       <ScrollView
         contentContainerStyle={styles.container}
         showsVerticalScrollIndicator={false}
@@ -196,12 +196,11 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   container: {
     flexGrow: 1,
-    paddingBottom: UNIFIED_THEME.spacing.xl,
   },
   hero: {
     alignItems: 'center',
     paddingTop: UNIFIED_THEME.spacing.xxxl,
-    paddingBottom: UNIFIED_THEME.spacing.lg,
+    paddingBottom: UNIFIED_THEME.spacing.xs,
     paddingHorizontal: UNIFIED_THEME.spacing.lg,
   },
   heroBadge: {

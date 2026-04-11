@@ -17,14 +17,14 @@ export const StarRating = ({ rating = 0, size = 16, count = 5, interactive = fal
     <View style={styles.container}>
       {[...Array(count)].map((_, index) => {
         let starType = 'star-outline';
-        let starColor = UNIFIED_THEME.colors.text.secondary;
+        let starColor = UNIFIED_THEME.colors.accent.warning;
 
         if (index < filledStars) {
           starType = 'star';
-          starColor = UNIFIED_THEME.colors.warning;
+          starColor = UNIFIED_THEME.colors.accent.warning;
         } else if (index === filledStars && hasHalfStar) {
           starType = 'star-half';
-          starColor = UNIFIED_THEME.colors.warning;
+          starColor = UNIFIED_THEME.colors.accent.warning;
         }
 
         return (
