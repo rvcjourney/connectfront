@@ -40,6 +40,7 @@ export const BookingCard = ({
   showLearnerInfo = false,
   onPressJoin,
   onPressCancel,
+  onPressRecording = null,
   statusLabel = null,
 }) => {
   const showLearnerDetails = isMentor || showLearnerInfo;
@@ -73,6 +74,7 @@ export const BookingCard = ({
     onPressJoin && (booking.status === 'pending' || booking.status === 'confirmed');
   const canCancel =
     onPressCancel && (booking.status === 'pending' || booking.status === 'confirmed');
+  const canViewRecording = !!onPressRecording;
 
   const statusTitle =
     typeof displayStatus === 'string'
@@ -145,6 +147,16 @@ export const BookingCard = ({
             activeOpacity={0.85}
           >
             <Text style={styles.cancelBtnText}>Cancel</Text>
+          </TouchableOpacity>
+        ) : null}
+        {canViewRecording ? (
+          <TouchableOpacity
+            style={styles.recordingBtn}
+            onPress={onPressRecording}
+            activeOpacity={0.85}
+          >
+            <MaterialIcons name="play-circle-filled" size={18} color={T.accent.secondary} />
+            <Text style={styles.recordingBtnText}>View recording</Text>
           </TouchableOpacity>
         ) : null}
       </View>
@@ -281,5 +293,22 @@ const styles = StyleSheet.create({
     ...UNIFIED_THEME.typography.bodySm,
     color: T.text.secondary,
     fontWeight: '600',
+  },
+  recordingBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: UNIFIED_THEME.spacing.sm,
+    paddingVertical: UNIFIED_THEME.spacing.sm + 2,
+    paddingHorizontal: UNIFIED_THEME.spacing.md,
+    borderRadius: UNIFIED_THEME.borderRadius.sm,
+    backgroundColor: 'rgba(94, 234, 212, 0.12)',
+    borderWidth: 1,
+    borderColor: T.accent.secondary,
+  },
+  recordingBtnText: {
+    ...UNIFIED_THEME.typography.labelMd,
+    color: T.accent.secondary,
+    fontWeight: '800',
   },
 });

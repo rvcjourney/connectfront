@@ -13,6 +13,7 @@ import IntroVideosScreen from '../scenes/auth/IntroVideosScreen';
 import SharedMentorProfileScreen from '../scenes/shared/MentorProfileScreen';
 import BookingScreen from '../scenes/shared/BookingScreen';
 import VideoCallScreen from '../scenes/shared/VideoCallScreen';
+import RecordingPlayerScreen from '../scenes/shared/RecordingPlayerScreen';
 import MentorAvailabilityScreen from '../scenes/mentor/AvailabilityScreen';
 import EditProfileScreen from '../scenes/settings/EditProfileScreen';
 
@@ -124,6 +125,11 @@ export const RootNavigator = () => {
             name={SCREEN_NAMES.VideoCall}
             component={VideoCallScreen}
             options={{ animationEnabled: false }}
+          />
+          <RootStack.Screen
+            name={SCREEN_NAMES.RecordingPlayer}
+            component={RecordingPlayerScreen}
+            options={{ animationEnabled: true }}
           />
         </>
       )}

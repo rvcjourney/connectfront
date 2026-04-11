@@ -16,6 +16,8 @@ import { BookingCard } from '../../components/BookingCard';
 import { SectionHeader } from '../../components/SectionHeader';
 import { useAuth } from '../../hooks/useAuth';
 import { bookingApi } from '../../api/bookingApi';
+import { getToken, fetchRecordingUrl, normalizeRecordingUrl } from '../../api/api';
+import { SCREEN_NAMES } from '../../navigators/screenNames';
 
 const T = UNIFIED_THEME;
 
@@ -34,7 +36,40 @@ export default function LearnerBookingsScreen({ navigation }) {
     try {
       setLoading(true);
       const data = await bookingApi.getBookingsByLearner(profile.id);
-      setBookings(data || []);
+      const baseBookings = data || [];
+
+      let token = null;
+      try {
+        token = await getToken();
+      } catch (err) {
+        console.warn('Recording links unavailable:', err?.message || err);
+      }
+
+      const enriched = await Promise.all(
+        baseBookings.map(async booking => {
+          const existingRecordingUrl =
+            booking?.recording_playback_url || booking?.recording_url || null;
+          if (existingRecordingUrl) {
+            return {
+              ...booking,
+              recordingUrl: existingRecordingUrl,
+            };
+          }
+          if (!token || !booking?.meeting_id || booking?.status !== 'completed') {
+            return booking;
+          }
+          const recordingUrl = await fetchRecordingUrl({
+            meetingId: booking.meeting_id,
+            token,
+          });
+          return {
+            ...booking,
+            recordingUrl: recordingUrl || null,
+          };
+        }),
+      );
+
+      setBookings(enriched);
     } catch (error) {
       console.error('Error loading learner bookings:', error);
       Toast.show('Failed to load bookings: ' + error.message);
@@ -64,6 +99,17 @@ export default function LearnerBookingsScreen({ navigation }) {
     } catch (error) {
       Toast.show('Failed to cancel booking');
     }
+  };
+
+  const handleOpenRecording = rawUrl => {
+    const url = normalizeRecordingUrl(rawUrl);
+    if (!url) {
+      Toast.show('Recording link is unavailable');
+      return;
+    }
+    navigation.navigate(SCREEN_NAMES.RecordingPlayer, {
+      recordingUrl: url,
+    });
   };
 
   const isSessionPast = (dateStr, timeStr) => {
@@ -118,6 +164,9 @@ export default function LearnerBookingsScreen({ navigation }) {
         isMentor={false}
         onPressJoin={isUpcoming ? () => handleJoinCall(item) : null}
         onPressCancel={isUpcoming ? () => handleCancelBooking(item) : null}
+        onPressRecording={
+          item.recordingUrl ? () => handleOpenRecording(item.recordingUrl) : null
+        }
         statusLabel={statusLabel}
       />
     );

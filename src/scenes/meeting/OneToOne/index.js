@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   Dimensions,
   Platform,
+  Alert,
 } from "react-native";
 import { CosmicLoader } from "../../../components/LoadingSpinner";
 import {
@@ -13,6 +14,7 @@ import {
   getAudioDeviceList,
   switchAudioDevice,
   Constants,
+  usePubSub,
 } from "@videosdk.live/react-native-sdk";
 import {
   CallEnd,
@@ -76,14 +78,21 @@ export default function OneToOneMeetingViewer({ isHost }) {
       Toast.show(`Error: ${code}: ${message}`);
     },
   });
+  const recordingConsentPubSub = usePubSub("RECORDING_CONSENT", {});
 
   const leaveMenu = useRef();
   const bottomSheetRef = useRef();
   const audioDeviceMenuRef = useRef();
   const moreOptionsMenu = useRef();
   const recordingRef = useRef();
+  const processedConsentMessagesRef = useRef(new Set());
+  const localParticipantIdRef = useRef(null);
+  const pendingRecordingRequestRef = useRef(null);
+  const recordingTimerRef = useRef(null);
+  const recordingStartedAtRef = useRef(null);
 
   const participantIds = [...participants.keys()];
+  const localParticipantId = meeting?.localParticipant?.id;
 
   const participantCount = participantIds ? participantIds.length : null;
 
@@ -93,11 +102,196 @@ export default function OneToOneMeetingViewer({ isHost }) {
 
   const [audioDevice, setAudioDevice] = useState([]);
   const [statParticipantId, setstatParticipantId] = useState("");
+  const [recordingElapsedSeconds, setRecordingElapsedSeconds] = useState(0);
 
   async function updateAudioDeviceList() {
     const devices = await getAudioDeviceList();
     setAudioDevice(devices);
   }
+
+  useEffect(() => {
+    localParticipantIdRef.current = localParticipantId;
+  }, [localParticipantId]);
+
+  const formatDuration = (seconds) => {
+    const mins = Math.floor(seconds / 60)
+      .toString()
+      .padStart(2, "0");
+    const secs = (seconds % 60).toString().padStart(2, "0");
+    return `${mins}:${secs}`;
+  };
+
+  const publishConsentMessage = (payload, persist = true) => {
+    recordingConsentPubSub.publish(JSON.stringify(payload), { persist });
+  };
+
+  const showIncomingRecordingConsent = (requestId, requesterRole) => {
+    Alert.alert(
+      "Recording Request",
+      `${requesterRole} wants to record this session. Do you agree?`,
+      [
+        {
+          text: "Disagree",
+          style: "cancel",
+          onPress: () => {
+            publishConsentMessage({
+              type: "RECORDING_CONSENT_RESPONSE",
+              requestId,
+              agreed: false,
+              responderId: localParticipantIdRef.current,
+              ts: Date.now(),
+            });
+            Toast.show("Recording consent declined");
+          },
+        },
+        {
+          text: "Agree",
+          onPress: () => {
+            publishConsentMessage({
+              type: "RECORDING_CONSENT_RESPONSE",
+              requestId,
+              agreed: true,
+              responderId: localParticipantIdRef.current,
+              ts: Date.now(),
+            });
+            Toast.show("Recording consent shared");
+          },
+        },
+      ],
+      { cancelable: false }
+    );
+  };
+
+  const requestRecordingConsent = () => {
+    if (participantCount < 2) {
+      Toast.show("Wait for the other participant to join");
+      return;
+    }
+
+    Alert.alert(
+      "Record Session",
+      "Do you want to request recording permission?",
+      [
+        {
+          text: "Cancel",
+          style: "cancel",
+        },
+        {
+          text: "Request",
+          onPress: () => {
+            const requestId = `${Date.now()}-${Math.random()
+              .toString(36)
+              .slice(2, 8)}`;
+            pendingRecordingRequestRef.current = requestId;
+            publishConsentMessage({
+              type: "RECORDING_CONSENT_REQUEST",
+              requestId,
+              requesterId: localParticipantIdRef.current,
+              requesterRole: isHost ? "Mentor" : "Learner",
+              ts: Date.now(),
+            });
+            Toast.show("Consent request sent");
+          },
+        },
+      ],
+      { cancelable: false }
+    );
+  };
+
+  useEffect(() => {
+    const messages = recordingConsentPubSub.messages || [];
+    if (!messages.length) return;
+
+    messages.forEach((entry) => {
+      const uniqueMessageId = `${entry.timestamp}-${entry.senderId}-${entry.message}`;
+      if (processedConsentMessagesRef.current.has(uniqueMessageId)) {
+        return;
+      }
+      processedConsentMessagesRef.current.add(uniqueMessageId);
+
+      if (entry.senderId === localParticipantIdRef.current) {
+        return;
+      }
+
+      let payload;
+      try {
+        payload = JSON.parse(entry.message);
+      } catch (e) {
+        return;
+      }
+
+      if (
+        payload.type === "RECORDING_CONSENT_REQUEST" &&
+        payload.requesterId !== localParticipantIdRef.current
+      ) {
+        showIncomingRecordingConsent(payload.requestId, payload.requesterRole);
+        return;
+      }
+
+      if (payload.type === "RECORDING_CONSENT_RESPONSE") {
+        if (payload.requestId !== pendingRecordingRequestRef.current) {
+          return;
+        }
+        if (payload.agreed) {
+          publishConsentMessage({
+            type: "RECORDING_START_APPROVED",
+            requestId: payload.requestId,
+            requesterId: localParticipantIdRef.current,
+            ts: Date.now(),
+          });
+          if (isHost) {
+            startRecording();
+          }
+          Toast.show("Both agreed. Starting recording...");
+        } else {
+          Toast.show("Other participant declined recording.");
+        }
+        pendingRecordingRequestRef.current = null;
+        return;
+      }
+
+      if (
+        payload.type === "RECORDING_START_APPROVED" &&
+        payload.requesterId !== localParticipantIdRef.current &&
+        isHost
+      ) {
+        if (
+          !recordingState ||
+          recordingState === Constants.recordingEvents.RECORDING_STOPPED
+        ) {
+          startRecording();
+          Toast.show("Recording started.");
+        }
+        return;
+      }
+    });
+  }, [recordingConsentPubSub.messages, isHost, recordingState, startRecording]);
+
+  useEffect(() => {
+    const isRecordingActive =
+      recordingState === Constants.recordingEvents.RECORDING_STARTED;
+
+    if (isRecordingActive && !recordingStartedAtRef.current) {
+      recordingStartedAtRef.current = Date.now();
+      setRecordingElapsedSeconds(0);
+      if (recordingTimerRef.current) {
+        clearInterval(recordingTimerRef.current);
+      }
+      recordingTimerRef.current = setInterval(() => {
+        const elapsed = Math.floor(
+          (Date.now() - recordingStartedAtRef.current) / 1000
+        );
+        setRecordingElapsedSeconds(elapsed);
+      }, 1000);
+    } else if (!isRecordingActive) {
+      if (recordingTimerRef.current) {
+        clearInterval(recordingTimerRef.current);
+        recordingTimerRef.current = null;
+      }
+      recordingStartedAtRef.current = null;
+      setRecordingElapsedSeconds(0);
+    }
+  }, [recordingState]);
 
   useEffect(() => {
     if (Platform.OS == "ios") {
@@ -128,6 +322,14 @@ export default function OneToOneMeetingViewer({ isHost }) {
     }
   }, [recordingState]);
 
+  useEffect(() => {
+    return () => {
+      if (recordingTimerRef.current) {
+        clearInterval(recordingTimerRef.current);
+      }
+    };
+  }, []);
+
   const openStatsBottomSheet = ({ pId }) => {
     setparticipantStatsViewer(true);
     setstatParticipantId(pId);
@@ -145,7 +347,7 @@ export default function OneToOneMeetingViewer({ isHost }) {
         {(recordingState === Constants.recordingEvents.RECORDING_STARTED ||
           recordingState === Constants.recordingEvents.RECORDING_STOPPING ||
           recordingState === Constants.recordingEvents.RECORDING_STARTING) && (
-          <View>
+          <View style={{ flexDirection: "row", alignItems: "center" }}>
             <Blink ref={recordingRef} duration={500}>
               <Lottie
                 source={recording_lottie}
@@ -157,6 +359,16 @@ export default function OneToOneMeetingViewer({ isHost }) {
                 }}
               />
             </Blink>
+            <Text
+              style={{
+                marginLeft: 8,
+                color: colors.primary[100],
+                fontFamily: ROBOTO_FONTS.RobotoBold,
+                fontSize: 13,
+              }}
+            >
+              REC {formatDuration(recordingElapsedSeconds)}
+            </Text>
           </View>
         )}
         <View
@@ -329,11 +541,15 @@ export default function OneToOneMeetingViewer({ isHost }) {
               !recordingState ||
               recordingState === Constants.recordingEvents.RECORDING_STOPPED
             ) {
-              startRecording();
+              requestRecordingConsent();
             } else if (
               recordingState === Constants.recordingEvents.RECORDING_STARTED
             ) {
-              stopRecording();
+              if (!isHost) {
+                Toast.show("Only mentor can stop recording");
+              } else {
+                stopRecording();
+              }
             }
             moreOptionsMenu.current.close();
           }}

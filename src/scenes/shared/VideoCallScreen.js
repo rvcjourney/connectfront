@@ -13,7 +13,7 @@ import {
 import Toast from 'react-native-simple-toast';
 import { UNIFIED_THEME } from '../../unifiedTheme';
 import { LoadingOverlay } from '../../components/LoadingOverlay';
-import { getToken, createMeeting, validateMeeting } from '../../api/api';
+import { getToken, createMeeting, validateMeeting, fetchRecordingUrl } from '../../api/api';
 import { bookingApi } from '../../api/bookingApi';
 import { earningsApi } from '../../api/earningsApi';
 import { useAuth } from '../../hooks/useAuth';
@@ -135,6 +135,33 @@ export default function VideoCallScreen({ navigation, route }) {
           status: 'completed',
         });
         console.log(`✅ Booking status updated successfully`);
+
+        // Persist recording URL to booking (host-side best effort with retries).
+        if (isHost && callParams?.meetingId && callParams?.token) {
+          const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
+          let recordingUrl = null;
+
+          for (let attempt = 1; attempt <= 5; attempt += 1) {
+            recordingUrl = await fetchRecordingUrl({
+              meetingId: callParams.meetingId,
+              token: callParams.token,
+            });
+            if (recordingUrl) break;
+            // Recording file may take some time after session end to become available.
+            await sleep(4000);
+          }
+
+          if (recordingUrl) {
+            await bookingApi.setRecordingLinks({
+              bookingId,
+              recordingUrl,
+              recordingPlaybackUrl: recordingUrl,
+            });
+            console.log(`✅ Recording URL saved for booking ${bookingId}`);
+          } else {
+            console.log(`⚠️ Recording URL not available yet for booking ${bookingId}`);
+          }
+        }
 
         // If host, create earnings record
         if (isHost) {

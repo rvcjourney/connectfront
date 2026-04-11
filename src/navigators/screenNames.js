@@ -35,5 +35,6 @@ export const SCREEN_NAMES = {
   MentorProfile: "MentorProfile_Screen",
   Booking: "Booking_Screen",
   VideoCall: "VideoCall_Screen",
+  RecordingPlayer: "RecordingPlayer_Screen",
   MentorAvailability: "MentorAvailability_Screen",
 };
