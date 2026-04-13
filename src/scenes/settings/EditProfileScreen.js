@@ -16,29 +16,7 @@ import { SafeScreen } from '../../components/SafeScreen';
 import { LoadingOverlay } from '../../components/LoadingOverlay';
 import { useAuth } from '../../hooks/useAuth';
 import { profileApi } from '../../api/profileApi';
-
-const CATEGORIES = [
-  'Technology',
-  'Software Development',
-  'AI & Machine Learning',
-  'Data Science',
-  'Cybersecurity',
-  'Cloud Computing',
-  'Business',
-  'Entrepreneurship',
-  'Product Management',
-  'Finance & Investing',
-  'Digital Marketing',
-  'Content Creation',
-  'Design & UX',
-  'Photography & Video',
-  'Personal Development',
-  'Health & Wellness',
-  'Education & Coaching',
-  'Legal',
-  'Sales',
-  'Other',
-];
+import { MENTOR_CATEGORIES } from '../../constants/mentorCategories';
 
 const SectionHeader = ({ icon, title, accent }) => (
   <View style={sSection.row}>
@@ -432,12 +410,12 @@ export default function EditProfileScreen({ navigation }) {
               </TouchableOpacity>
               {showCategoryPicker && (
                 <View style={styles.dropdownList}>
-                  {CATEGORIES.map((cat, index) => (
+                  {MENTOR_CATEGORIES.map((cat, index) => (
                     <TouchableOpacity
                       key={cat}
                       style={[
                         styles.dropdownItem,
-                        index === CATEGORIES.length - 1 && styles.dropdownItemLast,
+                        index === MENTOR_CATEGORIES.length - 1 && styles.dropdownItemLast,
                         category === cat && styles.dropdownItemActive,
                       ]}
                       onPress={() => { setCategory(cat); setShowCategoryPicker(false); }}

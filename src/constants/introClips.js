@@ -1,11 +1,15 @@
 /**
- * Intro video tabs — set `localSource` and/or `remoteUri` per clip.
- * Bundled: add files under src/assets/videos/ and use
- *   localSource: require('../assets/videos/your-clip.mp4'),
- * Remote: remoteUri: 'https://example.com/clip.mp4'
+ * Intro carousel content (order = tab order in IntroVideosScreen).
+ *
+ * Each object: stable `route` key, optional `tabLabel`/`tabIcon` (reserved for future UI),
+ * `caption` under the player, and either:
+ *   - localSource: require('...mp4')  (bundle under src/assets/videos/ recommended), or
+ *   - remoteUri: 'https://...mp4'
+ * If both are null, IntroClipScene shows the “Video coming soon” placeholder.
  */
 export const APP_DISPLAY_NAME = 'Connectiqo';
 
+/** Stable route keys — must stay in sync with TabView routes built from INTRO_CLIPS. */
 export const INTRO_CLIP_ROUTES = {
   overview: 'IntroClip_Overview',
   sessions: 'IntroClip_Sessions',

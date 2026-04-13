@@ -1,28 +1,58 @@
-import { SafeScreen } from './../../components/SafeScreen';
 import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
   Image,
-  SafeAreaView,
   ScrollView,
   TouchableOpacity,
   StyleSheet,
+  Platform,
 } from 'react-native';
+import LinearGradient from 'react-native-linear-gradient';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Toast from 'react-native-simple-toast';
+import { SafeScreen } from '../../components/SafeScreen';
 import { UNIFIED_THEME } from '../../unifiedTheme';
 import { LoadingOverlay } from '../../components/LoadingOverlay';
 import Button from '../../components/Button';
 import { StarRating } from '../../components/StarRating';
 import { mentorApi } from '../../api/mentorApi';
 import { formatPrice } from '../../utils/formatCurrency';
+import { SCREEN_NAMES } from '../../navigators/screenNames';
+
+const T = UNIFIED_THEME;
+const C = T.colors;
+const TB = C.tabBar;
+
+function StatPill({ icon, label, value, accent }) {
+  return (
+    <View style={styles.statPill}>
+      <LinearGradient
+        colors={['rgba(167, 139, 250, 0.18)', 'rgba(94, 234, 212, 0.08)']}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={styles.statPillInner}
+      >
+        <View style={[styles.statIconWrap, { borderColor: accent + '55' }]}>
+          <MaterialIcons name={icon} size={20} color={accent} />
+        </View>
+        <Text style={styles.statPillValue} numberOfLines={1}>
+          {value}
+        </Text>
+        <Text style={styles.statPillLabel} numberOfLines={2}>
+          {label}
+        </Text>
+      </LinearGradient>
+    </View>
+  );
+}
 
 export default function MentorProfileScreen({ navigation, route }) {
   const { mentorId } = route.params;
   const [mentor, setMentor] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const insets = useSafeAreaInsets();
 
   useEffect(() => {
     loadMentorProfile();
@@ -33,8 +63,8 @@ export default function MentorProfileScreen({ navigation, route }) {
       setLoading(true);
       const data = await mentorApi.getMentorWithProfile(mentorId);
       setMentor(data);
-    } catch (err) {
-      setError(err.message);
+    } catch {
+      setMentor(null);
       Toast.show('Failed to load mentor profile');
     } finally {
       setLoading(false);
@@ -42,19 +72,22 @@ export default function MentorProfileScreen({ navigation, route }) {
   };
 
   if (loading) {
-    return <LoadingOverlay visible message="Loading profile..." />;
+    return <LoadingOverlay visible message="Loading profile…" />;
   }
 
   if (!mentor) {
     return (
-      <SafeScreen scrollable={true} padding={UNIFIED_THEME.spacing.lg}>
-        <View style={styles.errorContainer}>
-          <Text style={styles.errorText}>Mentor not found</Text>
-          <Button
-            text="Go Back"
-            onPress={() => navigation.goBack()}
-            style={styles.errorButton}
-          />
+      <SafeScreen scrollable={false} padding={T.spacing.lg} hasBottomTabs={false}>
+        <View style={styles.errorWrap}>
+          <LinearGradient
+            colors={['rgba(248, 113, 113, 0.15)', 'rgba(6, 6, 31, 0.9)']}
+            style={styles.errorIconRing}
+          >
+            <MaterialIcons name="person-off" size={40} color={C.accent.error} />
+          </LinearGradient>
+          <Text style={styles.errorTitle}>Mentor not found</Text>
+          <Text style={styles.errorSub}>This profile may be unavailable. Try going back and opening it again.</Text>
+          <Button text="Go back" onPress={() => navigation.goBack()} style={styles.errorBtn} />
         </View>
       </SafeScreen>
     );
@@ -63,213 +96,457 @@ export default function MentorProfileScreen({ navigation, route }) {
   const avatarUrl = mentor.profiles?.avatar_url;
   const name = mentor.profiles?.name || 'Unknown';
   const specialization = mentor.specialization || 'Not specified';
-  const bio = mentor.bio || 'No bio provided';
-  const experienceYears = mentor.experience_years || 0;
-  const pricePerHour = mentor.price_per_hour || 0;
-  const rating = mentor.rating || 0;
-  const totalSessions = mentor.total_sessions || 0;
+  const bio = mentor.bio || 'No bio provided yet.';
+  const experienceYears = mentor.experience_years ?? 0;
+  const pricePerHour = mentor.price_per_hour ?? 0;
+  const rating = mentor.rating ?? 0;
+  const totalSessions = mentor.total_sessions ?? 0;
 
   return (
-    <SafeScreen scrollable={true} padding={UNIFIED_THEME.spacing.lg}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()}>
-          <MaterialIcons
-            name="close"
-            size={24}
-            color={UNIFIED_THEME.colors.text.primary}
+    <SafeScreen scrollable={false} padding={0} hasBottomTabs={false}>
+      <View style={styles.root}>
+        <View style={[styles.topBar, { paddingTop: insets.top + T.spacing.sm }]}>
+          <TouchableOpacity
+            onPress={() => navigation.goBack()}
+            style={styles.backHit}
+            hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+            accessibilityRole="button"
+            accessibilityLabel="Close profile"
+          >
+            <MaterialIcons name="arrow-back" size={24} color={C.text.primary} />
+          </TouchableOpacity>
+          <Text style={styles.topBarTitle}>Mentor profile</Text>
+          <View style={styles.topBarSpacer} />
+        </View>
+
+        <ScrollView
+          style={styles.scroll}
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+        >
+          <LinearGradient
+            colors={['rgba(124, 58, 237, 0.22)', 'rgba(6, 6, 31, 0.95)', 'transparent']}
+            locations={[0, 0.55, 1]}
+            style={styles.heroWash}
+            pointerEvents="none"
           />
-        </TouchableOpacity>
-      </View>
 
-      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-        {/* Avatar */}
-        <View style={styles.avatarSection}>
-          {avatarUrl ? (
-            <Image source={{ uri: avatarUrl }} style={styles.avatar} />
-          ) : (
-            <View style={[styles.avatar, styles.avatarPlaceholder]}>
-              <MaterialIcons
-                name="person"
-                size={64}
-                color={UNIFIED_THEME.colors.accent.primary}
-              />
+          <View style={styles.profileCard}>
+            <LinearGradient
+              colors={['rgba(167, 139, 250, 0.14)', 'rgba(94, 234, 212, 0.06)']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={styles.profileCardGlow}
+              pointerEvents="none"
+            />
+            <View style={styles.hero}>
+              <View style={styles.avatarRing}>
+                <LinearGradient
+                  colors={TB.topNavIconRing}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                  style={styles.avatarRingGrad}
+                >
+                  {avatarUrl ? (
+                    <Image source={{ uri: avatarUrl }} style={styles.avatar} />
+                  ) : (
+                    <View style={[styles.avatar, styles.avatarPlaceholder]}>
+                      <MaterialIcons name="person" size={52} color={C.accent.primary} />
+                    </View>
+                  )}
+                </LinearGradient>
+              </View>
+
+              <View style={styles.heroInfo}>
+                <Text style={styles.name}>{name}</Text>
+
+                <View style={styles.specialtyChip}>
+                  <MaterialIcons name="school" size={16} color={C.accent.primary} />
+                  <Text style={styles.specialtyText} numberOfLines={2}>
+                    {specialization}
+                  </Text>
+                </View>
+
+                <View style={styles.ratingRow}>
+                  <StarRating rating={rating} size={17} />
+                  <Text style={styles.ratingNum}>{rating.toFixed(1)}</Text>
+                </View>
+
+                <View style={styles.heroMetaRow}>
+                  <View style={styles.heroMetaChip}>
+                    <MaterialIcons name="event-available" size={14} color={C.text.muted} />
+                    <Text style={styles.sessionsHint}>{totalSessions} sessions</Text>
+                  </View>
+                  <View style={styles.heroMetaChip}>
+                    <MaterialIcons name="payments" size={14} color={C.text.muted} />
+                    <Text style={styles.sessionsHint}>{formatPrice(pricePerHour)}/hr</Text>
+                  </View>
+                </View>
+              </View>
             </View>
-          )}
-        </View>
-
-        {/* Name and Specialization */}
-        <View style={styles.infoSection}>
-          <Text style={styles.name}>{name}</Text>
-          <Text style={styles.specialization}>{specialization}</Text>
-
-          {/* Rating */}
-          <View style={styles.ratingSection}>
-            <StarRating rating={rating} size={18} />
-            <Text style={styles.ratingValue}>{rating.toFixed(1)}</Text>
-            {/* <Text style={styles.ratingCount}>({totalSessions} sessions)</Text> */}
           </View>
-        </View>
 
-        {/* Stats */}
-        <View style={styles.statsContainer}>
-          <View style={styles.statCard}>
-            <Text style={styles.statLabel}>Experience</Text>
-            <Text style={styles.statValue}>{experienceYears} years</Text>
+          <View style={styles.statsRow}>
+            <StatPill
+              icon="history-edu"
+              label="Experience"
+              value={`${experienceYears} yr${experienceYears === 1 ? '' : 's'}`}
+              accent={C.accent.secondary}
+            />
+            <StatPill
+              icon="payments"
+              label="Rate / hr"
+              value={formatPrice(pricePerHour)}
+              accent={C.accent.primary}
+            />
+            <StatPill
+              icon="groups"
+              label="Sessions"
+              value={`${totalSessions}`}
+              accent={C.accent.success}
+            />
           </View>
-          <View style={styles.statCard}>
-            <Text style={styles.statLabel}>Price/Hour</Text>
-            <Text style={styles.statValue}>{formatPrice(pricePerHour)}</Text>
-          </View>
-          <View style={styles.statCard}>
-            <Text style={styles.statLabel}>Sessions</Text>
-            <Text style={styles.statValue}>{totalSessions}</Text>
-          </View>
-        </View>
 
-        {/* Bio */}
-        <View style={styles.bioSection}>
-          <Text style={styles.bioTitle}>About</Text>
-          <Text style={styles.bioText}>Profession : {specialization}</Text>
-          <Text style={styles.bioText}>{bio}</Text>
-        </View>
-      </ScrollView>
+          <View style={styles.aboutCard}>
+            <View style={styles.aboutHeader}>
+              <LinearGradient
+                colors={['rgba(94, 234, 212, 0.2)', 'rgba(167, 139, 250, 0.12)']}
+                style={styles.aboutIconBadge}
+              >
+                <MaterialIcons name="format-quote" size={20} color={C.accent.secondary} />
+              </LinearGradient>
+              <Text style={styles.aboutTitle}>About</Text>
+            </View>
+            <View style={styles.aboutAccent} />
+            <Text style={styles.aboutBody}>{bio}</Text>
+          </View>
 
-      {/* Book Session Button */}
-      <View style={styles.footer}>
-        <Button
-          text="Book a Session"
-          onPress={() =>
-            navigation.navigate('Booking_Screen', { mentorId, mentorName: name })
-          }
-          style={styles.bookButton}
-        />
+          <View style={{ height: T.spacing.xxxl }} />
+        </ScrollView>
+
+        <View
+          style={[
+            styles.footer,
+            {
+              paddingBottom: Math.max(insets.bottom, T.spacing.md),
+            },
+          ]}
+        >
+          <LinearGradient
+            colors={TB.flatBarEdge}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 0 }}
+            style={styles.footerEdge}
+          />
+          <LinearGradient
+            colors={['rgba(6, 6, 31, 0.97)', 'rgba(12, 12, 40, 0.99)']}
+            style={styles.footerInner}
+          >
+            <Button
+              text="Book a session"
+              onPress={() =>
+                navigation.navigate(SCREEN_NAMES.Booking, {
+                  mentorId,
+                  mentorName: name,
+                })
+              }
+              style={styles.bookButton}
+            />
+          </LinearGradient>
+        </View>
       </View>
-
-      <LoadingOverlay visible={loading} message="Loading..." />
     </SafeScreen>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: UNIFIED_THEME.colors.primary.light,
-  },
-  header: {
-    paddingHorizontal: UNIFIED_THEME.spacing.lg,
-    paddingVertical: UNIFIED_THEME.spacing.md,
-    justifyContent: 'flex-end',
-  },
-  content: {
+  root: {
     flex: 1,
   },
-  avatarSection: {
+  topBar: {
+    flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: UNIFIED_THEME.spacing.lg,
+    justifyContent: 'space-between',
+    paddingHorizontal: T.spacing.md,
+    paddingBottom: T.spacing.sm,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: C.border.light,
+  },
+  backHit: {
+    width: 44,
+    height: 44,
+    justifyContent: 'center',
+    alignItems: 'flex-start',
+  },
+  topBarTitle: {
+    ...T.typography.bodyMd,
+    color: C.text.secondary,
+    fontWeight: '700',
+  },
+  topBarSpacer: {
+    width: 44,
+  },
+  scroll: {
+    flex: 1,
+  },
+  scrollContent: {
+    paddingBottom: T.spacing.lg,
+  },
+  heroWash: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    top: 0,
+    height: 320,
+  },
+  profileCard: {
+    marginHorizontal: T.spacing.lg,
+    marginTop: T.spacing.md,
+    marginBottom: T.spacing.lg,
+    borderRadius: T.borderRadius.xl,
+    borderWidth: 1,
+    borderColor: C.border.light,
+    backgroundColor: C.component.card,
+    overflow: 'hidden',
+    ...Platform.select({
+      ios: T.shadows.medium,
+      android: { elevation: 4 },
+    }),
+  },
+  profileCardGlow: {
+    ...StyleSheet.absoluteFillObject,
+  },
+  hero: {
+    flexDirection: 'column',
+    alignItems: 'center',
+    gap: T.spacing.md,
+    padding: T.spacing.lg,
+  },
+  avatarRing: {
+    padding: 3,
+    borderRadius: 68,
+  },
+  avatarRingGrad: {
+    padding: 3,
+    borderRadius: 65,
   },
   avatar: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
-    borderWidth: 3,
-    borderColor: UNIFIED_THEME.colors.primary.light,
+    width: 104,
+    height: 104,
+    borderRadius: 52,
+    backgroundColor: C.primary.dark,
+  },
+  heroInfo: {
+    width: '100%',
+    alignItems: 'center',
   },
   avatarPlaceholder: {
-    backgroundColor: UNIFIED_THEME.colors.component.input,
     justifyContent: 'center',
     alignItems: 'center',
-  },
-  infoSection: {
-    alignItems: 'center',
-    marginBottom: UNIFIED_THEME.spacing.xl,
+    borderWidth: 1,
+    borderColor: C.border.light,
   },
   name: {
-    ...UNIFIED_THEME.typography.headingMd,
-    color: UNIFIED_THEME.colors.text.primary,
-    marginBottom: UNIFIED_THEME.spacing.sm,
+    ...T.typography.headingMd,
+    fontSize: 24,
+    color: C.text.primary,
+    fontWeight: '800',
+    textAlign: 'center',
+    letterSpacing: -0.5,
+    marginBottom: T.spacing.xs,
   },
-  specialization: {
-    ...UNIFIED_THEME.typography.bodyMd,
-    color: UNIFIED_THEME.colors.accent.primary,
-    marginBottom: UNIFIED_THEME.spacing.md,
-  },
-  ratingSection: {
+  specialtyChip: {
     flexDirection: 'row',
     alignItems: 'center',
+    gap: T.spacing.sm,
+    alignSelf: 'center',
+    maxWidth: '92%',
+    paddingVertical: T.spacing.sm,
+    paddingHorizontal: T.spacing.md,
+    borderRadius: T.borderRadius.round,
+    backgroundColor: C.component.input,
+    borderWidth: 1,
+    borderColor: C.border.light,
+    marginBottom: T.spacing.sm,
+  },
+  specialtyText: {
+    ...T.typography.bodySm,
+    color: C.accent.primary,
+    fontWeight: '700',
+    flex: 1,
+  },
+  ratingRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: T.spacing.sm,
+  },
+  ratingNum: {
+    ...T.typography.labelLg,
+    color: C.text.primary,
+    fontWeight: '800',
+    marginLeft: T.spacing.sm,
+  },
+  heroMetaRow: {
+    flexDirection: 'row',
+    gap: T.spacing.sm,
+    flexWrap: 'wrap',
     justifyContent: 'center',
   },
-  ratingValue: {
-    ...UNIFIED_THEME.typography.bodyMd,
-    color: UNIFIED_THEME.colors.text.primary,
-    marginLeft: UNIFIED_THEME.spacing.sm,
+  heroMetaChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    borderRadius: T.borderRadius.round,
+    paddingVertical: 5,
+    paddingHorizontal: T.spacing.sm,
+    borderWidth: 1,
+    borderColor: C.border.light,
+    backgroundColor: 'rgba(255, 255, 255, 0.04)',
+  },
+  sessionsHint: {
+    ...T.typography.bodySm,
+    color: C.text.muted,
     fontWeight: '600',
   },
-  ratingCount: {
-    ...UNIFIED_THEME.typography.bodySm,
-    color: UNIFIED_THEME.colors.text.secondary,
-    marginLeft: UNIFIED_THEME.spacing.sm,
-  },
-  statsContainer: {
+  statsRow: {
     flexDirection: 'row',
-    paddingHorizontal: UNIFIED_THEME.spacing.md,
-    marginBottom: UNIFIED_THEME.spacing.xl,
+    paddingHorizontal: T.spacing.md,
+    gap: T.spacing.sm,
+    marginBottom: T.spacing.xl,
     justifyContent: 'space-between',
   },
-  statCard: {
+  statPill: {
     flex: 1,
-    backgroundColor: UNIFIED_THEME.colors.component.input,
-    borderRadius: 12,
-    padding: UNIFIED_THEME.spacing.md,
-    marginHorizontal: UNIFIED_THEME.spacing.sm,
+    minWidth: 0,
+    borderRadius: T.borderRadius.lg,
+    overflow: 'hidden',
     borderWidth: 1,
-    borderColor: UNIFIED_THEME.colors.primary.light,
+    borderColor: C.border.light,
+    ...Platform.select({
+      ios: T.shadows.small,
+      android: { elevation: 3 },
+    }),
+  },
+  statPillInner: {
+    padding: T.spacing.md,
     alignItems: 'center',
+    minHeight: 108,
+    justifyContent: 'center',
   },
-  statLabel: {
-    ...UNIFIED_THEME.typography.bodySm,
-    color: UNIFIED_THEME.colors.text.secondary,
-    marginBottom: UNIFIED_THEME.spacing.sm,
+  statIconWrap: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(2, 0, 20, 0.35)',
+    borderWidth: 1,
+    marginBottom: T.spacing.sm,
   },
-  statValue: {
-    ...UNIFIED_THEME.typography.bodyMd,
-    color: UNIFIED_THEME.colors.text.primary,
-    fontWeight: '600',
+  statPillValue: {
+    ...T.typography.labelLg,
+    color: C.text.primary,
+    fontWeight: '800',
+    textAlign: 'center',
+    marginBottom: 4,
   },
-  bioSection: {
-    paddingHorizontal: UNIFIED_THEME.spacing.lg,
-    marginBottom: UNIFIED_THEME.spacing.lg,
+  statPillLabel: {
+    ...T.typography.labelSm,
+    color: C.text.muted,
+    textAlign: 'center',
+    lineHeight: 16,
   },
-  bioTitle: {
-    ...UNIFIED_THEME.typography.bodyMd,
-    color: UNIFIED_THEME.colors.text.primary,
-    fontWeight: '600',
-    marginBottom: UNIFIED_THEME.spacing.md,
+  aboutCard: {
+    marginHorizontal: T.spacing.lg,
+    backgroundColor: C.component.card,
+    borderRadius: T.borderRadius.lg,
+    borderWidth: 1,
+    borderColor: C.border.light,
+    padding: T.spacing.lg,
+    ...Platform.select({
+      ios: T.shadows.small,
+      android: { elevation: 2 },
+    }),
   },
-  bioText: {
-    ...UNIFIED_THEME.typography.bodySm,
-    color: UNIFIED_THEME.colors.text.secondary,
-    lineHeight: 20,
+  aboutHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: T.spacing.md,
+    marginBottom: T.spacing.md,
+  },
+  aboutIconBadge: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: C.border.light,
+  },
+  aboutTitle: {
+    ...T.typography.headingSm,
+    fontSize: 18,
+    color: C.text.primary,
+    fontWeight: '800',
+  },
+  aboutAccent: {
+    width: 48,
+    height: 3,
+    borderRadius: 2,
+    backgroundColor: C.accent.secondary,
+    opacity: 0.85,
+    marginBottom: T.spacing.md,
+  },
+  aboutBody: {
+    ...T.typography.bodyMd,
+    color: C.text.secondary,
+    lineHeight: 24,
   },
   footer: {
-    paddingHorizontal: UNIFIED_THEME.spacing.lg,
-    paddingVertical: UNIFIED_THEME.spacing.lg,
     borderTopWidth: 1,
-    borderTopColor: UNIFIED_THEME.colors.primary.light,
+    borderTopColor: C.border.light,
+  },
+  footerEdge: {
+    height: 2,
+    opacity: 0.45,
+  },
+  footerInner: {
+    paddingHorizontal: T.spacing.lg,
+    paddingTop: T.spacing.md,
   },
   bookButton: {
     marginBottom: 0,
   },
-  errorContainer: {
+  errorWrap: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    paddingHorizontal: T.spacing.xl,
   },
-  errorText: {
-    ...UNIFIED_THEME.typography.bodyMd,
-    color: UNIFIED_THEME.colors.text.primary,
-    marginBottom: UNIFIED_THEME.spacing.lg,
+  errorIconRing: {
+    width: 96,
+    height: 96,
+    borderRadius: 48,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: T.spacing.lg,
+    borderWidth: 1,
+    borderColor: 'rgba(248, 113, 113, 0.35)',
   },
-  errorButton: {
-    width: 200,
+  errorTitle: {
+    ...T.typography.headingSm,
+    color: C.text.primary,
+    marginBottom: T.spacing.sm,
+    textAlign: 'center',
+  },
+  errorSub: {
+    ...T.typography.bodySm,
+    color: C.text.muted,
+    textAlign: 'center',
+    lineHeight: 20,
+    marginBottom: T.spacing.xl,
+  },
+  errorBtn: {
+    minWidth: 200,
   },
 });

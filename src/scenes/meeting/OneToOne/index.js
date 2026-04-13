@@ -7,6 +7,7 @@ import {
   Dimensions,
   Platform,
   Alert,
+  BackHandler,
 } from "react-native";
 import { CosmicLoader } from "../../../components/LoadingSpinner";
 import {
@@ -335,6 +336,40 @@ export default function OneToOneMeetingViewer({ isHost }) {
     setstatParticipantId(pId);
     bottomSheetRef.current.show();
   };
+
+  const confirmLeaveMeeting = () => {
+    Alert.alert(
+      "Leave meeting?",
+      "Are you sure you want to leave this meeting?",
+      [
+        {
+          text: "Stay in meeting",
+          style: "cancel",
+        },
+        {
+          text: "Leave meeting",
+          style: "destructive",
+          onPress: () => leave(),
+        },
+      ],
+      { cancelable: true }
+    );
+  };
+
+  useEffect(() => {
+    const onBackPress = () => {
+      confirmLeaveMeeting();
+      return true;
+    };
+
+    const backHandlerSubscription = BackHandler.addEventListener(
+      "hardwareBackPress",
+      onBackPress
+    );
+
+    return () => backHandlerSubscription.remove();
+  }, [leave]);
+
   return (
     <>
       <View

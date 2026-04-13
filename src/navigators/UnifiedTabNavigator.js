@@ -40,22 +40,22 @@ export const UnifiedTabNavigator = () => {
         }}
       />
       <BottomTab.Screen
-        name={SCREEN_NAMES.MentorSection}
-        component={MentorSectionNavigator}
-        options={{
-          tabBarLabel: 'Mentor',
-          tabBarIcon: ({ color, size }) => (
-            <MaterialIcons name="school" size={size} color={color} />
-          ),
-        }}
-      />
-      <BottomTab.Screen
         name={SCREEN_NAMES.LearnerSection}
         component={LearnerSectionNavigator}
         options={{
           tabBarLabel: 'Learner',
           tabBarIcon: ({ color, size }) => (
             <MaterialIcons name="menu-book" size={size} color={color} />
+          ),
+        }}
+      />
+      <BottomTab.Screen
+        name={SCREEN_NAMES.MentorSection}
+        component={MentorSectionNavigator}
+        options={{
+          tabBarLabel: 'Mentor',
+          tabBarIcon: ({ color, size }) => (
+            <MaterialIcons name="school" size={size} color={color} />
           ),
         }}
       />

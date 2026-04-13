@@ -16,6 +16,7 @@ import VideoCallScreen from '../scenes/shared/VideoCallScreen';
 import RecordingPlayerScreen from '../scenes/shared/RecordingPlayerScreen';
 import MentorAvailabilityScreen from '../scenes/mentor/AvailabilityScreen';
 import EditProfileScreen from '../scenes/settings/EditProfileScreen';
+import RecordedLecturesScreen from '../scenes/settings/RecordedLecturesScreen';
 
 const RootStack = createStackNavigator();
 
@@ -107,6 +108,10 @@ export const RootNavigator = () => {
             <RootStack.Screen
               name={SCREEN_NAMES.EditProfile}
               component={EditProfileScreen}
+            />
+            <RootStack.Screen
+              name={SCREEN_NAMES.RecordedLectures}
+              component={RecordedLecturesScreen}
             />
             <RootStack.Screen
               name={SCREEN_NAMES.MentorProfile}

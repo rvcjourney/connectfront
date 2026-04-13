@@ -1,3 +1,10 @@
+/**
+ * IntroClipScene — one page inside IntroVideosScreen’s pager.
+ *
+ * - If introClips.js provides localSource (require) or remoteUri (https), shows react-native-video.
+ * - Otherwise shows a “Video coming soon” placeholder with the clip caption + dev hint.
+ * - isActive: when false, video is paused and loading state resets when user swipes away.
+ */
 import React, { useEffect, useState } from 'react';
 import {
   View,
@@ -12,6 +19,7 @@ import { UNIFIED_THEME } from '../../unifiedTheme';
 
 const C = UNIFIED_THEME.colors;
 
+/** Prefer bundled file; else stream from remoteUri. */
 function resolveSource(clip) {
   if (clip?.localSource) {
     return clip.localSource;
@@ -32,6 +40,7 @@ export default function IntroClipScene({ clip, isActive = false }) {
   useEffect(() => {
     setFocused(isActive);
     if (!isActive) {
+      /* Next time user lands on this tab, show loader again until onLoad fires. */
       setLoading(!!source);
       setError(false);
     }
@@ -45,6 +54,7 @@ export default function IntroClipScene({ clip, isActive = false }) {
     );
   }
 
+  /* No asset configured — designers/devs fill introClips.js */
   if (!source) {
     return (
       <View style={styles.wrap}>
@@ -82,6 +92,7 @@ export default function IntroClipScene({ clip, isActive = false }) {
             <Text style={styles.errorText}>Could not play this video.</Text>
           </View>
         ) : (
+          // paused when tab not focused — saves battery and avoids overlapping audio
           <Video
             source={source}
             style={styles.video}

@@ -19,3 +19,18 @@ buildscript {
 }
 
 apply plugin: "com.facebook.react.rootproject"
+
+// AndroidUSBCamera: JitPack often publishes POMs without AARs; Liferay mirrors binaries. Force these groups off JitPack.
+allprojects {
+    repositories {
+        exclusiveContent {
+            forRepository {
+                maven { url "https://repository.liferay.com/nexus/content/repositories/public/" }
+            }
+            filter {
+                includeGroup "com.github.jiangdongguo.AndroidUSBCamera"
+                includeGroup "com.github.jiangdongguo"
+            }
+        }
+    }
+}

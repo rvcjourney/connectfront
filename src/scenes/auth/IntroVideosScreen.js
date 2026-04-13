@@ -1,3 +1,12 @@
+/**
+ * IntroVideosScreen — full-screen onboarding carousel after Welcome or right after login.
+ *
+ * - Swipe horizontally between clips (react-native-tab-view); dots at the bottom jump to pages.
+ * - Each page is IntroClipScene (video or placeholder if no asset URL is set in introClips.js).
+ * - flow=POST_AUTH: Skip/Close marks intro seen (AsyncStorage) and goes to main tabs.
+ * - flow=PRE_AUTH: dismiss returns to Welcome (or back stack).
+ * - Android hardware back acts like leaving the intro.
+ */
 import React, { useCallback, useContext, useMemo, useState } from 'react';
 import {
   View,
@@ -27,13 +36,14 @@ import IntroClipScene from './IntroClipScene';
 const C = UNIFIED_THEME.colors;
 const TB = C.tabBar;
 
+/** Persist “intro completed” for post-login flow, then navigate away from this screen. */
 async function persistIntroDismissal(navigation, { flow, userId }) {
   try {
     if (flow === INTRO_FLOW.POST_AUTH && userId) {
       await AsyncStorage.setItem(postLoginIntroSeenKey(userId), '1');
     }
   } catch {
-    // still leave
+    /* Storage failure should not trap the user on the intro. */
   }
   if (flow === INTRO_FLOW.POST_AUTH) {
     navigation.replace(SCREEN_NAMES.RootUnifiedTabs);
@@ -46,6 +56,7 @@ async function persistIntroDismissal(navigation, { flow, userId }) {
   }
 }
 
+/** Bottom dock: pill-style dots; active page shows elongated gradient tab. */
 function IntroDotTabBar({ navigationState, jumpTo }) {
   const insets = useSafeAreaInsets();
   return (
@@ -100,6 +111,7 @@ function IntroDotTabBar({ navigationState, jumpTo }) {
   );
 }
 
+/** Top bar: app mark + name; Skip and Close both end the intro (same as persistIntroDismissal). */
 function IntroBrandHeader({ onLeave }) {
   return (
     <View style={styles.header}>
@@ -151,6 +163,7 @@ function IntroBrandHeader({ onLeave }) {
 export default function IntroVideosScreen({ navigation, route }) {
   const { user, session } = useContext(AuthContext);
   const userId = user?.id ?? session?.user?.id;
+  /** PRE_AUTH: from Welcome. POST_AUTH: one-time after sign-in (see RootNavigator). */
   const flow = route.params?.flow ?? INTRO_FLOW.PRE_AUTH;
   const insets = useSafeAreaInsets();
   const layout = useWindowDimensions();
@@ -160,6 +173,7 @@ export default function IntroVideosScreen({ navigation, route }) {
   const topInset =
     Math.max(insets.top, statusBarOffset) + UNIFIED_THEME.spacing.lg;
   const [index, setIndex] = useState(0);
+  /** TabView route keys must match INTRO_CLIPS[].route in introClips.js */
   const routes = useMemo(
     () => INTRO_CLIPS.map(clip => ({ key: clip.route })),
     [],
@@ -171,6 +185,7 @@ export default function IntroVideosScreen({ navigation, route }) {
 
   useFocusEffect(
     useCallback(() => {
+      /* Android: back button exits intro instead of leaving an empty stack. */
       const sub = BackHandler.addEventListener('hardwareBackPress', () => {
         leaveIntro();
         return true;
@@ -183,11 +198,9 @@ export default function IntroVideosScreen({ navigation, route }) {
     ({ route }) => {
       const clip = INTRO_CLIPS.find(c => c.route === route.key);
       const sceneIndex = INTRO_CLIPS.findIndex(c => c.route === route.key);
+      /* Only the visible page plays video (IntroClipScene passes paused=!isActive to Video). */
       return (
-        <IntroClipScene
-          clip={clip}
-          isActive={index === sceneIndex}
-        />
+        <IntroClipScene clip={clip} isActive={index === sceneIndex} />
       );
     },
     [index],
@@ -219,6 +232,7 @@ export default function IntroVideosScreen({ navigation, route }) {
           style={styles.headerRule}
         />
 
+        {/* Pager: swipe between intro clips; custom tab bar = dots only (renderTabBar). */}
         <TabView
           navigationState={{ index, routes }}
           renderScene={renderScene}
@@ -236,6 +250,7 @@ export default function IntroVideosScreen({ navigation, route }) {
   );
 }
 
+/* --- Layout: header + full-height TabView + bottom dot dock (IntroDotTabBar) --- */
 const styles = StyleSheet.create({
   bg: {
     flex: 1,

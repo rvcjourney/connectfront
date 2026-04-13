@@ -37,4 +37,5 @@ export const SCREEN_NAMES = {
   VideoCall: "VideoCall_Screen",
   RecordingPlayer: "RecordingPlayer_Screen",
   MentorAvailability: "MentorAvailability_Screen",
+  RecordedLectures: "RecordedLectures_Screen",
 };

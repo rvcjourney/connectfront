@@ -134,10 +134,13 @@ export default function UnifiedSettingsScreen({ navigation }) {
             <MaterialIcons name="chevron-right" size={22} color={UNIFIED_THEME.colors.text.secondary} />
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.menuItem}>
+          <TouchableOpacity
+            style={styles.menuItem}
+            onPress={() => navigation.navigate(SCREEN_NAMES.RecordedLectures)}
+          >
             <View style={styles.menuLeft}>
               <MaterialIcons name="video-library" size={20} color={UNIFIED_THEME.colors.accent.primary} />
-              <Text style={styles.menuLabel}>Recorded Session</Text>
+              <Text style={styles.menuLabel}>Recorded lectures</Text>
             </View>
             <MaterialIcons name="chevron-right" size={22} color={UNIFIED_THEME.colors.text.secondary} />
           </TouchableOpacity>
