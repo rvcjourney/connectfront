@@ -1,3 +1,4 @@
+import { decode } from 'base64-arraybuffer';
 import { supabase } from '../lib/supabase';
 import { getSupabaseErrorMessage } from '../lib/supabaseErrorHandler';
 
@@ -117,16 +118,12 @@ export const profileApi = {
       const fileExt = (fileName || 'avatar.jpg').split('.').pop();
       const filePath = `${userId}/avatar.${fileExt}`;
 
-      // Decode base64 → ArrayBuffer (works with both file:// and content:// URIs)
-      const binaryStr = atob(base64);
-      const bytes = new Uint8Array(binaryStr.length);
-      for (let i = 0; i < binaryStr.length; i++) {
-        bytes[i] = binaryStr.charCodeAt(i);
-      }
+      // Decode base64 → ArrayBuffer (pure JS, no fetch — works on Android)
+      const arrayBuffer = decode(base64);
 
       const { error: uploadError } = await supabase.storage
-        .from('avatars')
-        .upload(filePath, bytes.buffer, {
+        .from('connectiqo_avatar')
+        .upload(filePath, arrayBuffer, {
           contentType: mimeType || 'image/jpeg',
           upsert: true,
         });
@@ -134,7 +131,7 @@ export const profileApi = {
       if (uploadError) throw uploadError;
 
       // Get public URL
-      const { data } = supabase.storage.from('avatars').getPublicUrl(filePath);
+      const { data } = supabase.storage.from('connectiqo_avatar').getPublicUrl(filePath);
 
       // Update profile with avatar URL
       await profileApi.updateProfile({
@@ -144,6 +141,7 @@ export const profileApi = {
 
       return data.publicUrl;
     } catch (error) {
+      console.error('uploadAvatar error:', error);
       throw new Error(getSupabaseErrorMessage(error));
     }
   },
