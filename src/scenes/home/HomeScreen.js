@@ -184,7 +184,7 @@ function CategoryRow({ categoryTitle, sectionIndex, onOpenVideo }) {
         </LinearGradient>
         <View style={styles.categoryTitleTextWrap}>
           <Text style={styles.categoryTitleText} numberOfLines={2}>
-            {categoryTitle}
+            Session
           </Text>
         </View>
       </View>
