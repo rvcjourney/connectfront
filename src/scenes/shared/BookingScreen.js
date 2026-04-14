@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, TextInput } from 'react-native';
 import Toast from 'react-native-simple-toast';
+import LinearGradient from 'react-native-linear-gradient';
+import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import { SafeScreen } from '../../components/SafeScreen';
 import { UNIFIED_THEME } from '../../unifiedTheme';
 import { LoadingOverlay } from '../../components/LoadingOverlay';
@@ -179,14 +181,30 @@ export default function BookingScreen({ navigation, route }) {
 
   return (
     <SafeScreen scrollable={true} padding={UNIFIED_THEME.spacing.lg} hasBottomTabs={true}>
-      <Text style={styles.title}>Book with {mentorName}</Text>
-      <Text style={styles.subtitle}>Select a date and available time slot</Text>
+      <View style={styles.headerCard}>
+        <LinearGradient
+          colors={[
+            'rgba(167, 139, 250, 0.18)',
+            'rgba(94, 234, 212, 0.1)',
+            'rgba(2, 0, 20, 0.45)',
+          ]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={StyleSheet.absoluteFill}
+          pointerEvents="none"
+        />
+        <Text style={styles.eyebrow}>Booking</Text>
+        <Text style={styles.title}>Book with {mentorName}</Text>
+        <Text style={styles.subtitle}>Select a date and available time slot</Text>
+      </View>
 
       {/* Calendar */}
       <View style={styles.calendarContainer}>
+        <Text style={styles.sectionEyebrow}>Select Date</Text>
         {/* Month Header */}
         <View style={styles.monthHeader}>
           <TouchableOpacity
+            style={styles.monthNavBtn}
             onPress={() => {
               const prev = new Date(currentDate);
               prev.setMonth(prev.getMonth() - 1);
@@ -197,6 +215,7 @@ export default function BookingScreen({ navigation, route }) {
           </TouchableOpacity>
           <Text style={styles.monthYear}>{monthYear}</Text>
           <TouchableOpacity
+            style={styles.monthNavBtn}
             onPress={() => {
               const next = new Date(currentDate);
               next.setMonth(next.getMonth() + 1);
@@ -273,6 +292,7 @@ export default function BookingScreen({ navigation, route }) {
       {/* Available Time Slots */}
       {timeSlotsForDate.length > 0 && (
         <View style={styles.timeSlotsContainer}>
+          <Text style={styles.sectionEyebrow}>Select Time</Text>
           <Text style={styles.sectionTitle}>
             Available Times for {formatDisplayDate(selectedDate)}
           </Text>
@@ -310,6 +330,11 @@ export default function BookingScreen({ navigation, route }) {
 
           {selectedTime && (
             <View style={styles.selectedInfo}>
+              <MaterialIcons
+                name="check-circle"
+                size={16}
+                color={UNIFIED_THEME.colors.text.onAccent}
+              />
               <Text style={styles.selectedInfoText}>
                 Selected Slot: {selectedTime.start_time.substring(0, 5)}-{selectedTime.end_time.substring(0, 5)}
               </Text>
@@ -320,6 +345,7 @@ export default function BookingScreen({ navigation, route }) {
 
       {timeSlotsForDate.length === 0 && selectedDate && (
         <View style={styles.noSlotsContainer}>
+          <MaterialIcons name="event-busy" size={24} color={UNIFIED_THEME.colors.text.muted} />
           <Text style={styles.noSlotsText}>
             No available time slots for {formatDisplayDate(selectedDate)}
           </Text>
@@ -328,8 +354,14 @@ export default function BookingScreen({ navigation, route }) {
 
       {Object.keys(mentorAvailability).length === 0 && !loading && (
         <View style={styles.noAvailabilityContainer}>
+          <MaterialIcons
+            name="sentiment-dissatisfied"
+            size={28}
+            color={UNIFIED_THEME.colors.accent.secondary}
+            style={styles.emptyIcon}
+          />
           <Text style={styles.noAvailabilityText}>
-            😔 This mentor has not set their availability yet
+            This mentor has not set their availability yet
           </Text>
           <Text style={styles.noAvailabilitySubtext}>
             Please check back later or book with another mentor
@@ -339,6 +371,7 @@ export default function BookingScreen({ navigation, route }) {
 
       {selectedTime && (
         <View style={styles.messageContainer}>
+          <Text style={styles.sectionEyebrow}>Session Goal</Text>
           <Text style={styles.messageLabel}>What would you like to achieve in this session?</Text>
           <TextInput
             style={styles.messageInput}
@@ -353,6 +386,9 @@ export default function BookingScreen({ navigation, route }) {
       )}
 
       {/* Action Buttons */}
+      <Text style={styles.bookingHint}>
+        You can review and change your slot anytime before confirming.
+      </Text>
       <View style={styles.actions}>
         <Button
           text="Cancel"
@@ -379,6 +415,22 @@ export default function BookingScreen({ navigation, route }) {
 }
 
 const styles = StyleSheet.create({
+  headerCard: {
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: UNIFIED_THEME.colors.border.light,
+    backgroundColor: UNIFIED_THEME.colors.component.input,
+    padding: UNIFIED_THEME.spacing.lg,
+    marginBottom: UNIFIED_THEME.spacing.lg,
+    overflow: 'hidden',
+  },
+  eyebrow: {
+    ...UNIFIED_THEME.typography.labelSm,
+    color: UNIFIED_THEME.colors.accent.secondary,
+    letterSpacing: 1.2,
+    textTransform: 'uppercase',
+    marginBottom: UNIFIED_THEME.spacing.xs,
+  },
   title: {
     ...UNIFIED_THEME.typography.headingMd,
     color: UNIFIED_THEME.colors.text.primary,
@@ -399,11 +451,29 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: UNIFIED_THEME.colors.primary.light,
   },
+  sectionEyebrow: {
+    ...UNIFIED_THEME.typography.labelSm,
+    color: UNIFIED_THEME.colors.text.muted,
+    textTransform: 'uppercase',
+    letterSpacing: 0.8,
+    marginBottom: UNIFIED_THEME.spacing.xs,
+    fontWeight: '700',
+  },
   monthHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: UNIFIED_THEME.spacing.md,
+  },
+  monthNavBtn: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    borderWidth: 1,
+    borderColor: UNIFIED_THEME.colors.border.light,
+    backgroundColor: UNIFIED_THEME.colors.primary.light,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   monthYear: {
     ...UNIFIED_THEME.typography.bodyMd,
@@ -414,6 +484,7 @@ const styles = StyleSheet.create({
     fontSize: 24,
     color: UNIFIED_THEME.colors.text.primary,
     fontWeight: 'bold',
+    lineHeight: 26,
   },
   dayHeadersRow: {
     flexDirection: 'row',
@@ -488,6 +559,11 @@ const styles = StyleSheet.create({
     color: UNIFIED_THEME.colors.primary.light,
   },
   timeSlotsContainer: {
+    backgroundColor: UNIFIED_THEME.colors.component.input,
+    borderRadius: 12,
+    padding: UNIFIED_THEME.spacing.md,
+    borderWidth: 1,
+    borderColor: UNIFIED_THEME.colors.primary.light,
     marginBottom: UNIFIED_THEME.spacing.lg,
   },
   sectionTitle: {
@@ -534,6 +610,10 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     paddingVertical: UNIFIED_THEME.spacing.md,
     paddingHorizontal: UNIFIED_THEME.spacing.lg,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: UNIFIED_THEME.spacing.sm,
   },
   selectedInfoText: {
     ...UNIFIED_THEME.typography.bodySm,
@@ -548,6 +628,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: UNIFIED_THEME.spacing.lg,
     marginBottom: UNIFIED_THEME.spacing.lg,
     alignItems: 'center',
+    gap: UNIFIED_THEME.spacing.sm,
+    borderWidth: 1,
+    borderColor: UNIFIED_THEME.colors.border.light,
   },
   noSlotsText: {
     ...UNIFIED_THEME.typography.bodySm,
@@ -562,6 +645,10 @@ const styles = StyleSheet.create({
     marginBottom: UNIFIED_THEME.spacing.lg,
     borderLeftWidth: 4,
     borderLeftColor: UNIFIED_THEME.colors.accent.secondary,
+    alignItems: 'center',
+  },
+  emptyIcon: {
+    marginBottom: UNIFIED_THEME.spacing.sm,
   },
   noAvailabilityText: {
     ...UNIFIED_THEME.typography.bodyMd,
@@ -603,8 +690,14 @@ const styles = StyleSheet.create({
   actions: {
     flexDirection: 'row',
     gap: UNIFIED_THEME.spacing.md,
-    marginTop: UNIFIED_THEME.spacing.xl,
+    marginTop: UNIFIED_THEME.spacing.md,
     marginBottom: UNIFIED_THEME.spacing.lg,
+  },
+  bookingHint: {
+    ...UNIFIED_THEME.typography.bodySm,
+    color: UNIFIED_THEME.colors.text.muted,
+    textAlign: 'center',
+    marginTop: UNIFIED_THEME.spacing.md,
   },
 
   actionButton: {

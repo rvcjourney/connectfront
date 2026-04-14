@@ -13,6 +13,7 @@ import {
 import { LineChart } from 'react-native-chart-kit';
 import Toast from 'react-native-simple-toast';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
+import LinearGradient from 'react-native-linear-gradient';
 import { UNIFIED_THEME } from '../../unifiedTheme';
 import { LoadingOverlay } from '../../components/LoadingOverlay';
 import { useAuth } from '../../hooks/useAuth';
@@ -21,6 +22,7 @@ import { formatCurrency } from '../../utils/formatCurrency';
 import { formatDate } from '../../utils/dateHelpers';
 
 const T = UNIFIED_THEME;
+const TB = T.colors.tabBar;
 const PERIODS = ['week', 'month', 'year'];
 
 const chartWidth = Math.min(
@@ -118,8 +120,18 @@ export default function MentorEarningsScreen() {
     chartData.datasets?.[0]?.data &&
     chartData.datasets[0].data.some(n => n > 0);
 
+  const bestPoint = periodEarnings.reduce(
+    (max, row) => Math.max(max, parseFloat(row?.amount || 0)),
+    0,
+  );
+
   return (
-    <SafeScreen scrollable={true} hasBottomTabs={false} padding={T.spacing.lg} includeTopInset={false}>
+    <SafeScreen
+      scrollable={true}
+      hasBottomTabs={false}
+      padding={T.spacing.lg}
+      includeTopInset={false}
+    >
       <ScrollView
         style={styles.content}
         showsVerticalScrollIndicator={false}
@@ -131,9 +143,17 @@ export default function MentorEarningsScreen() {
           />
         }
       >
-        <View style={styles.pageIntro}>
-          {/* <Text style={styles.eyebrow}>Earnings</Text> */}
-          <Text style={styles.pageTitle}>Earnings</Text>
+        <View style={styles.pageIntroCard}>
+          <LinearGradient
+            colors={TB.flatBarEdge}
+            locations={[0, 0.4, 0.7, 1]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 0 }}
+            style={styles.pageIntroBeam}
+            pointerEvents="none"
+          />
+          <Text style={styles.eyebrow}>Mentor finance</Text>
+          <Text style={styles.pageTitle}>Earnings overview</Text>
           <Text style={styles.pageSubtitle}>
             Track totals and recent payouts from completed sessions.
           </Text>
@@ -142,6 +162,17 @@ export default function MentorEarningsScreen() {
         <View style={styles.totalCard}>
           <Text style={styles.totalLabel}>Total Earnings</Text>
           <Text style={styles.totalAmount}>{formatCurrency(totalEarnings)}</Text>
+        </View>
+
+        <View style={styles.kpiRow}>
+          <View style={styles.kpiCard}>
+            <Text style={styles.kpiValue}>{transactions.length}</Text>
+            <Text style={styles.kpiLabel}>Recent payouts</Text>
+          </View>
+          <View style={styles.kpiCard}>
+            <Text style={styles.kpiValue}>{formatCurrency(bestPoint)}</Text>
+            <Text style={styles.kpiLabel}>Peak payout</Text>
+          </View>
         </View>
 
         <Text style={styles.periodLabel}>Period</Text>
@@ -205,20 +236,23 @@ export default function MentorEarningsScreen() {
           </View>
         )}
 
-        <Text style={styles.transactionsHeading}>Recent activity</Text>
-        {transactions.length > 0 ? (
-          <FlatList
-            data={transactions}
-            renderItem={renderTransaction}
-            keyExtractor={(item, index) => `${item.id || index}`}
-            scrollEnabled={false}
-            nestedScrollEnabled={false}
-          />
-        ) : (
-          <View style={styles.noTransactionsContainer}>
-            <Text style={styles.noTransactionsText}>No transactions yet</Text>
-          </View>
-        )}
+        <View style={styles.transactionsCard}>
+          <Text style={styles.transactionsHeading}>Recent activity</Text>
+          {transactions.length > 0 ? (
+            <FlatList
+              data={transactions}
+              renderItem={renderTransaction}
+              keyExtractor={(item, index) => `${item.id || index}`}
+              scrollEnabled={false}
+              nestedScrollEnabled={false}
+            />
+          ) : (
+            <View style={styles.noTransactionsContainer}>
+              <MaterialIcons name="receipt-long" size={26} color={T.colors.text.muted} />
+              <Text style={styles.noTransactionsText}>No transactions yet</Text>
+            </View>
+          )}
+        </View>
       </ScrollView>
 
       <LoadingOverlay visible={loading} message="Loading earnings..." />
@@ -230,8 +264,23 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
   },
-  pageIntro: {
+  pageIntroCard: {
+    position: 'relative',
+    overflow: 'hidden',
+    borderRadius: T.borderRadius.lg,
+    borderWidth: 1,
+    borderColor: T.colors.border.light,
+    backgroundColor: T.colors.component.card,
+    padding: T.spacing.lg,
     marginBottom: T.spacing.lg,
+  },
+  pageIntroBeam: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: 2,
+    opacity: 0.9,
   },
   eyebrow: {
     ...T.typography.labelSm,
@@ -242,8 +291,8 @@ const styles = StyleSheet.create({
   },
   pageTitle: {
     ...T.typography.headingLg,
-    color: T.colors.accent.secondary,
-    fontWeight: '600',
+    color: T.colors.text.primary,
+    fontWeight: '700',
     marginBottom: T.spacing.sm,
   },
   pageSubtitle: {
@@ -272,6 +321,31 @@ const styles = StyleSheet.create({
     ...T.typography.headingLg,
     color: T.colors.accent.success,
     fontWeight: '800',
+  },
+  kpiRow: {
+    flexDirection: 'row',
+    gap: T.spacing.sm,
+    marginBottom: T.spacing.lg,
+  },
+  kpiCard: {
+    flex: 1,
+    paddingVertical: T.spacing.md,
+    paddingHorizontal: T.spacing.md,
+    borderRadius: T.borderRadius.md,
+    borderWidth: 1,
+    borderColor: T.colors.border.light,
+    backgroundColor: T.colors.component.card,
+    alignItems: 'center',
+  },
+  kpiValue: {
+    ...T.typography.labelLg,
+    color: T.colors.text.primary,
+    fontWeight: '800',
+  },
+  kpiLabel: {
+    ...T.typography.labelSm,
+    color: T.colors.text.muted,
+    marginTop: 2,
   },
   periodLabel: {
     ...T.typography.labelMd,
@@ -342,7 +416,16 @@ const styles = StyleSheet.create({
     fontSize: 17,
     color: T.colors.text.primary,
     fontWeight: '700',
-    marginBottom: T.spacing.md,
+    marginBottom: T.spacing.sm,
+  },
+  transactionsCard: {
+    borderRadius: T.borderRadius.lg,
+    borderWidth: 1,
+    borderColor: T.colors.border.light,
+    backgroundColor: T.colors.component.card,
+    paddingHorizontal: T.spacing.md,
+    paddingTop: T.spacing.sm,
+    paddingBottom: T.spacing.xs,
   },
   transactionRow: {
     flexDirection: 'row',
@@ -384,6 +467,7 @@ const styles = StyleSheet.create({
   noTransactionsContainer: {
     alignItems: 'center',
     paddingVertical: T.spacing.xl,
+    gap: T.spacing.sm,
   },
   noTransactionsText: {
     ...T.typography.bodySm,

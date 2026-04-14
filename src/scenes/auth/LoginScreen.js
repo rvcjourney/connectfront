@@ -14,7 +14,6 @@ import Toast from 'react-native-simple-toast';
 import CosmicBackground from '../../components/CosmicBackground';
 import { UNIFIED_THEME } from '../../unifiedTheme';
 import Button from '../../components/Button';
-import { LoadingOverlay } from '../../components/LoadingOverlay';
 import { authApi } from '../../api/authApi';
 
 export default function LoginScreen({ navigation }) {
@@ -141,9 +140,10 @@ export default function LoginScreen({ navigation }) {
 
             {/* Login Button */}
             <Button
-              text={loading ? 'Signing in...' : 'Sign In'}
+              text={loading ? 'Loading data...' : 'Sign In'}
               onPress={handleLogin}
               disabled={loading}
+              loading={loading}
               style={styles.loginBtn}
             />
           </View>
@@ -170,7 +170,6 @@ export default function LoginScreen({ navigation }) {
         </ScrollView>
       </SafeAreaView>
 
-      <LoadingOverlay visible={loading} message="Signing in..." />
     </CosmicBackground>
   );
 }

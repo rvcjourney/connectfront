@@ -17,7 +17,6 @@ import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import { UNIFIED_THEME } from '../../unifiedTheme';
 import { SCREEN_NAMES } from '../../navigators/screenNames';
 import { LoadingOverlay } from '../../components/LoadingOverlay';
-import { StatCard } from '../../components/StatCard';
 import { BookingCard } from '../../components/BookingCard';
 import { SectionHeader } from '../../components/SectionHeader';
 import { useAuth } from '../../hooks/useAuth';
@@ -132,27 +131,6 @@ export default function MentorDashboardScreen() {
 
   const firstName = profile?.name?.split(/\s+/)[0] || 'there';
 
-  const quickLinks = [
-    {
-      label: 'Sessions',
-      icon: 'video-call',
-      screen: SCREEN_NAMES.MentorCalls,
-      color: T.colors.accent.secondary,
-    },
-    {
-      label: 'Earnings',
-      icon: 'payments',
-      screen: SCREEN_NAMES.MentorEarnings,
-      color: T.colors.accent.success,
-    },
-    {
-      label: 'Schedule',
-      icon: 'calendar-today',
-      screen: SCREEN_NAMES.MentorAvailabilityTab,
-      color: T.colors.accent.primary,
-    },
-  ];
-
   return (
     <SafeScreen
       scrollable={true}
@@ -216,8 +194,32 @@ export default function MentorDashboardScreen() {
           {mentorProfile?.specialization || 'Add your specialization'}
         </Text>
         <Text style={styles.heroSubtitle}>
-          Track Upcoming session, earnings & Schedule your slots...
+          Manage sessions, track earnings, and keep your availability up to date.
         </Text>
+        <View style={styles.heroMetaRow}>
+          <View style={styles.heroMetaChip}>
+            <MaterialIcons
+              name="work-history"
+              size={14}
+              color={T.colors.accent.secondary}
+            />
+            <Text style={styles.heroMetaText}>
+              {(mentorProfile?.experience_years ?? 0) || 0}+ yrs
+            </Text>
+          </View>
+          <View style={styles.heroMetaChip}>
+            <MaterialIcons
+              name="payments"
+              size={14}
+              color={T.colors.accent.success}
+            />
+            <Text style={styles.heroMetaText}>
+              {mentorProfile?.price_per_hour
+                ? `₹${mentorProfile.price_per_hour}/hr`
+                : 'Rate not set'}
+            </Text>
+          </View>
+        </View>
 
         {!profileComplete ? (
           <TouchableOpacity
@@ -227,7 +229,7 @@ export default function MentorDashboardScreen() {
           >
             <MaterialIcons name="bolt" size={20} color={T.colors.accent.warning} />
             <Text style={styles.completionText}>
-              Complete Profile so learners can find and trust you.
+              Complete your profile so learners can find and trust you.
             </Text>
             <MaterialIcons name="chevron-right" size={22} color={T.colors.text.muted} />
           </TouchableOpacity>
@@ -256,106 +258,8 @@ export default function MentorDashboardScreen() {
         </View>
       </View>
 
-
-      {/* <View style={styles.profileBlock}>
-        <LinearGradient
-          colors={TB.flatBarEdge}
-          locations={[0, 0.35, 0.65, 1]}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 0 }}
-          style={styles.profileBlockTopBeam}
-          pointerEvents="none"
-        />
-
-        <View style={styles.profileHeader}>
-          <View style={styles.profileHeaderLeft}>
-            <View style={styles.profileHeaderIcon}>
-              <MaterialIcons name="person-pin" size={20} color={T.colors.accent.secondary} />
-            </View>
-            <View style={styles.profileHeaderText}>
-              <Text style={styles.profileTitle}>Public profile</Text>
-              <Text style={styles.profileHint}>
-                Visible to learners in search and booking
-              </Text>
-            </View>
-          </View>
-          <Pressable
-            onPress={() => navigation.navigate(SCREEN_NAMES.EditProfile)}
-            style={({ pressed }) => [
-              styles.editBtn,
-              pressed && { opacity: 0.75 },
-            ]}
-          >
-            <Text style={styles.editBtnText}>Edit</Text>
-            <MaterialIcons name="edit" size={18} color={T.colors.accent.secondary} />
-          </Pressable>
-        </View>
-        <View style={styles.profileBody}>
-          <View style={styles.profileMain}>
-            <View style={styles.nameRow}>
-              <Text style={styles.mentorName} numberOfLines={1}>
-                {profile?.name || 'Mentor'}
-              </Text>
-              <View style={styles.tagPro}>
-                <MaterialIcons name="verified" size={14} color={T.colors.accent.secondary} />
-                <Text style={styles.tagProText}>Pro</Text>
-              </View>
-            </View>
-
-            <View style={styles.ratingRow}>
-              <MaterialIcons name="star" size={16} color={T.colors.accent.warning} />
-              <Text style={styles.ratingValue}>{ratingDisplay}</Text>
-              <Text style={styles.ratingOutOf}>/ 5</Text>
-              <Text style={styles.ratingDot}>·</Text>
-              <Text style={styles.ratingLabel}>Average from learners</Text>
-            </View>
-
-            <Text style={styles.specialization} numberOfLines={2}>
-              {mentorProfile?.specialization || 'Add your specialization'}
-            </Text>
-
-            <View style={styles.metaRow}>
-              <View style={styles.metaTag}>
-                <MaterialIcons name="work-history" size={14} color={T.colors.accent.secondary} />
-                <Text style={styles.metaTagText}>
-                  {(mentorProfile?.experience_years ?? 0) || 0}+ yrs experience
-                </Text>
-              </View>
-              {mentorProfile?.price_per_hour ? (
-                <View style={styles.metaTag}>
-                  <MaterialIcons name="payments" size={14} color={T.colors.accent.primary} />
-                  <Text style={styles.metaTagText}>₹{mentorProfile.price_per_hour} / hr</Text>
-                </View>
-              ) : null}
-            </View>
-
-            {mentorProfile?.bio ? (
-              <Text style={styles.bio} numberOfLines={4}>
-                {mentorProfile.bio}
-              </Text>
-            ) : (
-              <Text style={styles.bioMuted}>
-                A short bio builds trust. Tap Edit to tell learners how you can help.
-              </Text>
-            )}
-          </View>
-
-          <View style={styles.avatarTile}>
-            {profile?.avatar_url ? (
-              <Image source={{ uri: profile.avatar_url }} style={styles.avatarImg} />
-            ) : (
-              <View style={[styles.avatarImg, styles.avatarPh]}>
-                <Text style={styles.avatarLetter}>
-                  {profile?.name?.charAt(0).toUpperCase() || '?'}
-                </Text>
-              </View>
-            )}
-          </View>
-        </View>
-      </View> */}
-
       <SectionHeader
-        title="Upcoming sessions.."
+        title="Upcoming sessions"
         subtitle="Pending and confirmed bookings with learners."
         count={todaySessions.length}
       />
@@ -370,9 +274,9 @@ export default function MentorDashboardScreen() {
             <MaterialIcons name="event-note" size={28} color={T.colors.accent.secondary} />
           </View>
           <Text style={styles.emptyTitle}>No upcoming sessions</Text>
-          {/* <Text style={styles.emptySub}>
-            New bookings will show up here. Use Sessions to join live calls when it is time.
-          </Text> */}
+          <Text style={styles.emptySub}>
+            New bookings will appear here. Open Sessions to review requests.
+          </Text>
           <Pressable
             style={({ pressed }) => [styles.emptyCta, pressed && { opacity: 0.85 }]}
             onPress={() => goTab(SCREEN_NAMES.MentorCalls)}
@@ -390,39 +294,14 @@ export default function MentorDashboardScreen() {
   );
 }
 
-/** Wraps quick-strip cell + optional vertical divider (flat layout). */
-function FragmentRow({ children, showDivider }) {
-  return (
-    <>
-      {showDivider ? <View style={mentorDashStyles.quickDivider} /> : null}
-      <View style={mentorDashStyles.quickCellWrap}>{children}</View>
-    </>
-  );
-}
-
-const mentorDashStyles = StyleSheet.create({
-  quickDivider: {
-    width: StyleSheet.hairlineWidth * 2,
-    alignSelf: 'stretch',
-    marginVertical: T.spacing.md,
-    backgroundColor: T.colors.border.light,
-    opacity: 0.45,
-  },
-  quickCellWrap: {
-    flex: 1,
-    minWidth: 0,
-  },
-});
-
 const styles = StyleSheet.create({
   hero: {
-    borderRadius: T.borderRadius.sm,
+    borderRadius: T.borderRadius.lg,
     overflow: 'hidden',
     padding: T.spacing.lg,
-    marginBottom: T.spacing.lg,
+    marginBottom: T.spacing.xl,
     borderWidth: 1,
     borderColor: T.colors.border.light,
-    // backgroundColor: T.colors.primary.dark,
     backgroundColor: T.colors.component.card,
     borderLeftWidth: 3,
     borderLeftColor: T.colors.accent.secondary,
@@ -443,26 +322,16 @@ const styles = StyleSheet.create({
   heroTopRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: T.spacing.md,
+    marginBottom: T.spacing.sm,
     zIndex: 1,
-  },
-  heroMainRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: T.spacing.md,
-    zIndex: 1,
-  },
-  heroTextBlock: {
-    flex: 1,
-    minWidth: 0,
   },
   heroAvatarSmall: {
     position: 'absolute',
     top: T.spacing.lg,
     right: T.spacing.lg,
-    width: 92,
-    height: 92,
-    borderRadius: T.borderRadius.sm,
+    width: 78,
+    height: 78,
+    borderRadius: T.borderRadius.md,
     overflow: 'hidden',
     borderWidth: 2,
     borderColor: T.colors.border.default,
@@ -485,15 +354,6 @@ const styles = StyleSheet.create({
     color: T.colors.text.secondary,
     fontWeight: '700',
   },
-  heroGreeting: {
-    ...T.typography.labelSm,
-    color: T.colors.accent.secondary,
-    letterSpacing: 1,
-    textTransform: 'uppercase',
-    marginBottom: T.spacing.xs,
-    fontWeight: '700',
-    zIndex: 1,
-  },
   heroTitle: {
     ...T.typography.headingMd,
     color: T.colors.text.primary,
@@ -505,8 +365,33 @@ const styles = StyleSheet.create({
     ...T.typography.bodyMd,
     color: T.colors.text.muted,
     lineHeight: 22,
-    marginBottom: T.spacing.lg,
+    marginBottom: T.spacing.md,
     zIndex: 1,
+    paddingRight: 76,
+  },
+  heroMetaRow: {
+    flexDirection: 'row',
+    gap: T.spacing.sm,
+    marginBottom: T.spacing.md,
+    zIndex: 1,
+    paddingRight: 76,
+  },
+  heroMetaChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingVertical: 6,
+    paddingHorizontal: T.spacing.sm,
+    borderRadius: T.borderRadius.sm,
+    borderWidth: 1,
+    borderColor: T.colors.border.light,
+    backgroundColor: T.colors.component.input,
+    flexShrink: 1,
+  },
+  heroMetaText: {
+    ...T.typography.labelSm,
+    color: T.colors.text.secondary,
+    fontWeight: '700',
   },
   heroSnapshot: {
     flexDirection: 'row',
@@ -514,7 +399,7 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: T.colors.border.light,
     paddingTop: T.spacing.md,
-    marginTop: T.spacing.sm,
+    marginTop: T.spacing.md,
     zIndex: 1,
   },
   snapshotItem: {
@@ -548,121 +433,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 4,
   },
-  quickStrip: {
-    flexDirection: 'row',
-    alignItems: 'stretch',
-    marginBottom: T.spacing.lg,
-    borderWidth: 1,
-    borderColor: T.colors.border.light,
-    backgroundColor: T.colors.component.card,
-    borderRadius: T.borderRadius.sm,
-    overflow: 'hidden',
-    ...Platform.select({
-      ios: T.shadows.small,
-      android: { elevation: 2 },
-    }),
-  },
-  quickCell: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: T.spacing.md,
-    paddingHorizontal: T.spacing.xs,
-  },
-  quickIconTile: {
-    width: 44,
-    height: 44,
-    borderRadius: T.borderRadius.sm,
-    backgroundColor: T.colors.component.input,
-    borderWidth: 1,
-    borderColor: T.colors.border.light,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: T.spacing.sm,
-  },
-  quickLabel: {
-    ...T.typography.labelSm,
-    color: T.colors.text.secondary,
-    fontWeight: '700',
-    textAlign: 'center',
-  },
-  profileBlock: {
-    marginBottom: T.spacing.xl,
-    borderWidth: 1,
-    borderColor: T.colors.border.light,
-    backgroundColor: T.colors.component.card,
-    borderRadius: T.borderRadius.sm,
-    overflow: 'hidden',
-    borderLeftWidth: 3,
-    borderLeftColor: T.colors.border.default,
-    ...Platform.select({
-      ios: T.shadows.small,
-      android: { elevation: 3 },
-    }),
-  },
-  profileBlockTopBeam: {
-    height: 2,
-    width: '100%',
-    opacity: 0.85,
-  },
-  profileHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: T.spacing.lg,
-    paddingTop: T.spacing.md,
-    paddingBottom: T.spacing.md,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: T.colors.border.light,
-  },
-  profileHeaderLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: T.spacing.md,
-    flex: 1,
-    marginRight: T.spacing.sm,
-  },
-  profileHeaderIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: T.borderRadius.sm,
-    backgroundColor: T.colors.component.input,
-    borderWidth: 1,
-    borderColor: T.colors.border.light,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  profileHeaderText: {
-    flex: 1,
-    minWidth: 0,
-  },
-  profileTitle: {
-    ...T.typography.labelMd,
-    color: T.colors.text.primary,
-    fontWeight: '700',
-    fontSize: 15,
-  },
-  profileHint: {
-    ...T.typography.bodyXs,
-    color: T.colors.text.muted,
-    marginTop: 3,
-    lineHeight: 16,
-  },
-  editBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    paddingVertical: T.spacing.sm,
-    paddingHorizontal: T.spacing.md,
-    borderRadius: T.borderRadius.sm,
-    borderWidth: 1,
-    borderColor: T.colors.border.default,
-    backgroundColor: T.colors.component.input,
-  },
-  editBtnText: {
-    ...T.typography.labelMd,
-    color: T.colors.accent.secondary,
-    fontWeight: '700',
-  },
   completionStrip: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -681,21 +451,6 @@ const styles = StyleSheet.create({
     flex: 1,
     lineHeight: 19,
   },
-  profileBody: {
-    flexDirection: 'row',
-    padding: T.spacing.lg,
-    alignItems: 'flex-start',
-    gap: T.spacing.lg,
-  },
-  avatarTile: {
-    width: 96,
-    height: 96,
-    borderRadius: T.borderRadius.sm,
-    overflow: 'hidden',
-    borderWidth: 1,
-    borderColor: T.colors.border.default,
-    backgroundColor: T.colors.primary.dark,
-  },
   avatarImg: {
     width: '100%',
     height: '100%',
@@ -706,70 +461,9 @@ const styles = StyleSheet.create({
     backgroundColor: T.colors.component.input,
   },
   avatarLetter: {
-    fontSize: 36,
+    fontSize: 30,
     fontWeight: '800',
     color: T.colors.accent.primary,
-  },
-  profileMain: {
-    flex: 1,
-    minWidth: 0,
-  },
-  nameRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flexWrap: 'wrap',
-    gap: T.spacing.sm,
-    marginBottom: T.spacing.xs,
-  },
-  mentorName: {
-    ...T.typography.headingSm,
-    fontSize: 19,
-    color: T.colors.text.primary,
-    fontWeight: '800',
-    flexShrink: 1,
-  },
-  tagPro: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    paddingHorizontal: T.spacing.sm,
-    paddingVertical: 4,
-    borderRadius: T.borderRadius.sm,
-    backgroundColor: T.colors.component.input,
-    borderWidth: 1,
-    borderColor: T.colors.border.light,
-  },
-  tagProText: {
-    ...T.typography.labelSm,
-    color: T.colors.accent.secondary,
-    fontWeight: '800',
-    fontSize: 10,
-    letterSpacing: 0.6,
-    textTransform: 'uppercase',
-  },
-  ratingRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flexWrap: 'wrap',
-    gap: 4,
-    marginBottom: T.spacing.sm,
-  },
-  ratingValue: {
-    ...T.typography.bodyMd,
-    color: T.colors.text.primary,
-    fontWeight: '800',
-  },
-  ratingOutOf: {
-    ...T.typography.bodySm,
-    color: T.colors.text.muted,
-  },
-  ratingDot: {
-    color: T.colors.text.muted,
-    marginHorizontal: 2,
-  },
-  ratingLabel: {
-    ...T.typography.bodySm,
-    color: T.colors.text.muted,
   },
   specialization: {
     ...T.typography.bodyMd,
@@ -777,44 +471,6 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     marginBottom: T.spacing.md,
     lineHeight: 22,
-  },
-  metaRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: T.spacing.sm,
-    marginBottom: T.spacing.md,
-  },
-  metaTag: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    paddingVertical: 6,
-    paddingHorizontal: T.spacing.sm,
-    borderRadius: T.borderRadius.sm,
-    backgroundColor: T.colors.component.input,
-    borderWidth: 1,
-    borderColor: T.colors.border.light,
-  },
-  metaTagText: {
-    ...T.typography.labelSm,
-    color: T.colors.text.secondary,
-    fontWeight: '600',
-  },
-  bio: {
-    ...T.typography.bodySm,
-    color: T.colors.text.secondary,
-    lineHeight: 21,
-  },
-  bioMuted: {
-    ...T.typography.bodySm,
-    color: T.colors.text.muted,
-    fontStyle: 'italic',
-    lineHeight: 21,
-  },
-  statsRow: {
-    flexDirection: 'row',
-    gap: T.spacing.sm,
-    marginBottom: T.spacing.xl,
   },
   sessionsContainer: {
     gap: T.spacing.md,
@@ -824,11 +480,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: T.spacing.xxl,
     paddingHorizontal: T.spacing.lg,
-    // backgroundColor: T.colors.component.card,
+    backgroundColor: T.colors.component.card,
     borderRadius: T.borderRadius.sm,
     borderWidth: 1,
     borderColor: T.colors.border.light,
-    // borderLeftWidth: 3,
+    borderLeftWidth: 2,
     borderLeftColor: T.colors.accent.secondary,
     marginBottom: T.spacing.lg,
   },

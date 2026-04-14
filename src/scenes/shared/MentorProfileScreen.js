@@ -115,8 +115,10 @@ export default function MentorProfileScreen({ navigation, route }) {
           >
             <MaterialIcons name="arrow-back" size={24} color={C.text.primary} />
           </TouchableOpacity>
-          <Text style={styles.topBarTitle}>Mentor profile</Text>
-          <View style={styles.topBarSpacer} />
+          <Text style={styles.topBarTitle}>Mentor Profile</Text>
+          <View style={styles.topBarRightBadge}>
+            <MaterialIcons name="verified" size={14} color={C.accent.secondary} />
+          </View>
         </View>
 
         <ScrollView
@@ -158,6 +160,7 @@ export default function MentorProfileScreen({ navigation, route }) {
               </View>
 
               <View style={styles.heroInfo}>
+                <Text style={styles.profileEyebrow}>Mentor profile</Text>
                 <Text style={styles.name}>{name}</Text>
 
                 <View style={styles.specialtyChip}>
@@ -170,6 +173,7 @@ export default function MentorProfileScreen({ navigation, route }) {
                 <View style={styles.ratingRow}>
                   <StarRating rating={rating} size={17} />
                   <Text style={styles.ratingNum}>{rating.toFixed(1)}</Text>
+                  <Text style={styles.ratingMeta}>Learner rating</Text>
                 </View>
 
                 <View style={styles.heroMetaRow}>
@@ -181,11 +185,18 @@ export default function MentorProfileScreen({ navigation, route }) {
                     <MaterialIcons name="payments" size={14} color={C.text.muted} />
                     <Text style={styles.sessionsHint}>{formatPrice(pricePerHour)}/hr</Text>
                   </View>
+                  <View style={styles.heroMetaChip}>
+                    <MaterialIcons name="workspace-premium" size={14} color={C.text.muted} />
+                    <Text style={styles.sessionsHint}>
+                      {experienceYears > 0 ? `${experienceYears}+ yrs` : 'New mentor'}
+                    </Text>
+                  </View>
                 </View>
               </View>
             </View>
           </View>
 
+          <Text style={styles.sectionEyebrow}>Overview</Text>
           <View style={styles.statsRow}>
             <StatPill
               icon="history-edu"
@@ -207,6 +218,7 @@ export default function MentorProfileScreen({ navigation, route }) {
             />
           </View>
 
+          <Text style={styles.sectionEyebrow}>About Mentor</Text>
           <View style={styles.aboutCard}>
             <View style={styles.aboutHeader}>
               <LinearGradient
@@ -242,6 +254,9 @@ export default function MentorProfileScreen({ navigation, route }) {
             colors={['rgba(6, 6, 31, 0.97)', 'rgba(12, 12, 40, 0.99)']}
             style={styles.footerInner}
           >
+            <Text style={styles.footerHint}>
+              Choose a date and time in the next step.
+            </Text>
             <Button
               text="Book a session"
               onPress={() =>
@@ -268,9 +283,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: T.spacing.md,
-    paddingBottom: T.spacing.sm,
+    paddingBottom: T.spacing.md,
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: C.border.light,
+    backgroundColor: 'rgba(6, 6, 31, 0.72)',
   },
   backHit: {
     width: 44,
@@ -280,11 +296,15 @@ const styles = StyleSheet.create({
   },
   topBarTitle: {
     ...T.typography.bodyMd,
-    color: C.text.secondary,
-    fontWeight: '700',
+    color: C.text.primary,
+    fontWeight: '800',
+    letterSpacing: 0.3,
   },
-  topBarSpacer: {
+  topBarRightBadge: {
     width: 44,
+    height: 44,
+    alignItems: 'flex-end',
+    justifyContent: 'center',
   },
   scroll: {
     flex: 1,
@@ -308,6 +328,8 @@ const styles = StyleSheet.create({
     borderColor: C.border.light,
     backgroundColor: C.component.card,
     overflow: 'hidden',
+    borderLeftWidth: 3,
+    borderLeftColor: C.accent.secondary,
     ...Platform.select({
       ios: T.shadows.medium,
       android: { elevation: 4 },
@@ -340,6 +362,13 @@ const styles = StyleSheet.create({
     width: '100%',
     alignItems: 'center',
   },
+  profileEyebrow: {
+    ...T.typography.labelSm,
+    color: C.accent.secondary,
+    letterSpacing: 1.2,
+    textTransform: 'uppercase',
+    marginBottom: 2,
+  },
   avatarPlaceholder: {
     justifyContent: 'center',
     alignItems: 'center',
@@ -363,7 +392,7 @@ const styles = StyleSheet.create({
     maxWidth: '92%',
     paddingVertical: T.spacing.sm,
     paddingHorizontal: T.spacing.md,
-    borderRadius: T.borderRadius.round,
+    borderRadius: T.borderRadius.md,
     backgroundColor: C.component.input,
     borderWidth: 1,
     borderColor: C.border.light,
@@ -379,12 +408,16 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: T.spacing.sm,
+    gap: T.spacing.sm,
   },
   ratingNum: {
     ...T.typography.labelLg,
     color: C.text.primary,
     fontWeight: '800',
-    marginLeft: T.spacing.sm,
+  },
+  ratingMeta: {
+    ...T.typography.bodySm,
+    color: C.text.muted,
   },
   heroMetaRow: {
     flexDirection: 'row',
@@ -396,8 +429,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 5,
-    borderRadius: T.borderRadius.round,
-    paddingVertical: 5,
+    borderRadius: T.borderRadius.md,
+    paddingVertical: 7,
     paddingHorizontal: T.spacing.sm,
     borderWidth: 1,
     borderColor: C.border.light,
@@ -410,15 +443,24 @@ const styles = StyleSheet.create({
   },
   statsRow: {
     flexDirection: 'row',
-    paddingHorizontal: T.spacing.md,
+    paddingHorizontal: T.spacing.lg,
     gap: T.spacing.sm,
-    marginBottom: T.spacing.xl,
+    marginBottom: T.spacing.lg,
     justifyContent: 'space-between',
+  },
+  sectionEyebrow: {
+    ...T.typography.labelSm,
+    color: C.text.muted,
+    letterSpacing: 1,
+    textTransform: 'uppercase',
+    fontWeight: '700',
+    marginBottom: T.spacing.sm,
+    paddingHorizontal: T.spacing.lg,
   },
   statPill: {
     flex: 1,
     minWidth: 0,
-    borderRadius: T.borderRadius.lg,
+    borderRadius: T.borderRadius.md,
     overflow: 'hidden',
     borderWidth: 1,
     borderColor: C.border.light,
@@ -430,7 +472,7 @@ const styles = StyleSheet.create({
   statPillInner: {
     padding: T.spacing.md,
     alignItems: 'center',
-    minHeight: 108,
+    minHeight: 112,
     justifyContent: 'center',
   },
   statIconWrap: {
@@ -459,14 +501,17 @@ const styles = StyleSheet.create({
   aboutCard: {
     marginHorizontal: T.spacing.lg,
     backgroundColor: C.component.card,
-    borderRadius: T.borderRadius.lg,
+    borderRadius: T.borderRadius.md,
     borderWidth: 1,
     borderColor: C.border.light,
     padding: T.spacing.lg,
+    borderLeftWidth: 3,
+    borderLeftColor: C.accent.primary,
     ...Platform.select({
       ios: T.shadows.small,
       android: { elevation: 2 },
     }),
+    marginBottom: T.spacing.sm,
   },
   aboutHeader: {
     flexDirection: 'row',
@@ -505,6 +550,7 @@ const styles = StyleSheet.create({
   footer: {
     borderTopWidth: 1,
     borderTopColor: C.border.light,
+    backgroundColor: 'rgba(6, 6, 31, 0.94)',
   },
   footerEdge: {
     height: 2,
@@ -514,8 +560,15 @@ const styles = StyleSheet.create({
     paddingHorizontal: T.spacing.lg,
     paddingTop: T.spacing.md,
   },
+  footerHint: {
+    ...T.typography.bodySm,
+    color: C.text.muted,
+    textAlign: 'center',
+    marginBottom: T.spacing.sm,
+  },
   bookButton: {
     marginBottom: 0,
+    borderRadius: T.borderRadius.md,
   },
   errorWrap: {
     flex: 1,

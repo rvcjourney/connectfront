@@ -19,14 +19,15 @@ import LinearGradient from 'react-native-linear-gradient';
 import YoutubePlayer from 'react-native-youtube-iframe';
 import { MENTOR_CATEGORIES } from '../../constants/mentorCategories';
 
-/** Only this many category rows on home (full list stays in profile / elsewhere). */
-const HOME_CATEGORY_COUNT = 3;
+/** Keep only one session row on home. */
+const HOME_CATEGORY_COUNT = 1;
 
 const T = UNIFIED_THEME;
 const C = T.colors;
 
 const APP_NAME = 'Connectiqo';
 const APP_TAGLINE = 'Connect · Learn · Grow';
+const HOME_GREETING = 'Discover mentor-led learning';
 
 /** Portrait video-style preview tiles per category row (horizontal scroll, demo) */
 const DUMMY_BOX_COUNT = 6;
@@ -183,7 +184,7 @@ function CategoryRow({ categoryTitle, sectionIndex, onOpenVideo }) {
         </LinearGradient>
         <View style={styles.categoryTitleTextWrap}>
           <Text style={styles.categoryTitleText} numberOfLines={2}>
-            Sessions
+            {categoryTitle}
           </Text>
         </View>
       </View>
@@ -331,6 +332,7 @@ export default function HomeScreen() {
             <View style={styles.brandText}>
               <Text style={styles.appName}>{APP_NAME}</Text>
               <Text style={styles.appTagline}>{APP_TAGLINE}</Text>
+              <Text style={styles.appSubline}>{HOME_GREETING}</Text>
             </View>
           </View>
         </Animated.View>
@@ -353,7 +355,7 @@ export default function HomeScreen() {
           <View style={styles.sectionHead}>
             <Text style={styles.sectionTitle}>Browse categories</Text>
             <Text style={styles.sectionSub}>
-              A few featured topics — swipe sideways on each row for short preview tiles (demo)
+              Explore featured topics and tap any preview to watch quickly.
             </Text>
           </View>
 
@@ -466,6 +468,11 @@ const styles = StyleSheet.create({
     letterSpacing: 2,
     textTransform: 'uppercase',
   },
+  appSubline: {
+    ...T.typography.bodySm,
+    color: C.text.muted,
+    marginTop: 4,
+  },
   sectionHead: {
     paddingHorizontal: T.spacing.lg,
     marginBottom: T.spacing.lg,
@@ -481,7 +488,7 @@ const styles = StyleSheet.create({
   sectionSub: {
     ...T.typography.bodySm,
     color: C.text.muted,
-    lineHeight: 18,
+    lineHeight: 20,
   },
   introBlock: {
     marginBottom: T.spacing.xl,
@@ -637,6 +644,7 @@ const styles = StyleSheet.create({
     color: C.text.primary,
     fontWeight: '800',
     letterSpacing: -0.2,
+    textTransform: 'capitalize',
   },
   dummyRow: {
     paddingLeft: T.spacing.lg,

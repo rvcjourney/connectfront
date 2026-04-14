@@ -10,35 +10,67 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Don't wait for getSession - show app immediately
-    // onAuthStateChange will handle session detection
-    setLoading(false);
-    console.log('📱 App ready, listening for auth changes...');
+    let active = true;
 
-    // Listen for auth changes
+    const bootstrapSession = async () => {
+      try {
+        console.log('📱 Restoring auth session...');
+        const {
+          data: { session: initialSession },
+        } = await supabase.auth.getSession();
+
+        if (!active) return;
+
+        if (initialSession?.user) {
+          console.log('✅ Initial session restored, fetching profile...');
+          setSession(initialSession);
+          setUser(initialSession.user);
+          // Do not block app startup on profile query.
+          fetchProfile(initialSession.user.id);
+          setLoading(false);
+        } else {
+          console.log('❌ No initial session found');
+          setSession(null);
+          setUser(null);
+          setProfile(null);
+          setLoading(false);
+        }
+      } catch (error) {
+        console.error('❌ Session bootstrap failed:', error?.message || error);
+        if (!active) return;
+        setSession(null);
+        setUser(null);
+        setProfile(null);
+        setLoading(false);
+      }
+    };
+
+    bootstrapSession();
+
+    // Listen for auth changes after bootstrap starts
     const { data: listener } = supabase.auth.onAuthStateChange(
       async (event, newSession) => {
+        if (!active) return;
         console.log('🔔 Auth state changed:', event);
         if (newSession?.user) {
           console.log('✅ Session found, fetching profile...');
           setSession(newSession);
           setUser(newSession.user);
-
-          // Add small delay to let session fully establish
-          // This prevents hanging on immediate profile queries
-          setTimeout(() => {
-            fetchProfile(newSession.user.id);
-          }, 500);
+          // Keep auth transitions responsive even if profile query is slow.
+          fetchProfile(newSession.user.id);
+          setLoading(false);
         } else {
           console.log('❌ No session found');
           setSession(null);
           setUser(null);
           setProfile(null);
+          setLoading(false);
         }
       }
     );
 
     return () => {
+      active = false;
       listener?.subscription?.unsubscribe();
     };
   }, []);

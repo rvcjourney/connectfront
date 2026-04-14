@@ -1,5 +1,5 @@
 import React from "react";
-import { TouchableOpacity, Text, StyleSheet } from "react-native";
+import { TouchableOpacity, Text, StyleSheet, View, ActivityIndicator } from "react-native";
 import { UNIFIED_THEME } from "../../unifiedTheme";
 
 const Button = ({
@@ -7,6 +7,7 @@ const Button = ({
   backgroundColor,
   onPress,
   disabled = false,
+  loading = false,
   variant = "primary",
   style = {},
   textStyle = {},
@@ -25,27 +26,36 @@ const Button = ({
   return (
     <TouchableOpacity
       onPress={onPress}
-      disabled={disabled}
+      disabled={disabled || loading}
       style={[
         styles.button,
         {
           backgroundColor: getBackgroundColor(),
-          opacity: disabled ? 0.6 : 1,
+          opacity: disabled || loading ? 0.6 : 1,
         },
         style,
       ]}
     >
-      <Text
-        style={[
-          styles.text,
-          {
-            color: getTextColor(),
-          },
-          textStyle,
-        ]}
-      >
-        {text}
-      </Text>
+      <View style={styles.contentRow}>
+        {loading ? (
+          <ActivityIndicator
+            size="small"
+            color={getTextColor()}
+            style={styles.loader}
+          />
+        ) : null}
+        <Text
+          style={[
+            styles.text,
+            {
+              color: getTextColor(),
+            },
+            textStyle,
+          ]}
+        >
+          {text}
+        </Text>
+      </View>
     </TouchableOpacity>
   );
 };
@@ -57,6 +67,14 @@ const styles = StyleSheet.create({
     alignItems: "center",
     borderRadius: UNIFIED_THEME.borderRadius.md,
     marginVertical: UNIFIED_THEME.spacing.md,
+  },
+  contentRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  loader: {
+    marginRight: UNIFIED_THEME.spacing.sm,
   },
   text: {
     fontSize: UNIFIED_THEME.typography.labelLg.fontSize,

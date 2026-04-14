@@ -9,6 +9,7 @@ import {
   StyleSheet,
   Alert,
 } from 'react-native';
+import LinearGradient from 'react-native-linear-gradient';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import Toast from 'react-native-simple-toast';
 import { launchImageLibrary } from 'react-native-image-picker';
@@ -74,7 +75,20 @@ export default function UnifiedSettingsScreen({ navigation }) {
   return (
     <SafeScreen scrollable={false} padding={UNIFIED_THEME.spacing.lg} hasBottomTabs={false}>
       <View style={styles.header}>
+        <LinearGradient
+          colors={[
+            'rgba(167, 139, 250, 0.16)',
+            'rgba(94, 234, 212, 0.1)',
+            'rgba(2, 0, 20, 0.45)',
+          ]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={StyleSheet.absoluteFill}
+          pointerEvents="none"
+        />
+        <Text style={styles.eyebrow}>Preferences</Text>
         <Text style={styles.title}>Settings</Text>
+        <Text style={styles.subtitle}>Manage your account, content, and support options.</Text>
       </View>
 
       <ScrollView showsVerticalScrollIndicator={false}>
@@ -98,6 +112,7 @@ export default function UnifiedSettingsScreen({ navigation }) {
               <Text style={styles.profileName}>{profile?.name || 'User'}</Text>
               <Text style={styles.profileEmail}>{profile?.email}</Text>
               <View style={styles.badge}>
+                <MaterialIcons name="workspace-premium" size={12} color={UNIFIED_THEME.colors.accent.primary} />
                 <Text style={styles.badgeText}>Mentor & Learner</Text>
               </View>
             </View>
@@ -176,11 +191,32 @@ export default function UnifiedSettingsScreen({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-  header: { marginBottom: UNIFIED_THEME.spacing.lg },
+  header: {
+    marginBottom: UNIFIED_THEME.spacing.lg,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: UNIFIED_THEME.colors.border.light,
+    backgroundColor: UNIFIED_THEME.colors.component.input,
+    padding: UNIFIED_THEME.spacing.lg,
+    overflow: 'hidden',
+  },
+  eyebrow: {
+    ...UNIFIED_THEME.typography.labelSm,
+    color: UNIFIED_THEME.colors.accent.secondary,
+    textTransform: 'uppercase',
+    letterSpacing: 1.2,
+    marginBottom: UNIFIED_THEME.spacing.xs,
+  },
   title: {
     ...UNIFIED_THEME.typography.headingLg,
     color: UNIFIED_THEME.colors.text.primary,
     fontWeight: '700',
+    marginBottom: UNIFIED_THEME.spacing.xs,
+  },
+  subtitle: {
+    ...UNIFIED_THEME.typography.bodySm,
+    color: UNIFIED_THEME.colors.text.secondary,
+    lineHeight: 20,
   },
   profileCard: {
     backgroundColor: UNIFIED_THEME.colors.component.input,
@@ -230,10 +266,13 @@ const styles = StyleSheet.create({
   },
   badge: {
     alignSelf: 'flex-start',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
     backgroundColor: UNIFIED_THEME.colors.primary.light,
     paddingHorizontal: UNIFIED_THEME.spacing.md,
     paddingVertical: UNIFIED_THEME.spacing.xs,
-    borderRadius: 20,
+    borderRadius: 10,
   },
   badgeText: {
     ...UNIFIED_THEME.typography.bodySm,

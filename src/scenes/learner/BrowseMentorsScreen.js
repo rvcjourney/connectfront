@@ -59,6 +59,7 @@ export default function BrowseMentorsScreen({ navigation }) {
     (sum, c) => sum + mentorsByCategory[c].length,
     0,
   );
+  const featuredCount = categories.filter(c => mentorsByCategory[c]?.length > 0).length;
 
   const renderCategorySection = (category, mentors) => (
     <View key={category} style={styles.section}>
@@ -96,6 +97,14 @@ export default function BrowseMentorsScreen({ navigation }) {
     >
       <View style={styles.hero}>
         <LinearGradient
+          colors={T.colors.tabBar.flatBarEdge}
+          locations={[0, 0.4, 0.7, 1]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 0 }}
+          style={styles.heroBeam}
+          pointerEvents="none"
+        />
+        <LinearGradient
           colors={[
             'rgba(167, 139, 250, 0.2)',
             'rgba(94, 234, 212, 0.1)',
@@ -106,10 +115,21 @@ export default function BrowseMentorsScreen({ navigation }) {
           style={StyleSheet.absoluteFill}
         />
         <View style={styles.heroRim} pointerEvents="none" />
+        <Text style={styles.heroEyebrow}>Browse</Text>
         <Text style={styles.heroTitle}>Discover mentors</Text>
         <Text style={styles.heroSubtitle}>
           Explore experts by category. Open a profile to book a session.
         </Text>
+        <View style={styles.heroChipRow}>
+          <View style={styles.heroChip}>
+            <MaterialIcons name="verified" size={13} color={T.colors.accent.secondary} />
+            <Text style={styles.heroChipText}>Verified profiles</Text>
+          </View>
+          <View style={styles.heroChip}>
+            <MaterialIcons name="bolt" size={13} color={T.colors.accent.primary} />
+            <Text style={styles.heroChipText}>Quick booking</Text>
+          </View>
+        </View>
         <View style={styles.heroStats}>
           <View style={styles.heroStat}>
             <Text style={styles.heroStatValue}>{categories.length}</Text>
@@ -119,6 +139,11 @@ export default function BrowseMentorsScreen({ navigation }) {
           <View style={styles.heroStat}>
             <Text style={styles.heroStatValue}>{totalMentors}</Text>
             <Text style={styles.heroStatLabel}>Mentors</Text>
+          </View>
+          <View style={styles.heroStatDivider} />
+          <View style={styles.heroStat}>
+            <Text style={styles.heroStatValue}>{featuredCount}</Text>
+            <Text style={styles.heroStatLabel}>Active groups</Text>
           </View>
         </View>
       </View>
@@ -170,6 +195,23 @@ const styles = StyleSheet.create({
     borderColor: T.colors.tabBar.rimBorder,
     margin: 1,
   },
+  heroBeam: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    top: 0,
+    height: 2,
+    opacity: 0.9,
+    zIndex: 1,
+  },
+  heroEyebrow: {
+    ...T.typography.labelSm,
+    color: T.colors.accent.secondary,
+    letterSpacing: 1.2,
+    textTransform: 'uppercase',
+    marginBottom: T.spacing.xs,
+    zIndex: 1,
+  },
   heroTitle: {
     ...T.typography.headingMd,
     color: T.colors.text.primary,
@@ -180,6 +222,28 @@ const styles = StyleSheet.create({
     color: T.colors.text.muted,
     lineHeight: 22,
     marginBottom: T.spacing.lg,
+  },
+  heroChipRow: {
+    flexDirection: 'row',
+    gap: T.spacing.sm,
+    marginBottom: T.spacing.md,
+    flexWrap: 'wrap',
+  },
+  heroChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: T.spacing.sm,
+    paddingVertical: 6,
+    borderRadius: T.borderRadius.round,
+    borderWidth: 1,
+    borderColor: T.colors.border.light,
+    backgroundColor: 'rgba(255,255,255,0.06)',
+  },
+  heroChipText: {
+    ...T.typography.labelSm,
+    color: T.colors.text.secondary,
+    fontWeight: '700',
   },
   heroStats: {
     flexDirection: 'row',
@@ -226,6 +290,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: T.spacing.xxxl,
     paddingHorizontal: T.spacing.lg,
+    borderWidth: 1,
+    borderColor: T.colors.border.light,
+    borderRadius: T.borderRadius.lg,
+    backgroundColor: T.colors.component.card,
   },
   emptyIconCircle: {
     width: 88,

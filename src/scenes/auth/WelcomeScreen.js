@@ -13,8 +13,6 @@ import LinearGradient from 'react-native-linear-gradient';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import CosmicBackground from '../../components/CosmicBackground';
 import { UNIFIED_THEME } from '../../unifiedTheme';
-import { INTRO_FLOW } from '../../constants/introFlow';
-import { SCREEN_NAMES } from '../../navigators/screenNames';
 
 const ENTRANCE = {
   duration: 520,
@@ -261,45 +259,6 @@ export default function WelcomeScreen({ navigation }) {
           </View>
 
           <Animated.View
-            style={{ opacity: btnO, transform: [{ translateY: btnY }], width: '100%' }}
-          >
-            <TouchableOpacity
-              onPress={() =>
-                navigation.navigate(SCREEN_NAMES.IntroVideos, {
-                  flow: INTRO_FLOW.PRE_AUTH,
-                })
-              }
-              activeOpacity={0.8}
-              style={styles.introRow}
-            >
-              <LinearGradient
-                colors={[
-                  'rgba(167, 139, 250, 0.14)',
-                  'rgba(94, 234, 212, 0.08)',
-                ]}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={styles.introGradient}
-              >
-                <MaterialIcons
-                  name="play-circle-filled"
-                  size={26}
-                  color={UNIFIED_THEME.colors.accent.primary}
-                />
-                <View style={styles.introTextCol}>
-                  <Text style={styles.introTitle}>Watch app intro</Text>
-                  <Text style={styles.introSub}>Short clips · 4 steps</Text>
-                </View>
-                <MaterialIcons
-                  name="chevron-right"
-                  size={22}
-                  color={UNIFIED_THEME.colors.text.muted}
-                />
-              </LinearGradient>
-            </TouchableOpacity>
-          </Animated.View>
-
-          <Animated.View
             style={[
               styles.buttonWrap,
               {
@@ -522,40 +481,6 @@ const styles = StyleSheet.create({
   chipText: {
     ...UNIFIED_THEME.typography.labelSm,
     color: UNIFIED_THEME.colors.text.secondary,
-    fontWeight: '600',
-  },
-
-  introRow: {
-    width: '100%',
-    marginBottom: UNIFIED_THEME.spacing.md,
-    borderRadius: UNIFIED_THEME.borderRadius.lg,
-    overflow: 'hidden',
-    borderWidth: 1,
-    borderColor: UNIFIED_THEME.colors.border.light,
-  },
-
-  introGradient: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: UNIFIED_THEME.spacing.md,
-    paddingHorizontal: UNIFIED_THEME.spacing.md,
-    gap: UNIFIED_THEME.spacing.md,
-  },
-
-  introTextCol: {
-    flex: 1,
-  },
-
-  introTitle: {
-    ...UNIFIED_THEME.typography.labelLg,
-    color: UNIFIED_THEME.colors.text.primary,
-    fontWeight: '700',
-  },
-
-  introSub: {
-    marginTop: 2,
-    ...UNIFIED_THEME.typography.labelSm,
-    color: UNIFIED_THEME.colors.text.muted,
     fontWeight: '600',
   },
 

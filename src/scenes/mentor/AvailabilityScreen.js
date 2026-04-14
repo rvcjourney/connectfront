@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import Toast from 'react-native-simple-toast';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
+import LinearGradient from 'react-native-linear-gradient';
 import { SafeScreen } from '../../components/SafeScreen';
 import { UNIFIED_THEME } from '../../unifiedTheme';
 import Button from '../../components/Button';
@@ -218,7 +219,18 @@ export default function MentorAvailabilityScreen({ navigation }) {
       includeTopInset={false}
     >
       {/* Header */}
-      <View style={styles.header}>
+      <View style={styles.headerCard}>
+        <LinearGradient
+          colors={[
+            'rgba(94, 234, 212, 0.12)',
+            'rgba(167, 139, 250, 0.12)',
+            'rgba(2, 0, 20, 0.65)',
+          ]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={StyleSheet.absoluteFill}
+          pointerEvents="none"
+        />
         <View style={{ flex: 1 }}>
           <Text style={styles.eyebrow}>Availability</Text>
           <Text style={styles.title}>When you can teach</Text>
@@ -255,6 +267,7 @@ export default function MentorAvailabilityScreen({ navigation }) {
         {/* Month Header with Navigation */}
         <View style={styles.monthHeader}>
           <TouchableOpacity
+            style={styles.monthNavBtn}
             onPress={() => {
               const prev = new Date(currentDate);
               prev.setMonth(prev.getMonth() - 1);
@@ -265,6 +278,7 @@ export default function MentorAvailabilityScreen({ navigation }) {
           </TouchableOpacity>
           <Text style={styles.monthYear}>{monthYear}</Text>
           <TouchableOpacity
+            style={styles.monthNavBtn}
             onPress={() => {
               const next = new Date(currentDate);
               next.setMonth(next.getMonth() + 1);
@@ -377,6 +391,11 @@ export default function MentorAvailabilityScreen({ navigation }) {
 
         {selectedSlots.length > 0 && (
           <View style={styles.selectedSummary}>
+            <MaterialIcons
+              name="check-circle"
+              size={16}
+              color={UNIFIED_THEME.colors.text.onAccent}
+            />
             <Text style={styles.selectedSummaryText}>
               {selectedSlots.length} slot{selectedSlots.length > 1 ? 's' : ''} selected for this date
             </Text>
@@ -408,11 +427,17 @@ export default function MentorAvailabilityScreen({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-  header: {
+  headerCard: {
     flexDirection: 'row',
     alignItems: 'center',
+    borderRadius: UNIFIED_THEME.borderRadius.lg,
+    borderWidth: 1,
+    borderColor: UNIFIED_THEME.colors.border.light,
+    backgroundColor: UNIFIED_THEME.colors.component.card,
+    padding: UNIFIED_THEME.spacing.lg,
     marginBottom: UNIFIED_THEME.spacing.lg,
     gap: UNIFIED_THEME.spacing.md,
+    overflow: 'hidden',
   },
 
   eyebrow: {
@@ -435,7 +460,7 @@ const styles = StyleSheet.create({
   title: {
     ...UNIFIED_THEME.typography.headingLg,
     color: UNIFIED_THEME.colors.text.primary,
-    fontWeight: '800',
+    fontWeight: '700',
     marginBottom: UNIFIED_THEME.spacing.sm,
   },
   subtitle: {
@@ -452,6 +477,8 @@ const styles = StyleSheet.create({
     borderRadius: UNIFIED_THEME.borderRadius.lg,
     marginBottom: UNIFIED_THEME.spacing.lg,
     gap: UNIFIED_THEME.spacing.md,
+    borderLeftWidth: 2,
+    borderLeftColor: UNIFIED_THEME.colors.accent.secondary,
   },
   limitationRow: {
     flexDirection: 'row',
@@ -479,6 +506,16 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: UNIFIED_THEME.spacing.md,
   },
+  monthNavBtn: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    borderWidth: 1,
+    borderColor: UNIFIED_THEME.colors.border.light,
+    backgroundColor: UNIFIED_THEME.colors.component.input,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   monthYear: {
     ...UNIFIED_THEME.typography.bodyMd,
     color: UNIFIED_THEME.colors.text.primary,
@@ -488,6 +525,7 @@ const styles = StyleSheet.create({
     fontSize: 24,
     color: UNIFIED_THEME.colors.accent.primary,
     fontWeight: 'bold',
+    lineHeight: 26,
   },
   dayHeadersRow: {
     flexDirection: 'row',
@@ -562,6 +600,11 @@ const styles = StyleSheet.create({
     color: UNIFIED_THEME.colors.text.onAccent,
   },
   timeSlotsContainer: {
+    backgroundColor: UNIFIED_THEME.colors.component.card,
+    borderRadius: UNIFIED_THEME.borderRadius.lg,
+    borderWidth: 1,
+    borderColor: UNIFIED_THEME.colors.border.light,
+    padding: UNIFIED_THEME.spacing.md,
     marginBottom: UNIFIED_THEME.spacing.lg,
   },
   sectionTitle: {
@@ -619,6 +662,10 @@ const styles = StyleSheet.create({
     marginBottom: UNIFIED_THEME.spacing.lg,
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.2)',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: UNIFIED_THEME.spacing.sm,
   },
   selectedSummaryText: {
     ...UNIFIED_THEME.typography.bodySm,

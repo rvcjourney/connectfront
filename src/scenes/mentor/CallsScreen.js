@@ -203,6 +203,7 @@ export default function MentorCallsScreen({ navigation }) {
 
   const fullyEmpty =
     upcomingBookings.length === 0 && historyBookings.length === 0 && !loading;
+  const completedCount = bookings.filter(b => b.status === 'completed').length;
 
   return (
     <SafeScreen
@@ -218,7 +219,7 @@ export default function MentorCallsScreen({ navigation }) {
         />
       }
     >
-      {/* <View style={styles.hero}>
+      <View style={styles.hero} testID="mentor-calls-hero">
         <LinearGradient
           colors={TB.flatBarEdge}
           locations={[0, 0.4, 0.7, 1]}
@@ -242,21 +243,35 @@ export default function MentorCallsScreen({ navigation }) {
           <MaterialIcons name="video-call" size={24} color={T.colors.accent.secondary} />
         </View>
         <Text style={styles.eyebrow}>Sessions</Text>
-        <Text style={styles.pageTitle}>Your schedule</Text>
+        <Text style={styles.pageTitle}>Mentor call center</Text>
         <Text style={styles.pageSubtitle}>
-          Join upcoming calls as host. Each card shows the learner and session time.
+          Manage upcoming calls, session history, and recordings from one place.
         </Text>
-      </View> */}
+        <View style={styles.heroStatsRow}>
+          <View style={styles.heroStatCard}>
+            <Text style={styles.heroStatValue}>{upcomingBookings.length}</Text>
+            <Text style={styles.heroStatLabel}>Upcoming</Text>
+          </View>
+          <View style={styles.heroStatCard}>
+            <Text style={styles.heroStatValue}>{completedCount}</Text>
+            <Text style={styles.heroStatLabel}>Completed</Text>
+          </View>
+          <View style={styles.heroStatCard}>
+            <Text style={styles.heroStatValue}>{historyBookings.length}</Text>
+            <Text style={styles.heroStatLabel}>History</Text>
+          </View>
+        </View>
+      </View>
 
       {renderSection(
-        'Upcoming Session',
+        'Upcoming sessions',
         'Start your sessions at their scheduled time.',
         upcomingBookings,
         true,
       )}
 
       {renderSection(
-        'Session History',
+        'Session history',
         'A record of your past sessions.',
         historyBookings,
         false,
@@ -341,7 +356,33 @@ const styles = StyleSheet.create({
     ...T.typography.bodyMd,
     color: T.colors.text.muted,
     lineHeight: 22,
+    marginBottom: T.spacing.md,
     zIndex: 1,
+  },
+  heroStatsRow: {
+    flexDirection: 'row',
+    gap: T.spacing.sm,
+    zIndex: 1,
+  },
+  heroStatCard: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: T.spacing.sm + 2,
+    borderRadius: T.borderRadius.sm,
+    borderWidth: 1,
+    borderColor: T.colors.border.light,
+    backgroundColor: 'rgba(255,255,255,0.04)',
+  },
+  heroStatValue: {
+    ...T.typography.labelLg,
+    color: T.colors.text.primary,
+    fontWeight: '800',
+  },
+  heroStatLabel: {
+    ...T.typography.labelSm,
+    color: T.colors.text.muted,
+    marginTop: 2,
   },
   section: {
     marginBottom: T.spacing.xl,

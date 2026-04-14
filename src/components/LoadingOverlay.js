@@ -12,7 +12,13 @@ export const LoadingOverlay = ({
   backdropOpacity = 0.75,
 }) => {
   return (
-    <Modal visible={visible} transparent animationType="fade">
+    <Modal
+      visible={visible}
+      transparent
+      animationType="fade"
+      statusBarTranslucent
+      onRequestClose={() => {}}
+    >
       <View style={styles.root}>
         <View
           style={[styles.backdrop, { opacity: backdropOpacity }]}
@@ -30,7 +36,10 @@ export const LoadingOverlay = ({
             style={styles.card}
           >
             <View style={styles.cardInnerBorder} />
-            <CosmicLoader size={64} />
+            <CosmicLoader size={56} />
+            <View style={styles.badge}>
+              <Text style={styles.badgeText}>Please wait</Text>
+            </View>
             <Text style={styles.message}>{message}</Text>
           </LinearGradient>
         </View>
@@ -55,13 +64,13 @@ const styles = StyleSheet.create({
   },
   card: {
     alignItems: 'center',
-    paddingVertical: UNIFIED_THEME.spacing.xxxl,
-    paddingHorizontal: UNIFIED_THEME.spacing.xxxl,
+    paddingVertical: UNIFIED_THEME.spacing.xxl,
+    paddingHorizontal: UNIFIED_THEME.spacing.xl,
     borderRadius: UNIFIED_THEME.borderRadius.xl,
     borderWidth: 1,
     borderColor: UNIFIED_THEME.colors.border.light,
-    minWidth: 260,
-    maxWidth: 320,
+    minWidth: 220,
+    maxWidth: 280,
     overflow: 'hidden',
     ...UNIFIED_THEME.shadows.large,
   },
@@ -77,8 +86,22 @@ const styles = StyleSheet.create({
     ...UNIFIED_THEME.typography.bodyMd,
     color: UNIFIED_THEME.colors.text.secondary,
     textAlign: 'center',
-    marginTop: UNIFIED_THEME.spacing.xl,
+    marginTop: UNIFIED_THEME.spacing.md,
     lineHeight: 22,
     letterSpacing: 0.2,
+  },
+  badge: {
+    marginTop: UNIFIED_THEME.spacing.md,
+    paddingHorizontal: UNIFIED_THEME.spacing.sm,
+    paddingVertical: 4,
+    borderRadius: UNIFIED_THEME.borderRadius.md,
+    borderWidth: 1,
+    borderColor: UNIFIED_THEME.colors.border.light,
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+  },
+  badgeText: {
+    ...UNIFIED_THEME.typography.labelSm,
+    color: UNIFIED_THEME.colors.text.muted,
+    fontWeight: '700',
   },
 });

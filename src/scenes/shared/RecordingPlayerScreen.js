@@ -9,6 +9,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import Video from 'react-native-video';
+import LinearGradient from 'react-native-linear-gradient';
 import { UNIFIED_THEME } from '../../unifiedTheme';
 import { normalizeRecordingUrl } from '../../api/api';
 
@@ -34,10 +35,21 @@ export default function RecordingPlayerScreen({ navigation, route }) {
           <MaterialIcons name="arrow-back" size={20} color={T.colors.text.primary} />
           <Text style={styles.backText}>Back</Text>
         </TouchableOpacity>
-        <Text style={styles.title}>Session Recording</Text>
+        <View style={styles.headerTitleWrap}>
+          <Text style={styles.title}>Session Recording</Text>
+          <Text style={styles.subtitle}>Watch and review this session</Text>
+        </View>
+        <View style={styles.headerRightPad} />
       </View>
 
       <View style={styles.playerCard}>
+        <LinearGradient
+          colors={['rgba(167, 139, 250, 0.1)', 'transparent']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.playerGlow}
+          pointerEvents="none"
+        />
         {!sourceUrl ? (
           <View style={styles.centered}>
             <MaterialIcons
@@ -46,6 +58,7 @@ export default function RecordingPlayerScreen({ navigation, route }) {
               color={T.colors.accent.error}
             />
             <Text style={styles.errorText}>Recording URL is unavailable.</Text>
+            <Text style={styles.errorHint}>Please return and try opening it again.</Text>
           </View>
         ) : error ? (
           <View style={styles.centered}>
@@ -55,6 +68,7 @@ export default function RecordingPlayerScreen({ navigation, route }) {
               color={T.colors.accent.error}
             />
             <Text style={styles.errorText}>Could not load this recording.</Text>
+            <Text style={styles.errorHint}>Check your connection and retry.</Text>
           </View>
         ) : (
           <>
@@ -102,8 +116,9 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
+    justifyContent: 'flex-start',
     marginBottom: T.spacing.md,
+    gap: T.spacing.sm,
   },
   backButton: {
     flexDirection: 'row',
@@ -124,7 +139,21 @@ const styles = StyleSheet.create({
   title: {
     ...T.typography.labelMd,
     color: T.colors.text.primary,
-    fontWeight: '700',
+    fontWeight: '800',
+  },
+  headerTitleWrap: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: T.spacing.sm,
+  },
+  subtitle: {
+    ...T.typography.bodyXs,
+    color: T.colors.text.muted,
+    marginTop: 2,
+  },
+  headerRightPad: {
+    width: 36,
   },
   playerCard: {
     flex: 1,
@@ -133,6 +162,10 @@ const styles = StyleSheet.create({
     borderColor: T.colors.border.light,
     backgroundColor: 'rgba(0,0,0,0.85)',
     overflow: 'hidden',
+  },
+  playerGlow: {
+    ...StyleSheet.absoluteFillObject,
+    zIndex: 1,
   },
   video: {
     ...StyleSheet.absoluteFillObject,
@@ -147,6 +180,12 @@ const styles = StyleSheet.create({
   errorText: {
     ...T.typography.bodyMd,
     color: T.colors.text.secondary,
+    textAlign: 'center',
+    fontWeight: '700',
+  },
+  errorHint: {
+    ...T.typography.bodySm,
+    color: T.colors.text.muted,
     textAlign: 'center',
   },
   loadingOverlay: {

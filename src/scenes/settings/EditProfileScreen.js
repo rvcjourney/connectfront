@@ -257,7 +257,10 @@ export default function EditProfileScreen({ navigation }) {
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
           <MaterialIcons name="arrow-back" size={22} color={UNIFIED_THEME.colors.text.primary} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Edit Profile</Text>
+        <View style={styles.headerTitleWrap}>
+          <Text style={styles.headerTitle}>Edit Profile</Text>
+          <Text style={styles.headerSubtitle}>Keep your learner and mentor details updated</Text>
+        </View>
         <TouchableOpacity
           onPress={handleSave}
           disabled={saving}
@@ -446,7 +449,7 @@ export default function EditProfileScreen({ navigation }) {
 const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     justifyContent: 'space-between',
     paddingHorizontal: UNIFIED_THEME.spacing.lg,
     paddingVertical: UNIFIED_THEME.spacing.md,
@@ -463,17 +466,30 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: UNIFIED_THEME.colors.border.light,
   },
+  headerTitleWrap: {
+    flex: 1,
+    alignItems: 'center',
+    paddingHorizontal: UNIFIED_THEME.spacing.sm,
+  },
   headerTitle: {
     fontSize: 17,
     fontWeight: '700',
     color: UNIFIED_THEME.colors.text.primary,
     letterSpacing: 0.3,
+    textAlign: 'center',
+  },
+  headerSubtitle: {
+    fontSize: 11,
+    color: UNIFIED_THEME.colors.text.muted,
+    marginTop: 2,
+    textAlign: 'center',
   },
   saveBtn: {
     paddingHorizontal: UNIFIED_THEME.spacing.lg,
     paddingVertical: UNIFIED_THEME.spacing.sm,
     backgroundColor: UNIFIED_THEME.colors.accent.primary,
-    borderRadius: 20,
+    borderRadius: 10,
+    marginTop: 2,
   },
   saveBtnDisabled: { opacity: 0.5 },
   saveBtnText: {
@@ -487,7 +503,7 @@ const styles = StyleSheet.create({
   },
   avatarSection: {
     alignItems: 'center',
-    paddingVertical: UNIFIED_THEME.spacing.xl,
+    paddingVertical: UNIFIED_THEME.spacing.lg,
     borderBottomWidth: 1,
     borderBottomColor: UNIFIED_THEME.colors.border.light,
     marginBottom: UNIFIED_THEME.spacing.sm,
@@ -528,6 +544,7 @@ const styles = StyleSheet.create({
   avatarHint: {
     fontSize: 12,
     color: UNIFIED_THEME.colors.text.muted,
+    marginTop: 2,
   },
   body: {
     paddingHorizontal: UNIFIED_THEME.spacing.lg,
