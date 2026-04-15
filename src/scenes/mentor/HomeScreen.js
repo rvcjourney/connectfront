@@ -50,8 +50,9 @@ export default function MentorDashboardScreen() {
     try {
       setLoading(true);
 
+      let mentorData = null;
       try {
-        const mentorData = await profileApi.getMentorProfile(profile.id);
+        mentorData = await profileApi.getMentorProfile(profile.id);
         setMentorProfile(mentorData);
         setRating(mentorData.rating || 4.5);
       } catch (err) {
@@ -87,8 +88,7 @@ export default function MentorDashboardScreen() {
       const earnings = await earningsApi.getTotalEarnings(profile.id);
       setTotalEarnings(earnings?.total || 0);
 
-      const completedCount = bookings.filter(b => b.status === 'completed').length;
-      setTotalSessions(completedCount);
+      setTotalSessions(mentorData?.total_sessions || 0);
     } catch (error) {
       Toast.show('Failed to load dashboard');
       console.error(error);
@@ -172,7 +172,7 @@ export default function MentorDashboardScreen() {
         {/* Avatar pinned to top-right of hero card */}
         <View style={styles.heroAvatarSmall}>
           {profile?.avatar_url ? (
-            <Image source={{ uri: profile.avatar_url }} style={styles.avatarImg} />
+            <Image key={profile.avatar_url} source={{ uri: profile.avatar_url, cache: 'reload' }} style={styles.avatarImg} />
           ) : (
             <View style={[styles.avatarImg, styles.avatarPh]}>
               <Text style={styles.avatarLetter}>

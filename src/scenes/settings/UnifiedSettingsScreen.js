@@ -21,7 +21,7 @@ import { profileApi } from '../../api/profileApi';
 import { SCREEN_NAMES } from '../../navigators/screenNames';
 
 export default function UnifiedSettingsScreen({ navigation }) {
-  const { profile, signOut } = useAuth();
+  const { profile, signOut, refreshProfile } = useAuth();
   const [avatarUrl, setAvatarUrl] = useState(profile?.avatar_url || '');
   const [loading, setLoading] = useState(false);
 
@@ -45,6 +45,7 @@ export default function UnifiedSettingsScreen({ navigation }) {
             fileName: asset.fileName || 'avatar.jpg',
           });
           setAvatarUrl(url);
+          await refreshProfile();
           Toast.show('Photo updated');
         } catch {
           Toast.show('Failed to upload photo');
@@ -98,7 +99,7 @@ export default function UnifiedSettingsScreen({ navigation }) {
           <View style={styles.avatarRow}>
             <View style={styles.avatarWrapper}>
               {avatarUrl ? (
-                <Image source={{ uri: avatarUrl }} style={styles.avatar} />
+                <Image key={avatarUrl} source={{ uri: avatarUrl, cache: 'reload' }} style={styles.avatar} />
               ) : (
                 <View style={[styles.avatar, styles.avatarPlaceholder]}>
                   <MaterialIcons name="person" size={40} color="#FFF" />

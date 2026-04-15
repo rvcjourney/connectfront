@@ -206,6 +206,7 @@ export default function EditProfileScreen({ navigation }) {
             fileName: asset.fileName || 'avatar.jpg',
           });
           setAvatarUrl(url);
+          await refreshProfile();
           Toast.show('Photo updated');
         } catch {
           Toast.show('Failed to upload photo');
@@ -284,7 +285,7 @@ export default function EditProfileScreen({ navigation }) {
             activeOpacity={0.8}
           >
             {avatarUrl ? (
-              <Image source={{ uri: avatarUrl }} style={styles.avatar} />
+              <Image key={avatarUrl} source={{ uri: avatarUrl, cache: 'reload' }} style={styles.avatar} />
             ) : (
               <View style={[styles.avatar, styles.avatarPlaceholder]}>
                 <MaterialIcons name="person" size={54} color={UNIFIED_THEME.colors.text.muted} />

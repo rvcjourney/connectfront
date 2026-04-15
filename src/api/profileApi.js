@@ -129,17 +129,28 @@ export const profileApi = {
         });
 
       if (uploadError) throw uploadError;
+      console.log('✅ Storage upload success | userId:', userId, '| filePath:', filePath);
 
-      // Get public URL
+      // Get public URL with cache-bust timestamp
       const { data } = supabase.storage.from('connectiqo_avatar').getPublicUrl(filePath);
+      const avatarUrl = `${data.publicUrl}?t=${Date.now()}`;
+      console.log('🔗 Public URL:', avatarUrl);
 
-      // Update profile with avatar URL
-      await profileApi.updateProfile({
-        userId,
-        avatarUrl: data.publicUrl,
-      });
+      // Update profiles table with timestamped URL so refreshProfile loads the fresh image
+      const { data: updated, error: profileError } = await supabase
+        .from('profiles')
+        .update({ avatar_url: avatarUrl })
+        .eq('id', userId)
+        .select('avatar_url')
+        .single();
 
-      return data.publicUrl;
+      if (profileError) {
+        console.error('❌ profiles update error:', profileError);
+        throw profileError;
+      }
+      console.log('✅ profiles.avatar_url updated to:', updated?.avatar_url);
+
+      return avatarUrl;
     } catch (error) {
       console.error('uploadAvatar error:', error);
       throw new Error(getSupabaseErrorMessage(error));
