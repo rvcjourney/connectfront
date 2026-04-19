@@ -19,7 +19,7 @@ const TB = C.tabBar;
  * Material top tabs — cosmic “sector” layout: aurora edges, nebula wash on active,
  * stellar icon ring, full-width column beam (not a segmented capsule).
  */
-export const CapsuleTabBar = ({ state, descriptors, navigation }) => {
+export const CapsuleTabBar = ({ state, descriptors, navigation, compact = false }) => {
   const insets = useSafeAreaInsets();
   const useScroll = state.routes.length > 4;
 
@@ -49,6 +49,36 @@ export const CapsuleTabBar = ({ state, descriptors, navigation }) => {
       ? options.tabBarIcon({ focused: isFocused, color: iconColor })
       : null;
 
+    if (compact) {
+      return (
+        <View style={[styles.tabColumn, useScroll && styles.tabColumnScroll]}>
+          <TouchableOpacity
+            accessibilityRole="tab"
+            accessibilityState={{ selected: isFocused }}
+            accessibilityLabel={typeof label === 'string' ? label : route.name}
+            onPress={onPress}
+            activeOpacity={0.85}
+            style={styles.tabHitCompact}
+          >
+            <View style={styles.tabContentCompact}>
+              {iconNode ? (
+                <View style={styles.iconSlotCompact}>{iconNode}</View>
+              ) : null}
+              <Text
+                style={[styles.labelCompact, { color: labelColor }, isFocused && styles.labelFocused]}
+                numberOfLines={1}
+                adjustsFontSizeToFit
+                minimumFontScale={0.78}
+              >
+                {label}
+              </Text>
+              {isFocused ? <View style={styles.compactDot} /> : null}
+            </View>
+          </TouchableOpacity>
+        </View>
+      );
+    }
+
     return (
       <View
         style={[styles.tabColumn, useScroll && styles.tabColumnScroll]}
@@ -59,7 +89,6 @@ export const CapsuleTabBar = ({ state, descriptors, navigation }) => {
             locations={[0, 0.5, 1]}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
-            // style={styles.activeWash}
             pointerEvents="none"
           />
         ) : null}
@@ -347,5 +376,38 @@ const styles = StyleSheet.create({
     width: '100%',
     height: 3,
     borderRadius: 2,
+  },
+  tabHitCompact: {
+    width: '100%',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: T.spacing.xs + 2,
+    paddingHorizontal: T.spacing.xs,
+    minHeight: 48,
+    zIndex: 1,
+  },
+  tabContentCompact: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 5,
+  },
+  iconSlotCompact: {
+    width: 20,
+    height: 22,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  labelCompact: {
+    ...T.typography.labelSm,
+    fontWeight: '600',
+    letterSpacing: 0.2,
+  },
+  compactDot: {
+    width: 0,
+    height: 0,
+    borderRadius: 2,
+    backgroundColor: C.accent.primary,
+    marginLeft: 2,
   },
 });

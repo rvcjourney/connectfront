@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback, useMemo } from 'react';
+import React, { useEffect, useState, useCallback, useMemo, useRef } from 'react';
 import {
   View,
   Text,
@@ -8,6 +8,7 @@ import {
   ActivityIndicator,
   TouchableOpacity,
   RefreshControl,
+  Animated,
   Platform,
   StatusBar,
 } from 'react-native';
@@ -33,6 +34,99 @@ const SORT_OPTIONS = [
   { key: 'experience',  label: 'Experience',  icon: 'workspace-premium' },
 ];
 
+// ─── Shimmer ──────────────────────────────────────────────────────────────────
+function useShimmer() {
+  const anim = useRef(new Animated.Value(0)).current;
+  useEffect(() => {
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(anim, { toValue: 1, duration: 850, useNativeDriver: true }),
+        Animated.timing(anim, { toValue: 0, duration: 850, useNativeDriver: true }),
+      ]),
+    ).start();
+  }, []);
+  return anim;
+}
+
+function SkeletonBone({ style }) {
+  const opacity = useShimmer();
+  return (
+    <Animated.View style={[skeletonStyles.bone, style, { opacity: opacity.interpolate({ inputRange: [0, 1], outputRange: [0.25, 0.55] }) }]} />
+  );
+}
+
+function SkeletonCard() {
+  return (
+    <View style={skeletonStyles.card}>
+      <View style={skeletonStyles.topRow}>
+        <SkeletonBone style={skeletonStyles.avatar} />
+        <View style={skeletonStyles.headCol}>
+          <SkeletonBone style={skeletonStyles.nameLine} />
+          <SkeletonBone style={skeletonStyles.ratingLine} />
+        </View>
+      </View>
+      <SkeletonBone style={skeletonStyles.specLine} />
+      <SkeletonBone style={skeletonStyles.specLineShort} />
+      <SkeletonBone style={skeletonStyles.priceLine} />
+      <SkeletonBone style={skeletonStyles.btnLine} />
+    </View>
+  );
+}
+
+function SkeletonGrid() {
+  return (
+    <View style={skeletonStyles.grid}>
+      {[0, 1, 2, 3, 4, 5].map(i => (
+        <View key={i} style={skeletonStyles.cardWrap}>
+          <SkeletonCard />
+        </View>
+      ))}
+    </View>
+  );
+}
+
+const skeletonStyles = StyleSheet.create({
+  grid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+    padding: UNIFIED_THEME.spacing.lg,
+    gap: UNIFIED_THEME.spacing.md,
+  },
+  cardWrap: {
+    width: '48%',
+  },
+  card: {
+    backgroundColor: UNIFIED_THEME.colors.component.card,
+    borderRadius: UNIFIED_THEME.borderRadius.sm,
+    padding: UNIFIED_THEME.spacing.md,
+    borderWidth: 1,
+    borderColor: UNIFIED_THEME.colors.border.light,
+  },
+  bone: {
+    backgroundColor: UNIFIED_THEME.colors.border.default,
+    borderRadius: UNIFIED_THEME.borderRadius.sm,
+  },
+  topRow: {
+    flexDirection: 'row',
+    gap: UNIFIED_THEME.spacing.sm,
+    marginBottom: UNIFIED_THEME.spacing.sm,
+  },
+  headCol: {
+    flex: 1,
+    gap: 6,
+    justifyContent: 'center',
+  },
+  avatar: { width: 48, height: 48, borderRadius: UNIFIED_THEME.borderRadius.sm },
+  nameLine: { height: 12, width: '80%' },
+  ratingLine: { height: 10, width: '50%' },
+  specLine: { height: 10, width: '100%', marginBottom: 5 },
+  specLineShort: { height: 10, width: '65%', marginBottom: UNIFIED_THEME.spacing.sm },
+  priceLine: { height: 14, width: '45%', marginBottom: UNIFIED_THEME.spacing.sm },
+  btnLine: { height: 32, width: '100%', borderRadius: UNIFIED_THEME.borderRadius.sm },
+});
+
+// ─── Sort ─────────────────────────────────────────────────────────────────────
 function applySortFn(arr, sortBy) {
   const copy = [...arr];
   switch (sortBy) {
@@ -211,7 +305,8 @@ export default function CategoryMentorsScreen({ route, navigation }) {
           <Text style={styles.topBarTitle} numberOfLines={1}>Mentor Category</Text>
           <View style={styles.backBtn} />
         </View>
-      <FlatList
+
+        {loading ? <SkeletonGrid /> : <FlatList
         style={{ flex: 1 }}
         data={sortedMentors}
         keyExtractor={item => item.id}
@@ -246,7 +341,7 @@ export default function CategoryMentorsScreen({ route, navigation }) {
             tintColor={T.colors.accent.secondary}
           />
         }
-      />
+      />}
       </SafeAreaView>
     </CosmicBackground>
   );

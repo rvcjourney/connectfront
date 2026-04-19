@@ -143,6 +143,15 @@ function LearnerRecordingsTab() {
   );
 }
 
+async function getTokenWithTimeout(timeoutMs = 6000) {
+  return Promise.race([
+    getToken(),
+    new Promise((_, reject) =>
+      setTimeout(() => reject(new Error('Token request timed out')), timeoutMs),
+    ),
+  ]);
+}
+
 export default function RecordedLecturesScreen({ navigation }) {
   const { profile } = useAuth();
   const [mentorWithRecordings, setMentorWithRecordings] = useState([]);
@@ -152,17 +161,31 @@ export default function RecordedLecturesScreen({ navigation }) {
 
   const load = useCallback(async () => {
     if (!profile?.id) return;
-    let token = null;
-    try {
-      token = await getToken();
-    } catch (e) {
-      console.warn('Recording links unavailable:', e?.message || e);
-    }
 
+    // Phase 1: load DB rows immediately — show recordings already stored
     const [mentorRows, learnerRows] = await Promise.all([
       bookingApi.getBookingsByMentor(profile.id),
       bookingApi.getBookingsByLearner(profile.id),
     ]);
+
+    const quickMentor = (mentorRows || [])
+      .map(b => ({ ...b, recordingUrl: b.recording_playback_url || b.recording_url || null }))
+      .filter(b => b.recordingUrl);
+    const quickLearner = (learnerRows || [])
+      .map(b => ({ ...b, recordingUrl: b.recording_playback_url || b.recording_url || null }))
+      .filter(b => b.recordingUrl);
+
+    setMentorWithRecordings(quickMentor);
+    setLearnerWithRecordings(quickLearner);
+    setLoading(false); // show UI immediately, even if VideoSDK enrichment is pending
+
+    // Phase 2: try to fetch token + enrich via VideoSDK API in background
+    let token = null;
+    try {
+      token = await getTokenWithTimeout(6000);
+    } catch {
+      return; // server sleeping or unavailable — DB recordings already shown
+    }
 
     const [mentorEnriched, learnerEnriched] = await Promise.all([
       enrichBookingsWithRecordings(mentorRows, token),
@@ -176,19 +199,13 @@ export default function RecordedLecturesScreen({ navigation }) {
   useFocusEffect(
     useCallback(() => {
       let cancelled = false;
-      (async () => {
-        try {
-          setLoading(true);
-          await load();
-        } catch (err) {
-          if (!cancelled) {
-            console.error(err);
-            Toast.show('Failed to load recordings');
-          }
-        } finally {
-          if (!cancelled) setLoading(false);
+      setLoading(true);
+      load().catch(err => {
+        if (!cancelled) {
+          Toast.show('Failed to load recordings');
+          setLoading(false);
         }
-      })();
+      });
       return () => {
         cancelled = true;
       };
@@ -197,13 +214,7 @@ export default function RecordedLecturesScreen({ navigation }) {
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
-    try {
-      await load();
-    } catch {
-      Toast.show('Failed to refresh');
-    } finally {
-      setRefreshing(false);
-    }
+    load().catch(() => Toast.show('Failed to refresh')).finally(() => setRefreshing(false));
   }, [load]);
 
   const openRecording = useCallback(

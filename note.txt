@@ -1,0 +1,63 @@
+Pagination Done on Learner Discover -> only 6 per Category click view to all
+video url need to changes
+
+require Database :
+video url
+
+
+Production Readiness Audit — What's Still Needed
+🔴 CRITICAL (Must fix before launch)
+1. 89 console.log statements across 14 files
+
+This is the #1 security issue. You're logging:
+
+User IDs, emails, profile data (AuthContext.js)
+Earnings amounts, recording URLs, call durations (VideoCallScreen.js)
+Booking details, payment data (bookingApi.js, paymentApi.js)
+Anyone with a USB cable and adb logcat can read all of this from any Android device. On iOS, Xcode console does the same. Before release, every console.log must be stripped or replaced with a debug-only logger.
+
+Fix: One-pass find-and-delete, or add a __DEV__ guard wrapper.
+
+2. Push Notifications are fake
+
+NotificationContext.js only manages an in-memory counter (unreadCount). It does not send or receive real push notifications. This means:
+
+When a mentor accepts a booking → learner gets no notification
+When a session starts in 15 min → only works if app is open (local trigger via notifee)
+App closed / background → completely silent
+Fix needed: FCM (Android) + APNs (iOS) via @react-native-firebase/messaging. Supabase Edge Function or pg_net webhook triggers the FCM push on booking status change.
+
+3. Zero crash reporting
+
+You are blind to production crashes. If 50 users hit a crash, you won't know until they uninstall or complain. No stack trace, no context.
+
+Fix: Add Sentry React Native — 30 min setup, free tier covers thousands of events.
+
+
+npm install @sentry/react-native
+🟠 IMPORTANT (Needed before Play Store / App Store approval)
+4. Force Update screen not built
+
+src/utils/forceUpdate.js exists and queries Supabase correctly, but there's no UI and it's never called. If you push a breaking API change, you cannot block old app versions.
+
+What's missing: A modal/screen that intercepts navigation when required: true, shows the message, and opens the store URL. Needs to run in App.js after auth resolves.
+
+5. Remote Config not wired to HomeScreen
+
+remoteConfig.js is created, loadRemoteConfig() is imported in App.js but the call await loadRemoteConfig() is never executed. And HomeScreen.js still uses the hardcoded APP_DEMO_VIDEO constant instead of getConfig('home_video_id').
+
+Fix: Two lines — call loadRemoteConfig() on app start, read getConfig() in HomeScreen.
+
+6. Privacy Policy + Terms of Service screen
+
+Both app stores reject apps without this. Google Play requires a Privacy Policy URL in the store listing AND accessible from inside the app (Settings screen). Apple requires the same.
+
+You collect: name, email, profile photo, payment info, session recordings. GDPR/CCPA implications exist.
+
+Fix: Create a simple PrivacyPolicyScreen.js (WebView loading your policy URL), add a link in UnifiedSettingsScreen. You'll also need an actual hosted policy page.
+
+7. App icon + Splash screen for release
+
+The default React Native icon (the RN logo) will show in the Play Store and on user home screens. Same for the white splash screen.
+
+Fix: Use react-native-bootsplash for splash. Replace android/app/src/main/res/mipmap-*/ic_launcher with your actual icon assets.

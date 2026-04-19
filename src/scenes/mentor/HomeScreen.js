@@ -1,5 +1,5 @@
 import { SafeScreen } from '../../components/SafeScreen';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import {
   View,
   Text,
@@ -8,6 +8,7 @@ import {
   RefreshControl,
   TouchableOpacity,
   Pressable,
+  Animated,
   Platform,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
@@ -16,7 +17,6 @@ import LinearGradient from 'react-native-linear-gradient';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import { UNIFIED_THEME } from '../../unifiedTheme';
 import { SCREEN_NAMES } from '../../navigators/screenNames';
-import { LoadingOverlay } from '../../components/LoadingOverlay';
 import { BookingCard } from '../../components/BookingCard';
 import { SectionHeader } from '../../components/SectionHeader';
 import { useAuth } from '../../hooks/useAuth';
@@ -28,6 +28,112 @@ import { formatCurrency } from '../../utils/formatCurrency';
 const T = UNIFIED_THEME;
 const TB = T.colors.tabBar;
 
+// ─── Skeleton ─────────────────────────────────────────────────────────────────
+function SkeletonBone({ style }) {
+  const anim = useRef(new Animated.Value(0)).current;
+  useEffect(() => {
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(anim, { toValue: 1, duration: 900, useNativeDriver: true }),
+        Animated.timing(anim, { toValue: 0, duration: 900, useNativeDriver: true }),
+      ]),
+    ).start();
+  }, []);
+  const opacity = anim.interpolate({ inputRange: [0, 1], outputRange: [0.2, 0.5] });
+  return <Animated.View style={[sk.bone, style, { opacity }]} />;
+}
+
+function DashboardSkeleton() {
+  return (
+    <>
+      {/* Hero card */}
+      <View style={sk.hero}>
+        <View style={sk.heroTopRow}>
+          <SkeletonBone style={sk.badge} />
+          <SkeletonBone style={sk.avatar} />
+        </View>
+        <SkeletonBone style={sk.heroTitle} />
+        <SkeletonBone style={sk.heroSpec} />
+        <SkeletonBone style={sk.heroSubtitle} />
+        <View style={sk.chipRow}>
+          <SkeletonBone style={sk.chip} />
+          <SkeletonBone style={sk.chip} />
+        </View>
+        <SkeletonBone style={sk.progressBar} />
+      </View>
+
+      {/* Stats row */}
+      <View style={sk.statsRow}>
+        <SkeletonBone style={sk.statCard} />
+        <SkeletonBone style={sk.statCard} />
+        <SkeletonBone style={sk.statCard} />
+      </View>
+
+      {/* Section header */}
+      <SkeletonBone style={sk.sectionTitle} />
+
+      {/* Session cards */}
+      {[0, 1].map(i => (
+        <View key={i} style={sk.sessionCard}>
+          <View style={sk.sessionTop}>
+            <SkeletonBone style={sk.sessionAvatar} />
+            <View style={sk.sessionInfo}>
+              <SkeletonBone style={sk.sessionName} />
+              <SkeletonBone style={sk.sessionMeta} />
+            </View>
+            <SkeletonBone style={sk.sessionBadge} />
+          </View>
+          <SkeletonBone style={sk.sessionBtn} />
+        </View>
+      ))}
+    </>
+  );
+}
+
+const sk = StyleSheet.create({
+  bone: { backgroundColor: T.colors.border.default, borderRadius: T.borderRadius.sm },
+  hero: {
+    borderRadius: T.borderRadius.lg,
+    backgroundColor: T.colors.component.card,
+    borderWidth: 1,
+    borderColor: T.colors.border.light,
+    borderLeftWidth: 3,
+    borderLeftColor: T.colors.border.default,
+    padding: T.spacing.lg,
+    marginBottom: T.spacing.xl,
+    gap: T.spacing.sm,
+  },
+  heroTopRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: T.spacing.xs },
+  badge: { height: 26, width: 80, borderRadius: T.borderRadius.sm },
+  avatar: { width: 48, height: 48, borderRadius: T.borderRadius.sm },
+  heroTitle: { height: 22, width: '50%' },
+  heroSpec: { height: 14, width: '70%' },
+  heroSubtitle: { height: 12, width: '90%' },
+  chipRow: { flexDirection: 'row', gap: T.spacing.sm },
+  chip: { height: 28, width: 90, borderRadius: T.borderRadius.sm },
+  progressBar: { height: 8, width: '100%', borderRadius: T.borderRadius.lg, marginTop: T.spacing.xs },
+  statsRow: { flexDirection: 'row', gap: T.spacing.sm, marginBottom: T.spacing.lg },
+  statCard: { flex: 1, height: 72, borderRadius: T.borderRadius.sm },
+  sectionTitle: { height: 16, width: 160, marginBottom: T.spacing.lg },
+  sessionCard: {
+    backgroundColor: T.colors.component.card,
+    borderRadius: T.borderRadius.sm,
+    borderWidth: 1,
+    borderColor: T.colors.border.light,
+    padding: T.spacing.md,
+    marginBottom: T.spacing.md,
+    gap: T.spacing.sm,
+  },
+  sessionTop: { flexDirection: 'row', alignItems: 'center', gap: T.spacing.sm },
+  sessionAvatar: { width: 40, height: 40, borderRadius: 20 },
+  sessionInfo: { flex: 1, gap: 6 },
+  sessionName: { height: 13, width: '60%' },
+  sessionMeta: { height: 11, width: '40%' },
+  sessionBadge: { height: 24, width: 60, borderRadius: T.borderRadius.sm },
+  sessionBtn: { height: 36, width: '100%', borderRadius: T.borderRadius.sm },
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
 export default function MentorDashboardScreen() {
   const navigation = useNavigation();
   const { profile } = useAuth();
@@ -152,6 +258,7 @@ export default function MentorDashboardScreen() {
 
       }
     >
+      {loading && !refreshing ? <DashboardSkeleton /> : <>
       <View style={styles.hero}>
         <LinearGradient
           colors={TB.flatBarEdge}
@@ -338,8 +445,7 @@ export default function MentorDashboardScreen() {
       )}
 
       <View style={styles.bottomSpacer} />
-
-      <LoadingOverlay visible={loading && !refreshing} message="Loading dashboard…" />
+      </>}
     </SafeScreen>
   );
 }

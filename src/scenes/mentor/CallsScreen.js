@@ -28,6 +28,14 @@ const normalize = b => ({
   recordingUrl: b?.recording_playback_url || b?.recording_url || null,
 });
 
+const isSessionPast = b => {
+  const date = b?.availability_slots?.date;
+  const endTime = b?.availability_slots?.end_time;
+  if (!date) return false;
+  const sessionEnd = new Date(`${date}T${endTime || '23:59:59'}`);
+  return sessionEnd < new Date();
+};
+
 export default function MentorCallsScreen({ navigation }) {
   const { profile } = useAuth();
   const [upcoming, setUpcoming] = useState([]);
@@ -52,11 +60,17 @@ export default function MentorCallsScreen({ navigation }) {
         bookingApi.getBookingHistoryByMentor(profile.id, 0, PAGE_SIZE),
       ]);
 
-      const upcomingNorm = (upcomingData || []).map(normalize);
+      const allUpcoming = (upcomingData || []).map(normalize);
       const historyNorm = (historyData || []).map(normalize);
 
+      // Split: past date+time sessions move to history even if status is still pending/confirmed
+      const upcomingNorm = allUpcoming.filter(b => !isSessionPast(b));
+      const expiredNorm  = allUpcoming.filter(b => isSessionPast(b))
+        .map(b => ({ ...b, isExpired: true }));
+
       setUpcoming(upcomingNorm);
-      setHistory(historyNorm);
+      // Expired sessions prepended so they appear at top of history
+      setHistory([...expiredNorm, ...historyNorm]);
       setHistoryPage(1);
       setHasMoreHistory(historyNorm.length === PAGE_SIZE);
 
@@ -84,7 +98,18 @@ export default function MentorCallsScreen({ navigation }) {
     if (!profile?.id) return;
     try {
       const data = await bookingApi.getUpcomingBookingsByMentor(profile.id);
-      setUpcoming((data || []).map(normalize));
+      const all = (data || []).map(normalize);
+      const stillUpcoming = all.filter(b => !isSessionPast(b));
+      const nowExpired    = all.filter(b => isSessionPast(b)).map(b => ({ ...b, isExpired: true }));
+      setUpcoming(stillUpcoming);
+      // Merge newly expired into history without duplicating
+      if (nowExpired.length > 0) {
+        setHistory(prev => {
+          const existingIds = new Set(prev.map(b => b.id));
+          const fresh = nowExpired.filter(b => !existingIds.has(b.id));
+          return fresh.length > 0 ? [...fresh, ...prev] : prev;
+        });
+      }
     } catch { /* silent poll */ }
   }, [profile?.id]);
 
@@ -152,7 +177,15 @@ export default function MentorCallsScreen({ navigation }) {
       onPressCancel={null}
       onPressRecording={item.recordingUrl ? () => handleOpenRecording(item.recordingUrl) : null}
       statusLabel={
-        item.status === 'pending' || item.status === 'confirmed' ? 'Booked' : item.status
+        item.isExpired
+          ? 'Expired'
+          : item.status === 'completed'
+          ? 'Completed'
+          : item.status === 'cancelled'
+          ? 'Cancelled'
+          : item.status === 'rejected'
+          ? 'Rejected'
+          : 'Booked'
       }
     />
   );

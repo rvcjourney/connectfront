@@ -98,6 +98,8 @@ export default function SignupScreen({ navigation }) {
                 value={name}
                 onChangeText={setName}
                 editable={!loading}
+                cursorColor={UNIFIED_THEME.colors.accent.secondary}
+                selectionColor={UNIFIED_THEME.colors.accent.secondary}
               />
             </View>
 
@@ -117,6 +119,8 @@ export default function SignupScreen({ navigation }) {
                 keyboardType="email-address"
                 autoCapitalize="none"
                 editable={!loading}
+                cursorColor={UNIFIED_THEME.colors.accent.secondary}
+                selectionColor={UNIFIED_THEME.colors.accent.secondary}
               />
             </View>
 
@@ -135,6 +139,8 @@ export default function SignupScreen({ navigation }) {
                 onChangeText={setPassword}
                 secureTextEntry={!showPassword}
                 editable={!loading}
+                cursorColor={UNIFIED_THEME.colors.accent.secondary}
+                selectionColor={UNIFIED_THEME.colors.accent.secondary}
               />
               <TouchableOpacity
                 onPress={() => setShowPassword(!showPassword)}
@@ -164,6 +170,8 @@ export default function SignupScreen({ navigation }) {
                 onChangeText={setConfirmPassword}
                 secureTextEntry={!showConfirmPassword}
                 editable={!loading}
+                cursorColor={UNIFIED_THEME.colors.accent.secondary}
+                selectionColor={UNIFIED_THEME.colors.accent.secondary}
               />
               <TouchableOpacity
                 onPress={() => setShowConfirmPassword(!showConfirmPassword)}

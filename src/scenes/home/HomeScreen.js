@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -10,415 +10,356 @@ import {
   TouchableOpacity,
   Modal,
   useWindowDimensions,
+  Image,
 } from 'react-native';
+import YoutubePlayer from 'react-native-youtube-iframe';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { SafeScreen } from '../../components/SafeScreen';
 import { UNIFIED_THEME } from '../../unifiedTheme';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import LinearGradient from 'react-native-linear-gradient';
-import YoutubePlayer from 'react-native-youtube-iframe';
-import { MENTOR_CATEGORIES } from '../../constants/mentorCategories';
-
-/** Keep only one session row on home. */
-const HOME_CATEGORY_COUNT = 1;
 
 const T = UNIFIED_THEME;
 const C = T.colors;
+const TB = C.tabBar;
 
-const APP_NAME = 'Connectiqo';
-const APP_TAGLINE = 'Connect · Learn · Grow';
-const HOME_GREETING = 'Discover mentor-led learning';
+const STEPS = [
+  {
+    icon: 'search',
+    title: 'Browse Mentors',
+    desc: 'Filter by skill, rating, or hourly rate to find the right expert.',
+    color: C.accent.primary,
+    bg: 'rgba(240,216,117,0.1)',
+    border: 'rgba(240,216,117,0.25)',
+  },
+  {
+    icon: 'event-available',
+    title: 'Book a Slot',
+    desc: 'Pick a time that works. Secure checkout with instant confirmation.',
+    color: C.accent.secondary,
+    bg: 'rgba(94,234,212,0.1)',
+    border: 'rgba(94,234,212,0.25)',
+  },
+  {
+    icon: 'videocam',
+    title: 'Join Live Session',
+    desc: 'Connect face-to-face via HD video. Real mentorship, in real time.',
+    color: 'rgba(167,139,250,1)',
+    bg: 'rgba(167,139,250,0.1)',
+    border: 'rgba(167,139,250,0.25)',
+  },
+];
 
-/** Portrait video-style preview tiles per category row (horizontal scroll, demo) */
-const DUMMY_BOX_COUNT = 6;
-const VIDEO_TILE_WIDTH = 108;
-const VIDEO_TILE_HEIGHT = Math.round((VIDEO_TILE_WIDTH * 16) / 9);
-const DUMMY_LABELS = ['Preview 1', 'Preview 2', 'Preview 3', 'Preview 4', 'Preview 5', 'Preview 6'];
-const INTRO_VIDEO_ID = 'dQw4w9WgXcQ';
-const HOME_YOUTUBE_VIDEOS = [
-  { id: 'M7lc1UVf-VE', title: 'Getting Started' },
-  { id: 'ysz5S6PUM-U', title: 'Mentor Tips' },
-  { id: 'HluANRwPyNo', title: 'Session Walkthrough' },
-  { id: 'ScMzIvxBSi4', title: 'Learning Path' },
-  { id: 'aqz-KE-bpKQ', title: 'Community Stories' },
-  { id: 'jNQXAC9IVRw', title: 'Quick Intro' },
+// Replace this ID with your own app demo/explainer video
+const APP_DEMO_VIDEO = {
+  id: 'qp0HIF3SfI4',
+  title: 'Book, connect, and learn in real time with Connectiqo.',
+  duration: '18:01',
+};
+
+const TRUST = [
+  { icon: 'verified-user', label: 'Verified Mentors' },
+  { icon: 'lock', label: 'Secure Payments' },
+  { icon: 'videocam', label: 'Live HD Video' },
+  { icon: 'star', label: 'Rated & Reviewed' },
 ];
 
 const DURATION = 420;
 const EASE = Easing.out(Easing.cubic);
 
-function fadeUp(opacity, translateY, delay = 0) {
+function anim(opacity, translateY, delay = 0) {
   return Animated.parallel([
-    Animated.timing(opacity, {
-      toValue: 1,
-      delay,
-      duration: DURATION,
-      easing: EASE,
-      useNativeDriver: true,
-    }),
-    Animated.timing(translateY, {
-      toValue: 0,
-      delay,
-      duration: DURATION,
-      easing: EASE,
-      useNativeDriver: true,
-    }),
+    Animated.timing(opacity, { toValue: 1, delay, duration: DURATION, easing: EASE, useNativeDriver: true }),
+    Animated.timing(translateY, { toValue: 0, delay, duration: DURATION, easing: EASE, useNativeDriver: true }),
   ]);
 }
 
-function iconForCategory(name) {
-  const n = name.toLowerCase();
-  if (n.includes('technology')) return 'memory';
-  if (n.includes('software')) return 'code';
-  if (n.includes('ai') || n.includes('machine')) return 'psychology';
-  return 'category';
-}
-
-const CATEGORY_GRADIENTS = [
-  ['rgba(167, 139, 250, 0.4)', 'rgba(94, 234, 212, 0.14)'],
-  ['rgba(94, 234, 212, 0.32)', 'rgba(56, 189, 248, 0.12)'],
-  ['rgba(236, 72, 153, 0.25)', 'rgba(167, 139, 250, 0.14)'],
-  ['rgba(240, 216, 117, 0.28)', 'rgba(94, 234, 212, 0.1)'],
-  ['rgba(52, 211, 153, 0.22)', 'rgba(94, 234, 212, 0.12)'],
-];
-
-/** Wide cinematic dummy video under the “Intro” heading. */
-function IntroVideoBar({ onOpenVideo }) {
-  const g = CATEGORY_GRADIENTS[0];
-  const thumbColors = ['rgba(4, 3, 20, 1)', g[0], g[1], 'rgba(1, 0, 12, 1)'];
-
-  return (
-    <View style={styles.introBlock}>
-      <View style={styles.introHeadRow}>
-        <View style={styles.introHeadLeft}>
-          <View style={styles.introTitleRow}>
-            <MaterialIcons name="play-circle-filled" size={20} color={C.accent.primary} />
-            <Text style={styles.sectionTitle}>Intro</Text>
-          </View>
-        </View>
-        <View style={styles.introDurationChip}>
-          <MaterialIcons name="schedule" size={12} color={C.text.muted} />
-          <Text style={styles.introDurationText}>01:24</Text>
-        </View>
-      </View>
-      <TouchableOpacity
-        style={styles.introVideoOuter}
-        activeOpacity={0.9}
-        onPress={() => onOpenVideo(INTRO_VIDEO_ID)}
-      >
-        <LinearGradient
-          colors={['rgba(167, 139, 250, 0.42)', 'rgba(94, 234, 212, 0.2)']}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={styles.introVideoBorder}
-        >
-          <View style={styles.introVideoClip}>
-            <LinearGradient
-              colors={thumbColors}
-              locations={[0, 0.35, 0.72, 1]}
-              start={{ x: 0.5, y: 0 }}
-              end={{ x: 0.5, y: 1 }}
-              style={styles.introVideoThumb}
-            >
-              <LinearGradient
-                colors={['rgba(0,0,0,0.16)', 'transparent', 'rgba(0,0,0,0.45)']}
-                locations={[0, 0.45, 1]}
-                style={styles.videoVignette}
-              />
-
-              <View style={styles.introTopRow}>
-                <View style={styles.introBadge}>
-                  <MaterialIcons name="auto-awesome" size={12} color={C.accent.primary} />
-                  <Text style={styles.introBadgeText}>Featured</Text>
-                </View>
-                <MaterialIcons name="videocam" size={18} color="rgba(244, 244, 255, 0.72)" />
-              </View>
-
-              <View style={styles.videoPlayWrap}>
-                <View style={styles.introPlayRing}>
-                  <MaterialIcons
-                    name="play-arrow"
-                    size={40}
-                    color={C.text.onAccent}
-                    style={styles.introPlayIcon}
-                  />
-                </View>
-              </View>
-
-              <LinearGradient
-                colors={['transparent', 'rgba(0,0,0,0.88)']}
-                style={styles.introBottomScrim}
-              >
-                <Text style={styles.introVideoTitle} numberOfLines={1}>
-                  Welcome to {APP_NAME}
-                </Text>
-              </LinearGradient>
-            </LinearGradient>
-          </View>
-        </LinearGradient>
-      </TouchableOpacity>
-    </View>
-  );
-}
-
-function CategoryRow({ categoryTitle, sectionIndex, onOpenVideo }) {
-  const iconName = iconForCategory(categoryTitle);
-  const accent = CATEGORY_GRADIENTS[sectionIndex % CATEGORY_GRADIENTS.length];
-
-  const dummies = Array.from({ length: DUMMY_BOX_COUNT }, (_, i) => ({
-    key: `${categoryTitle}-${i}`,
-    label: DUMMY_LABELS[i] || `Preview ${i + 1}`,
-    tone: (sectionIndex + i) % CATEGORY_GRADIENTS.length,
-  }));
-
-  return (
-    <View style={styles.categorySection}>
-      <View style={styles.categoryTitleRow}>
-        <LinearGradient
-          colors={accent}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={styles.categoryTitleIcon}
-        >
-          <MaterialIcons name={iconName} size={20} color={C.text.primary} />
-        </LinearGradient>
-        <View style={styles.categoryTitleTextWrap}>
-          <Text style={styles.categoryTitleText} numberOfLines={2}>
-            Session
-          </Text>
-        </View>
-      </View>
-
-      <ScrollView
-        horizontal
-        nestedScrollEnabled
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.dummyRow}
-        decelerationRate="fast"
-      >
-        {dummies.map(d => {
-          const g = CATEGORY_GRADIENTS[d.tone % CATEGORY_GRADIENTS.length];
-          const thumbColors = ['rgba(5, 3, 22, 1)', g[0], g[1], 'rgba(2, 0, 14, 1)'];
-          const video = HOME_YOUTUBE_VIDEOS[(sectionIndex * DUMMY_BOX_COUNT + d.tone) % HOME_YOUTUBE_VIDEOS.length];
-          return (
-            <TouchableOpacity
-              key={d.key}
-              style={styles.videoCardOuter}
-              activeOpacity={0.9}
-              onPress={() => onOpenVideo(video.id)}
-            >
-              <LinearGradient
-                colors={['rgba(167, 139, 250, 0.45)', 'rgba(94, 234, 212, 0.2)']}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={styles.videoCardBorder}
-              >
-                <View style={styles.videoThumbClip}>
-                  <LinearGradient
-                    colors={thumbColors}
-                    locations={[0, 0.35, 0.72, 1]}
-                    start={{ x: 0.5, y: 0 }}
-                    end={{ x: 0.5, y: 1 }}
-                    style={styles.videoThumb}
-                  >
-                    <LinearGradient
-                      colors={['rgba(0,0,0,0.15)', 'transparent', 'rgba(0,0,0,0.35)']}
-                      locations={[0, 0.45, 1]}
-                      style={styles.videoVignette}
-                    />
-                    <View style={styles.videoFilmLines}>
-                      {[0, 1, 2, 3, 4].map(i => (
-                        <View key={i} style={[styles.videoFilmLine, { opacity: 0.04 + i * 0.01 }]} />
-                      ))}
-                    </View>
-                    <View style={styles.videoTopBadge}>
-                      <MaterialIcons name="videocam" size={14} color={C.accent.primary} />
-                    </View>
-                    <View style={styles.videoPlayWrap}>
-                      <View style={styles.videoPlayRing}>
-                        <MaterialIcons name="play-arrow" size={34} color={C.text.onAccent} style={styles.videoPlayIcon} />
-                      </View>
-                    </View>
-                    <View style={styles.videoProgressTrack}>
-                      <View style={[styles.videoProgressFill, { width: `${28 + (d.tone % 5) * 12}%` }]} />
-                    </View>
-                    <LinearGradient
-                      colors={['transparent', 'rgba(0,0,0,0.82)']}
-                      style={styles.videoBottomScrim}
-                    >
-                      <Text style={styles.videoTitle} numberOfLines={1}>
-                        {video.title || d.label}
-                      </Text>
-                      <Text style={styles.videoSub} numberOfLines={1}>
-                        Tap to play in app
-                      </Text>
-                    </LinearGradient>
-                  </LinearGradient>
-                </View>
-              </LinearGradient>
-            </TouchableOpacity>
-          );
-        })}
-      </ScrollView>
-    </View>
-  );
+function useEntrance() {
+  const o = useRef(new Animated.Value(0)).current;
+  const y = useRef(new Animated.Value(18)).current;
+  return { o, y, style: { opacity: o, transform: [{ translateY: y }] } };
 }
 
 export default function HomeScreen() {
   const insets = useSafeAreaInsets();
-  const { width } = useWindowDimensions();
-  const [playerVisible, setPlayerVisible] = React.useState(false);
-  const [activeVideoId, setActiveVideoId] = React.useState(null);
-  const [playerError, setPlayerError] = React.useState(false);
+  const { width, height } = useWindowDimensions();
+  const [playerVisible, setPlayerVisible] = useState(false);
+  const [playerError, setPlayerError] = useState(false);
 
-  const headerO = useRef(new Animated.Value(0)).current;
-  const headerY = useRef(new Animated.Value(14)).current;
-  const introO = useRef(new Animated.Value(0)).current;
-  const introY = useRef(new Animated.Value(16)).current;
-  const stripO = useRef(new Animated.Value(0)).current;
-  const stripY = useRef(new Animated.Value(18)).current;
+  const s0 = useEntrance(); // app bar
+  const s1 = useEntrance(); // hero
+  const s2 = useEntrance(); // video card
+  const s3 = useEntrance(); // dual role
+  const s4 = useEntrance(); // how it works
+  const s5 = useEntrance(); // trust strip
 
   useEffect(() => {
-    Animated.sequence([
-      fadeUp(headerO, headerY, 0),
-      fadeUp(introO, introY, 0),
-      fadeUp(stripO, stripY, 0),
+    Animated.stagger(80, [
+      anim(s0.o, s0.y),
+      anim(s1.o, s1.y),
+      anim(s2.o, s2.y),
+      anim(s3.o, s3.y),
+      anim(s4.o, s4.y),
+      anim(s5.o, s5.y),
     ]).start();
   }, []);
-
-  const openVideo = (videoId) => {
-    if (!videoId) return;
-    setActiveVideoId(videoId);
-    setPlayerError(false);
-    setPlayerVisible(true);
-  };
-
-  const closeVideo = () => {
-    setPlayerVisible(false);
-    setActiveVideoId(null);
-    setPlayerError(false);
-  };
-
-  const activeVideoTitle =
-    HOME_YOUTUBE_VIDEOS.find(v => v.id === activeVideoId)?.title || 'YouTube Video';
-  const playerHeight = Math.max(220, Math.round((width * 9) / 16));
 
   return (
     <SafeScreen scrollable={false} padding={0} hasBottomTabs={false}>
       <ScrollView
-        contentContainerStyle={styles.page}
+        contentContainerStyle={[styles.page, { paddingTop: insets.top + T.spacing.lg }]}
         showsVerticalScrollIndicator={false}
-        nestedScrollEnabled
       >
-        <Animated.View
-          style={[
-            styles.topBar,
-            {
-              paddingTop: insets.top + T.spacing.sm,
-              opacity: headerO,
-              transform: [{ translateY: headerY }],
-            },
-          ]}
-        >
-          <View style={styles.brandRow}>
+
+        {/* ── APP BAR ── */}
+        <Animated.View style={[styles.appBar, s0.style]}>
+          <Image
+            source={require('../../assets/images/logo.png')}
+            style={styles.logoMark}
+            resizeMode="contain"
+          />
+          <View>
+            <Text style={styles.appName}>Connectiqo</Text>
+            <Text style={styles.appTagline}>Connect · Learn · Grow</Text>
+          </View>
+        </Animated.View>
+
+        {/* ── HERO ── */}
+        <Animated.View style={s1.style}>
+          <View style={styles.hero}>
             <LinearGradient
-              colors={['rgba(167, 139, 250, 0.5)', 'rgba(94, 234, 212, 0.22)']}
+              colors={['rgba(167,139,250,0.16)', 'rgba(94,234,212,0.08)', 'rgba(2,0,20,0.65)']}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 1 }}
-              style={styles.logoMark}
-            >
-              <MaterialIcons name="auto-awesome" size={26} color={C.accent.primary} />
-            </LinearGradient>
-            <View style={styles.brandText}>
-              <Text style={styles.appName}>{APP_NAME}</Text>
-              <Text style={styles.appTagline}>{APP_TAGLINE}</Text>
-              <Text style={styles.appSubline}>{HOME_GREETING}</Text>
+              style={StyleSheet.absoluteFill}
+            />
+            <LinearGradient
+              colors={TB.flatBarEdge}
+              locations={[0, 0.35, 0.65, 1]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+              style={styles.heroBeam}
+              pointerEvents="none"
+            />
+
+            <View style={styles.heroBadge}>
+              <MaterialIcons name="bolt" size={13} color={C.accent.secondary} />
+              <Text style={styles.heroBadgeText}>1-on-1 Live Mentorship</Text>
+            </View>
+
+            <Text style={styles.heroHeading}>
+              Teach what you know.{'\n'}
+              <Text style={styles.heroHeadingAccent}>Learn what you don't.</Text>
+            </Text>
+            <Text style={styles.heroBody}>
+              Every user on Connectiqo is both a mentor and a learner. Share your expertise, book sessions with experts, and grow — all in one place.
+            </Text>
+
+            <View style={styles.heroStats}>
+              <View style={styles.heroStat}>
+                <MaterialIcons name="verified-user" size={18} color={C.accent.primary} />
+                <Text style={styles.heroStatLbl}>Expert Mentors</Text>
+              </View>
+              <View style={styles.heroStatDivider} />
+              <View style={styles.heroStat}>
+                <MaterialIcons name="videocam" size={18} color={C.accent.secondary} />
+                <Text style={styles.heroStatLbl}>Live 1-on-1</Text>
+              </View>
+              <View style={styles.heroStatDivider} />
+              <View style={styles.heroStat}>
+                <MaterialIcons name="lock" size={18} color={C.accent.primary} />
+                <Text style={styles.heroStatLbl}>Secure Payments</Text>
+              </View>
             </View>
           </View>
         </Animated.View>
 
-        <Animated.View
-          style={{
-            opacity: introO,
-            transform: [{ translateY: introY }],
-          }}
-        >
-          <IntroVideoBar onOpenVideo={openVideo} />
+        {/* ── WATCH HOW IT WORKS ── */}
+        <Animated.View style={s2.style}>
+          <TouchableOpacity
+            style={styles.videoCard}
+            activeOpacity={0.88}
+            onPress={() => { setPlayerError(false); setPlayerVisible(true); }}
+          >
+            <LinearGradient
+              colors={['rgba(167,139,250,0.22)', 'rgba(94,234,212,0.1)', 'rgba(2,0,20,0.6)']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={StyleSheet.absoluteFill}
+            />
+            <LinearGradient
+              colors={TB.flatBarEdge}
+              locations={[0, 0.35, 0.65, 1]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+              style={styles.videoCardBeam}
+              pointerEvents="none"
+            />
+            <View style={styles.videoCardInner}>
+              <View style={styles.videoPlayBtn}>
+                <LinearGradient
+                  colors={[C.accent.primary, C.accent.secondary]}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                  style={styles.videoPlayGrad}
+                >
+                  <MaterialIcons name="play-arrow" size={28} color={C.text.onAccent} style={{ marginLeft: 3 }} />
+                </LinearGradient>
+              </View>
+              <View style={styles.videoCardText}>
+                <Text style={styles.videoCardLabel}>WATCH</Text>
+                <Text style={styles.videoCardTitle}>{APP_DEMO_VIDEO.title}</Text>
+                <View style={styles.videoCardMeta}>
+                  <MaterialIcons name="schedule" size={12} color={C.text.muted} />
+                  <Text style={styles.videoCardDuration}>{APP_DEMO_VIDEO.duration}</Text>
+                </View>
+              </View>
+              <MaterialIcons name="chevron-right" size={22} color={C.text.muted} />
+            </View>
+          </TouchableOpacity>
         </Animated.View>
 
-        <Animated.View
-          style={{
-            opacity: stripO,
-            transform: [{ translateY: stripY }],
-          }}
-        >
-          <View style={styles.sectionHead}>
-            <Text style={styles.sectionTitle}>Browse categories</Text>
-            <Text style={styles.sectionSub}>
-              Explore featured topics and tap any preview to watch quickly.
-            </Text>
+        {/* ── DUAL ROLE CARDS ── */}
+        <Animated.View style={[styles.dualRow, s3.style]}>
+          {/* Learner card */}
+          <View style={[styles.roleCard, styles.roleCardLeft]}>
+            <LinearGradient
+              colors={['rgba(94,234,212,0.14)', 'rgba(94,234,212,0.04)']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={StyleSheet.absoluteFill}
+            />
+            <View style={[styles.roleIconWrap, { backgroundColor: 'rgba(94,234,212,0.14)', borderColor: 'rgba(94,234,212,0.3)' }]}>
+              <MaterialIcons name="school" size={24} color={C.accent.secondary} />
+            </View>
+            <Text style={styles.roleTitle}>As a Learner</Text>
+            <Text style={styles.roleDesc}>Browse mentors, book sessions, and level up your skills 1-on-1.</Text>
+            <View style={styles.roleFeatures}>
+              {['Search by skill', 'Pay per session', 'Live video call'].map(f => (
+                <View key={f} style={styles.roleFeatureRow}>
+                  <MaterialIcons name="check-circle" size={12} color={C.accent.secondary} />
+                  <Text style={styles.roleFeatureText}>{f}</Text>
+                </View>
+              ))}
+            </View>
           </View>
 
-          {MENTOR_CATEGORIES.slice(0, HOME_CATEGORY_COUNT).map((categoryTitle, index) => (
-            <CategoryRow
-              key={categoryTitle}
-              categoryTitle={categoryTitle}
-              sectionIndex={index}
-              onOpenVideo={openVideo}
+          {/* Mentor card */}
+          <View style={[styles.roleCard, styles.roleCardRight]}>
+            <LinearGradient
+              colors={['rgba(240,216,117,0.14)', 'rgba(240,216,117,0.04)']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={StyleSheet.absoluteFill}
             />
+            <View style={[styles.roleIconWrap, { backgroundColor: 'rgba(240,216,117,0.14)', borderColor: 'rgba(240,216,117,0.3)' }]}>
+              <MaterialIcons name="workspace-premium" size={24} color={C.accent.primary} />
+            </View>
+            <Text style={styles.roleTitle}>As a Mentor</Text>
+            <Text style={styles.roleDesc}>Set your rate, manage availability, and earn by teaching what you love.</Text>
+            <View style={styles.roleFeatures}>
+              {['Set hourly rate', 'Manage schedule', 'Track earnings'].map(f => (
+                <View key={f} style={styles.roleFeatureRow}>
+                  <MaterialIcons name="check-circle" size={12} color={C.accent.primary} />
+                  <Text style={styles.roleFeatureText}>{f}</Text>
+                </View>
+              ))}
+            </View>
+          </View>
+        </Animated.View>
+
+        {/* ── HOW IT WORKS ── */}
+        <Animated.View style={[styles.section, s4.style]}>
+          <View style={styles.sectionHeaderRow}>
+            <View style={[styles.sectionDot, { backgroundColor: C.accent.secondary }]} />
+            <Text style={styles.sectionLabel}>HOW IT WORKS</Text>
+          </View>
+          <Text style={styles.sectionTitle}>From discovery to live session in minutes</Text>
+
+          {STEPS.map((step, i) => (
+            <View key={step.title} style={styles.stepRow}>
+              <View style={styles.stepLeft}>
+                <View style={[styles.stepIconBox, { backgroundColor: step.bg, borderColor: step.border }]}>
+                  <MaterialIcons name={step.icon} size={22} color={step.color} />
+                </View>
+                {i < STEPS.length - 1 ? <View style={styles.stepConnector} /> : null}
+              </View>
+              <View style={styles.stepBody}>
+                <View style={styles.stepTitleRow}>
+                  <Text style={styles.stepNum}>0{i + 1}</Text>
+                  <Text style={styles.stepTitle}>{step.title}</Text>
+                </View>
+                <Text style={styles.stepDesc}>{step.desc}</Text>
+              </View>
+            </View>
           ))}
         </Animated.View>
+
+        {/* ── TRUST STRIP ── */}
+        <Animated.View style={[styles.trustStrip, s5.style]}>
+          <LinearGradient
+            colors={['rgba(255,255,255,0.05)', 'rgba(255,255,255,0.02)']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={StyleSheet.absoluteFill}
+          />
+          {TRUST.map((t, i) => (
+            <React.Fragment key={t.label}>
+              <View style={styles.trustItem}>
+                <MaterialIcons name={t.icon} size={20} color={i % 2 === 0 ? C.accent.primary : C.accent.secondary} />
+                <Text style={styles.trustLabel}>{t.label}</Text>
+              </View>
+              {i < TRUST.length - 1 ? <View style={styles.trustDivider} /> : null}
+            </React.Fragment>
+          ))}
+        </Animated.View>
+
       </ScrollView>
 
+      {/* ── VIDEO PLAYER MODAL ── */}
       <Modal
         visible={playerVisible}
         transparent={false}
-        animationType="fade"
-        onRequestClose={closeVideo}
+        animationType="slide"
+        onRequestClose={() => setPlayerVisible(false)}
       >
         <View style={styles.playerScreen}>
-          <View style={[styles.playerHeader, { paddingTop: Math.max(insets.top, T.spacing.md) }]}>
-            <View style={styles.playerHeaderTitleWrap}>
-              <Text style={styles.playerOverline}>Now Playing</Text>
-              <Text style={styles.playerTitle} numberOfLines={1}>{activeVideoTitle}</Text>
+          {playerVisible ? (
+            <YoutubePlayer
+              key={APP_DEMO_VIDEO.id}
+              height={height}
+              width={width}
+              play
+              videoId={APP_DEMO_VIDEO.id}
+              initialPlayerParams={{ controls: 1, rel: 0, fs: 1 }}
+              webViewProps={{
+                allowsInlineMediaPlayback: false,
+                mediaPlaybackRequiresUserAction: false,
+                allowsFullscreenVideo: true,
+                javaScriptEnabled: true,
+              }}
+              onError={() => setPlayerError(true)}
+            />
+          ) : null}
+
+          {/* Close button overlay */}
+          <TouchableOpacity
+            style={[styles.playerCloseOverlay, { top: insets.top + 10 }]}
+            onPress={() => setPlayerVisible(false)}
+            activeOpacity={0.85}
+          >
+            <MaterialIcons name="close" size={20} color="#fff" />
+          </TouchableOpacity>
+
+          {playerError ? (
+            <View style={styles.playerError}>
+              <MaterialIcons name="error-outline" size={22} color={C.accent.error} />
+              <Text style={styles.playerErrorText}>Could not load video.</Text>
             </View>
-            <TouchableOpacity onPress={closeVideo} style={styles.playerCloseBtn} activeOpacity={0.8}>
-              <MaterialIcons name="close" size={24} color={C.text.primary} />
-            </TouchableOpacity>
-          </View>
-          <View style={[styles.playerFrame, { height: playerHeight }]}>
-            {activeVideoId ? (
-              <YoutubePlayer
-                key={activeVideoId}
-                height={playerHeight}
-                width={width}
-                play
-                videoId={activeVideoId}
-                webViewProps={{
-                  allowsInlineMediaPlayback: true,
-                  mediaPlaybackRequiresUserAction: false,
-                }}
-                onError={() => setPlayerError(true)}
-              />
-            ) : null}
-            {playerError ? (
-              <View style={styles.playerErrorWrap}>
-                <MaterialIcons name="error-outline" size={22} color={C.accent.error} />
-                <Text style={styles.playerErrorText}>Could not render this video.</Text>
-              </View>
-            ) : null}
-          </View>
-          <View style={styles.playerMetaArea}>
-            <View style={styles.playerMetaRow}>
-              <MaterialIcons name="live-tv" size={16} color={C.text.muted} />
-              <Text style={styles.playerMetaText}>Embedded playback inside app</Text>
-            </View>
-            <TouchableOpacity onPress={closeVideo} activeOpacity={0.85} style={styles.playerDoneBtn}>
-              <Text style={styles.playerDoneBtnText}>Done</Text>
-            </TouchableOpacity>
-          </View>
+          ) : null}
         </View>
       </Modal>
+
     </SafeScreen>
   );
 }
@@ -426,358 +367,377 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   page: {
     flexGrow: 1,
-    paddingBottom: T.spacing.xxl,
-  },
-  topBar: {
+    paddingBottom: T.spacing.xxxl + 16,
     paddingHorizontal: T.spacing.lg,
-    paddingBottom: T.spacing.md,
   },
-  brandRow: {
+
+  // App bar
+  appBar: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: T.spacing.md,
+    marginBottom: T.spacing.xl,
   },
   logoMark: {
     width: 48,
     height: 48,
     borderRadius: 14,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: C.border.light,
-    ...Platform.select({
-      ios: T.shadows.small,
-      android: { elevation: 4 },
-    }),
-  },
-  brandText: {
-    flex: 1,
-    minWidth: 0,
+    overflow: 'hidden',
   },
   appName: {
-    fontSize: 22,
+    fontSize: 20,
     fontWeight: '800',
     color: C.text.primary,
     letterSpacing: -0.3,
-    marginBottom: 2,
   },
   appTagline: {
-    fontSize: 11,
+    fontSize: 10,
     fontWeight: '700',
     color: C.accent.secondary,
-    letterSpacing: 2,
+    letterSpacing: 1.8,
     textTransform: 'uppercase',
+    marginTop: 1,
   },
-  appSubline: {
-    ...T.typography.bodySm,
-    color: C.text.muted,
-    marginTop: 4,
-  },
-  sectionHead: {
-    paddingHorizontal: T.spacing.lg,
-    marginBottom: T.spacing.lg,
-    marginTop: 2,
-  },
-  sectionTitle: {
-    ...T.typography.headingSm,
-    fontSize: 18,
-    color: C.text.primary,
-    fontWeight: '800',
-    marginBottom: T.spacing.xs,
-  },
-  sectionSub: {
-    ...T.typography.bodySm,
-    color: C.text.muted,
-    lineHeight: 20,
-  },
-  introBlock: {
-    marginBottom: T.spacing.xl,
-  },
-  introHeadRow: {
-    paddingHorizontal: T.spacing.lg,
-    marginBottom: T.spacing.md,
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    justifyContent: 'space-between',
-    gap: T.spacing.md,
-  },
-  introHeadLeft: {
-    flex: 1,
-    minWidth: 0,
-  },
-  introTitleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: T.spacing.xs,
-    marginBottom: 2,
-  },
-  introDurationChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
+
+  // Hero
+  hero: {
+    borderRadius: T.borderRadius.md,
+    overflow: 'hidden',
     borderWidth: 1,
     borderColor: C.border.light,
-    backgroundColor: 'rgba(255, 255, 255, 0.06)',
-    borderRadius: T.borderRadius.round,
-    paddingHorizontal: T.spacing.sm,
-    paddingVertical: 4,
-    marginTop: 2,
+    borderLeftWidth: 3,
+    borderLeftColor: C.accent.primary,
+    backgroundColor: C.primary.dark,
+    padding: T.spacing.lg,
+    marginBottom: T.spacing.lg,
+    ...Platform.select({ ios: T.shadows.medium, android: { elevation: 5 } }),
   },
-  introDurationText: {
+  heroBeam: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    top: 0,
+    height: 2,
+    opacity: 0.85,
+  },
+  heroBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+    gap: 5,
+    paddingHorizontal: T.spacing.md,
+    paddingVertical: 5,
+    borderRadius: T.borderRadius.sm,
+    backgroundColor: C.component.input,
+    borderWidth: 1,
+    borderColor: C.border.light,
+    marginBottom: T.spacing.md,
+  },
+  heroBadgeText: {
     ...T.typography.labelSm,
     color: C.text.secondary,
     fontWeight: '700',
   },
-  introVideoOuter: {
-    paddingHorizontal: T.spacing.lg,
-  },
-  introVideoBorder: {
-    borderRadius: T.borderRadius.lg,
-    padding: 2,
-    ...Platform.select({
-      ios: T.shadows.medium,
-      android: { elevation: 6 },
-    }),
-  },
-  introVideoClip: {
-    borderRadius: T.borderRadius.lg - 1,
-    overflow: 'hidden',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.08)',
-  },
-  introVideoThumb: {
-    width: '100%',
-    aspectRatio: 16 / 9,
-    position: 'relative',
-  },
-  introTopRow: {
-    position: 'absolute',
-    top: 12,
-    left: 12,
-    right: 12,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  introBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
-    paddingHorizontal: 9,
-    paddingVertical: 5,
-    borderRadius: 9,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    borderWidth: 1,
-    borderColor: 'rgba(240, 216, 117, 0.35)',
-  },
-  introBadgeText: {
-    ...T.typography.labelSm,
-    fontSize: 10,
-    color: C.text.primary,
-    fontWeight: '700',
-    letterSpacing: 0.4,
-  },
-  introPlayRing: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    backgroundColor: 'rgba(244, 244, 255, 0.94)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.5)',
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.4,
-        shadowRadius: 8,
-      },
-      android: { elevation: 6 },
-    }),
-  },
-  introPlayIcon: {
-    marginLeft: 3,
-  },
-  introBottomScrim: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    bottom: 0,
-    paddingHorizontal: 14,
-    paddingTop: 36,
-    paddingBottom: 14,
-    justifyContent: 'flex-end',
-  },
-  introVideoTitle: {
-    ...T.typography.bodyMd,
-    fontSize: 16,
+  heroHeading: {
+    fontSize: 24,
     fontWeight: '800',
-    color: '#f4f4ff',
+    color: C.text.primary,
+    letterSpacing: -0.4,
+    lineHeight: 32,
+    marginBottom: T.spacing.sm,
   },
-  categorySection: {
-    marginBottom: T.spacing.xl + 2,
+  heroHeadingAccent: {
+    color: C.accent.primary,
   },
-  categoryTitleRow: {
+  heroBody: {
+    ...T.typography.bodyMd,
+    color: C.text.muted,
+    lineHeight: 22,
+    marginBottom: T.spacing.lg,
+  },
+  heroStats: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: T.spacing.lg,
-    marginBottom: T.spacing.md,
-    gap: T.spacing.md,
+    borderTopWidth: 1,
+    borderTopColor: C.border.light,
+    paddingTop: T.spacing.md,
   },
-  categoryTitleIcon: {
-    width: 40,
-    height: 40,
+  heroStat: { flex: 1, alignItems: 'center' },
+  heroStatDivider: {
+    width: StyleSheet.hairlineWidth,
+    height: 30,
+    backgroundColor: C.border.light,
+    opacity: 0.7,
+  },
+  heroStatLbl: {
+    ...T.typography.labelSm,
+    color: C.text.muted,
+    marginTop: 2,
+  },
+
+  // Dual role
+  dualRow: {
+    flexDirection: 'row',
+    gap: T.spacing.sm,
+    marginBottom: T.spacing.xl,
+  },
+  roleCard: {
+    flex: 1,
+    borderRadius: T.borderRadius.sm,
+    borderWidth: 1,
+    padding: T.spacing.md,
+    overflow: 'hidden',
+    position: 'relative',
+    ...Platform.select({ ios: T.shadows.small, android: { elevation: 3 } }),
+  },
+  roleCardLeft: {
+    borderColor: 'rgba(94,234,212,0.28)',
+    backgroundColor: C.primary.dark,
+    borderTopWidth: 2,
+    borderTopColor: 'rgba(94,234,212,0.6)',
+  },
+  roleCardRight: {
+    borderColor: 'rgba(240,216,117,0.28)',
+    backgroundColor: C.primary.dark,
+    borderTopWidth: 2,
+    borderTopColor: 'rgba(240,216,117,0.6)',
+  },
+  roleIconWrap: {
+    width: 44,
+    height: 44,
     borderRadius: 12,
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: C.border.light,
+    marginBottom: T.spacing.sm,
   },
-  categoryTitleTextWrap: {
-    flex: 1,
-    minWidth: 0,
-  },
-  categoryTitleText: {
-    ...T.typography.headingXs,
-    fontSize: 17,
+  roleTitle: {
+    ...T.typography.labelMd,
     color: C.text.primary,
     fontWeight: '800',
-    letterSpacing: -0.2,
-    textTransform: 'capitalize',
+    marginBottom: T.spacing.xs,
   },
-  dummyRow: {
-    paddingLeft: T.spacing.lg,
-    paddingRight: T.spacing.lg,
+  roleDesc: {
+    ...T.typography.bodyXs,
+    color: C.text.muted,
+    lineHeight: 15,
+    marginBottom: T.spacing.md,
+  },
+  roleFeatures: {
+    gap: 5,
+  },
+  roleFeatureRow: {
     flexDirection: 'row',
-    alignItems: 'flex-end',
-    paddingBottom: T.spacing.xs,
+    alignItems: 'center',
+    gap: 5,
   },
-  videoCardOuter: {
-    width: VIDEO_TILE_WIDTH + 4,
-    marginRight: T.spacing.md,
+  roleFeatureText: {
+    ...T.typography.bodyXs,
+    color: C.text.secondary,
+    fontSize: 11,
   },
-  videoCardBorder: {
-    borderRadius: 16,
-    padding: 2,
-    ...Platform.select({
-      ios: T.shadows.medium,
-      android: { elevation: 5 },
-    }),
+
+  // How it works
+  section: {
+    marginBottom: T.spacing.xl,
   },
-  videoThumbClip: {
-    borderRadius: 14,
+  sectionHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 5,
+  },
+  sectionDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+  },
+  sectionLabel: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: C.text.muted,
+    letterSpacing: 1.4,
+  },
+  sectionTitle: {
+    ...T.typography.headingSm,
+    color: C.text.primary,
+    fontWeight: '800',
+    marginBottom: T.spacing.lg,
+  },
+  stepRow: {
+    flexDirection: 'row',
+    gap: T.spacing.md,
+    marginBottom: 2,
+  },
+  stepLeft: {
+    alignItems: 'center',
+    width: 44,
+  },
+  stepIconBox: {
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    borderWidth: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  stepConnector: {
+    width: 2,
+    flex: 1,
+    minHeight: 20,
+    backgroundColor: C.border.light,
+    borderRadius: 1,
+    opacity: 0.5,
+    marginVertical: 4,
+  },
+  stepBody: {
+    flex: 1,
+    paddingBottom: T.spacing.lg,
+  },
+  stepTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: T.spacing.sm,
+    marginBottom: 5,
+    marginTop: T.spacing.sm,
+  },
+  stepNum: {
+    fontSize: 10,
+    fontWeight: '900',
+    color: C.text.muted,
+    letterSpacing: 0.5,
+  },
+  stepTitle: {
+    ...T.typography.labelMd,
+    color: C.text.primary,
+    fontWeight: '800',
+  },
+  stepDesc: {
+    ...T.typography.bodySm,
+    color: C.text.muted,
+    lineHeight: 20,
+  },
+
+  // Trust strip
+  trustStrip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderRadius: T.borderRadius.sm,
+    borderWidth: 1,
+    borderColor: C.border.light,
+    backgroundColor: C.component.card,
+    overflow: 'hidden',
+    paddingVertical: T.spacing.md,
+  },
+  trustItem: {
+    flex: 1,
+    alignItems: 'center',
+    gap: 5,
+  },
+  trustLabel: {
+    fontSize: 9,
+    fontWeight: '700',
+    color: C.text.muted,
+    textAlign: 'center',
+    letterSpacing: 0.2,
+  },
+  trustDivider: {
+    width: 1,
+    height: 28,
+    backgroundColor: C.border.light,
+    opacity: 0.5,
+  },
+
+  // Video card
+  videoCard: {
+    borderRadius: T.borderRadius.md,
     overflow: 'hidden',
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.08)',
-  },
-  videoThumb: {
-    width: VIDEO_TILE_WIDTH,
-    height: VIDEO_TILE_HEIGHT,
+    borderColor: C.border.light,
+    backgroundColor: C.primary.dark,
+    marginBottom: T.spacing.lg,
     position: 'relative',
+    ...Platform.select({ ios: T.shadows.small, android: { elevation: 4 } }),
   },
-  videoVignette: {
-    ...StyleSheet.absoluteFillObject,
-  },
-  videoFilmLines: {
-    ...StyleSheet.absoluteFillObject,
-    justifyContent: 'space-evenly',
-    paddingVertical: 10,
-    pointerEvents: 'none',
-  },
-  videoFilmLine: {
-    height: StyleSheet.hairlineWidth * 2,
-    width: '100%',
-    backgroundColor: '#ffffff',
-  },
-  videoTopBadge: {
-    position: 'absolute',
-    top: 8,
-    left: 8,
-    width: 30,
-    height: 30,
-    borderRadius: 10,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    borderWidth: 1,
-    borderColor: 'rgba(240, 216, 117, 0.35)',
-  },
-  videoPlayWrap: {
-    ...StyleSheet.absoluteFillObject,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  videoPlayRing: {
-    width: 54,
-    height: 54,
-    borderRadius: 27,
-    backgroundColor: 'rgba(244, 244, 255, 0.94)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.5)',
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.35,
-        shadowRadius: 4,
-      },
-      android: { elevation: 4 },
-    }),
-  },
-  videoPlayIcon: {
-    marginLeft: 4,
-  },
-  videoProgressTrack: {
-    position: 'absolute',
-    left: 10,
-    right: 10,
-    bottom: 52,
-    height: 3,
-    borderRadius: 2,
-    backgroundColor: 'rgba(255, 255, 255, 0.22)',
-    overflow: 'hidden',
-  },
-  videoBottomScrim: {
+  videoCardBeam: {
     position: 'absolute',
     left: 0,
     right: 0,
-    bottom: 0,
-    paddingHorizontal: 10,
-    paddingTop: 36,
-    paddingBottom: 10,
-    justifyContent: 'flex-end',
+    top: 0,
+    height: 2,
+    opacity: 0.85,
   },
-  videoTitle: {
-    ...T.typography.labelMd,
-    fontSize: 12,
+  videoCardInner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: T.spacing.md,
+    padding: T.spacing.lg,
+  },
+  videoPlayBtn: {
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: C.border.light,
+    ...Platform.select({
+      ios: { shadowColor: C.accent.primary, shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.45, shadowRadius: 6 },
+      android: { elevation: 5 },
+    }),
+  },
+  videoPlayGrad: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  videoCardText: {
+    flex: 1,
+    minWidth: 0,
+  },
+  videoCardLabel: {
+    fontSize: 9,
     fontWeight: '800',
-    color: '#f4f4ff',
+    color: C.text.muted,
+    letterSpacing: 1.4,
+    marginBottom: 3,
   },
-  videoSub: {
-    ...T.typography.bodyXs,
-    fontSize: 10,
-    color: 'rgba(244, 244, 255, 0.65)',
-    marginTop: 3,
+  videoCardTitle: {
+    ...T.typography.labelMd,
+    color: C.text.primary,
+    fontWeight: '800',
+    marginBottom: 5,
   },
+  videoCardMeta: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  videoCardDuration: {
+    ...T.typography.labelSm,
+    color: C.text.muted,
+    fontWeight: '600',
+    fontSize: 11,
+  },
+
+  // Player modal
   playerScreen: {
     flex: 1,
     backgroundColor: '#000',
+    justifyContent: 'center',
   },
-  playerHeader: {
-    flexDirection: 'row',
+  playerBackBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    justifyContent: 'center',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: T.spacing.lg,
-    paddingBottom: T.spacing.md,
-    backgroundColor: 'rgba(0, 0, 0, 0.88)',
+    backgroundColor: 'rgba(255,255,255,0.08)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.12)',
   },
-  playerHeaderTitleWrap: {
+  playerTitleWrap: {
     flex: 1,
     minWidth: 0,
-    paddingRight: T.spacing.sm,
   },
   playerOverline: {
     ...T.typography.bodyXs,
@@ -791,62 +751,34 @@ const styles = StyleSheet.create({
     color: C.text.primary,
     fontWeight: '700',
   },
-  playerCloseBtn: {
+  playerCloseOverlay: {
+    position: 'absolute',
+    right: 14,
     width: 36,
     height: 36,
+    borderRadius: 18,
+    backgroundColor: 'rgba(0,0,0,0.55)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.2)',
     justifyContent: 'center',
     alignItems: 'center',
+    zIndex: 10,
   },
-  playerFrame: {
-    width: '100%',
-    backgroundColor: '#000',
-    justifyContent: 'center',
-  },
-  playerMetaArea: {
-    flex: 1,
-    justifyContent: 'space-between',
-    paddingHorizontal: T.spacing.lg,
-    paddingTop: T.spacing.lg,
-    paddingBottom: T.spacing.xxl,
-    backgroundColor: '#000',
-  },
-  playerMetaRow: {
+  playerError: {
+    ...StyleSheet.absoluteFillObject,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    justifyContent: 'center',
+    gap: 6,
+    backgroundColor: 'rgba(0,0,0,0.85)',
   },
-  playerMetaText: {
+  playerErrorText: {
     ...T.typography.bodySm,
-    color: C.text.muted,
-  },
-  playerDoneBtn: {
-    alignSelf: 'stretch',
-    borderRadius: T.borderRadius.md,
-    borderWidth: 1,
-    borderColor: C.border.light,
-    backgroundColor: 'rgba(255,255,255,0.06)',
-    paddingVertical: T.spacing.md,
-    alignItems: 'center',
+    color: C.text.primary,
   },
   playerDoneBtnText: {
     ...T.typography.labelLg,
     color: C.text.primary,
     fontWeight: '700',
-  },
-  playerErrorWrap: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    bottom: 0,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
-    paddingVertical: 8,
-    backgroundColor: 'rgba(0,0,0,0.65)',
-  },
-  playerErrorText: {
-    ...T.typography.bodySm,
-    color: C.text.primary,
   },
 });

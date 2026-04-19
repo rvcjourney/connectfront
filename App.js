@@ -12,6 +12,8 @@ import { AuthProvider } from "./src/contexts/AuthContext";
 import { NotificationProvider } from "./src/contexts/NotificationContext";
 import { RootNavigator } from "./src/navigators/RootNavigator";
 import { SCREEN_NAMES } from "./src/navigators/screenNames";
+import { linking } from "./src/navigators/linkingConfig";
+import { loadRemoteConfig } from "./src/utils/remoteConfig";
 
 LogBox.ignoreLogs([
   "Warning: Non-serializable values detected",
@@ -31,7 +33,7 @@ const navigationTheme = {
 export default function App() {
   const navigationRef = React.useRef();
 
-  console.log('🚀 App started');
+  React.useEffect(() => { loadRemoteConfig(); }, []);
 
   return (
     <ErrorBoundary
@@ -45,7 +47,7 @@ export default function App() {
       <SafeAreaProvider>
         <AuthProvider>
           <NotificationProvider>
-            <NavigationContainer ref={navigationRef} theme={navigationTheme}>
+            <NavigationContainer ref={navigationRef} theme={navigationTheme} linking={linking}>
               <RootNavigator />
             </NavigationContainer>
           </NotificationProvider>

@@ -24,7 +24,7 @@ const tabIcon =
 export const MentorSectionNavigator = () => {
   return (
     <TopTab.Navigator
-      tabBar={props => <CapsuleTabBar {...props} />}
+      tabBar={props => <CapsuleTabBar {...props} compact />}
       screenOptions={{
         swipeEnabled: true,
         lazy: true,

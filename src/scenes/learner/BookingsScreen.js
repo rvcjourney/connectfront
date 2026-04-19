@@ -58,11 +58,22 @@ export default function LearnerBookingsScreen({ navigation }) {
         recordingUrl: b?.recording_playback_url || b?.recording_url || null,
       });
 
-      const upcomingNorm = (upcomingData || []).map(normalizeBooking);
+      const isSessionPast = b => {
+        const date = b?.availability_slots?.date;
+        const endTime = b?.availability_slots?.end_time;
+        if (!date) return false;
+        return new Date(`${date}T${endTime || '23:59:59'}`) < new Date();
+      };
+
+      const allUpcoming = (upcomingData || []).map(normalizeBooking);
       const historyNorm = (historyData || []).map(normalizeBooking);
 
+      const upcomingNorm = allUpcoming.filter(b => !isSessionPast(b));
+      const expiredNorm  = allUpcoming.filter(b => isSessionPast(b))
+        .map(b => ({ ...b, isExpired: true }));
+
       setUpcoming(upcomingNorm);
-      setHistory(historyNorm);
+      setHistory([...expiredNorm, ...historyNorm]);
       setHistoryPage(1);
       setHasMoreHistory(historyNorm.length === PAGE_SIZE);
 
@@ -146,13 +157,17 @@ export default function LearnerBookingsScreen({ navigation }) {
   };
 
   const renderBooking = (item, isUpcoming) => {
-    let statusLabel = item.status;
-    if (isUpcoming && (item.status === 'pending' || item.status === 'confirmed')) {
+    let statusLabel;
+    if (item.isExpired) {
+      statusLabel = 'Expired';
+    } else if (isUpcoming && (item.status === 'pending' || item.status === 'confirmed')) {
       statusLabel = 'Booked';
     } else if (item.status === 'completed') {
       statusLabel = 'Completed';
     } else if (item.status === 'cancelled' || item.status === 'rejected') {
-      statusLabel = 'Failed';
+      statusLabel = 'Cancelled';
+    } else {
+      statusLabel = item.status;
     }
 
     const canRate = item.status === 'completed' && !reviewedIds.has(item.id);

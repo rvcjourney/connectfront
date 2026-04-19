@@ -5,6 +5,18 @@ import { cancelSessionReminder } from '../utils/sessionReminder';
 export const bookingApi = {
   createBooking: async ({ learnerId, mentorId, slotId, message }) => {
     try {
+      // Verify slot is still available before booking
+      const { data: slot, error: slotCheckError } = await supabase
+        .from('availability_slots')
+        .select('is_booked')
+        .eq('id', slotId)
+        .single();
+
+      if (slotCheckError) throw slotCheckError;
+      if (slot?.is_booked) {
+        throw new Error('This time slot was just booked by someone else. Please choose a different slot.');
+      }
+
       // Create the booking
       const { data, error } = await supabase
         .from('bookings')
@@ -83,10 +95,8 @@ export const bookingApi = {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      console.log('📚 Learner bookings:', data);
       return data || [];
     } catch (error) {
-      console.error('❌ Failed to load learner bookings:', error);
       throw new Error(getSupabaseErrorMessage(error));
     }
   },
@@ -155,10 +165,8 @@ export const bookingApi = {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      console.log('📞 Mentor bookings:', data);
       return data || [];
     } catch (error) {
-      console.error('❌ Failed to load mentor bookings:', error);
       throw new Error(getSupabaseErrorMessage(error));
     }
   },
@@ -308,19 +316,26 @@ export const bookingApi = {
 
   getTransactionsAsMentor: async (mentorId) => {
     try {
-      const { data, error } = await supabase
-        .from('bookings')
-        .select(`
-          *,
-          profiles:learner_id (id, name, avatar_url),
-          availability_slots (date, start_time, end_time),
-          mentor_profiles:mentor_id (price_per_hour)
-        `)
-        .eq('mentor_id', mentorId)
-        .order('created_at', { ascending: false });
+      const [{ data, error }, { data: mentorProfile }] = await Promise.all([
+        supabase
+          .from('bookings')
+          .select(`
+            *,
+            profiles:learner_id (id, name, avatar_url),
+            availability_slots (date, start_time, end_time)
+          `)
+          .eq('mentor_id', mentorId)
+          .order('created_at', { ascending: false }),
+        supabase
+          .from('mentor_profiles')
+          .select('price_per_hour')
+          .eq('id', mentorId)
+          .single(),
+      ]);
 
       if (error) throw error;
-      return data || [];
+      const price = mentorProfile?.price_per_hour ?? null;
+      return (data || []).map(b => ({ ...b, mentor_profiles: { price_per_hour: price } }));
     } catch (error) {
       throw new Error(getSupabaseErrorMessage(error));
     }
@@ -333,14 +348,29 @@ export const bookingApi = {
         .select(`
           *,
           profiles:mentor_id (id, name, avatar_url),
-          availability_slots (date, start_time, end_time),
-          mentor_profiles:mentor_id (price_per_hour)
+          availability_slots (date, start_time, end_time)
         `)
         .eq('learner_id', learnerId)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      return data || [];
+      const rows = data || [];
+
+      // Fetch price for each unique mentor in one query
+      const mentorIds = [...new Set(rows.map(b => b.mentor_id).filter(Boolean))];
+      let priceMap = {};
+      if (mentorIds.length > 0) {
+        const { data: profiles } = await supabase
+          .from('mentor_profiles')
+          .select('id, price_per_hour')
+          .in('id', mentorIds);
+        (profiles || []).forEach(mp => { priceMap[mp.id] = mp.price_per_hour; });
+      }
+
+      return rows.map(b => ({
+        ...b,
+        mentor_profiles: { price_per_hour: priceMap[b.mentor_id] ?? null },
+      }));
     } catch (error) {
       throw new Error(getSupabaseErrorMessage(error));
     }

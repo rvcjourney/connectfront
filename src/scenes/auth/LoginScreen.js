@@ -96,6 +96,8 @@ export default function LoginScreen({ navigation }) {
                 autoCapitalize="none"
                 keyboardType="email-address"
                 editable={!loading}
+                cursorColor={UNIFIED_THEME.colors.accent.secondary}
+                selectionColor={UNIFIED_THEME.colors.accent.secondary}
               />
             </View>
 
@@ -115,6 +117,8 @@ export default function LoginScreen({ navigation }) {
                 onChangeText={setPassword}
                 secureTextEntry={!showPassword}
                 editable={!loading}
+                cursorColor={UNIFIED_THEME.colors.accent.secondary}
+                selectionColor={UNIFIED_THEME.colors.accent.secondary}
               />
               <TouchableOpacity
                 onPress={() => setShowPassword(!showPassword)}
@@ -152,7 +156,7 @@ export default function LoginScreen({ navigation }) {
           <View style={styles.footer}>
             <Text style={styles.footerText}>Don't have an account?</Text>
             <TouchableOpacity
-              onPress={() => navigation.navigate('RoleSelect_Screen')}
+              onPress={() => navigation.navigate('Signup_Screen')}
               disabled={loading}
             >
               <Text style={styles.signupLink}>Create one</Text>

@@ -1,0 +1,57 @@
+What We Built & Fixed Today — Connectiqo
+Navigation & Architecture
+The app now has a unified dual-role navigator. Every user is both a mentor and a learner simultaneously. The bottom tabs are: Home → Mentor → Learner → Settings. Inside Mentor are top tabs (Profile, Calls, Earnings) and inside Learner are top tabs (Search, Bookings). The old role-based branching (show MentorNavigator OR LearnerNavigator based on profile.role) is gone. RootNavigator.js always shows UnifiedTabNavigator once logged in.
+
+The CapsuleTabBar was given a compact mode — horizontal icon + label layout with a minimum height of 38px — used inside both the Mentor and Learner top tab navigators.
+
+RoleSelectScreen.js was dead code (no navigator referenced it) and was deleted today.
+
+HomeScreen Redesign
+The app's main Home tab was rebuilt from scratch. The old design showed a YouTube video player which didn't represent the product. The new screen is purpose-built for a live 1-on-1 mentorship marketplace:
+
+App bar with logo image
+Hero card with dual-role pitch and feature icons
+Clickable video card that opens a full-screen YouTube modal (autoplay)
+Dual role cards — teal for Learner, gold for Mentor
+"How it works" vertical 3-step timeline with connectors
+Trust strip at the bottom
+All fake stats (500+ mentors, 12k+ sessions, 4.8★) were removed. Replaced with feature highlights: Expert Mentors · Live 1-on-1 · Secure Payments using icons — no misleading numbers.
+
+WelcomeScreen
+The app logo image replaced the default icon. The eyebrow text changed from "Your universe of learning" to "1-on-1 Live Mentorship" to reflect the actual product. The stats bar was updated with the same three icon+label feature highlights as HomeScreen.
+
+Auth Fixes
+LoginScreen: Dead "Create one" button was pointing to RoleSelect_Screen which no longer exists — fixed to navigate to Signup_Screen. All TextInputs (email, password) got cursorColor and selectionColor set to teal so the cursor is visible on the dark background.
+SignupScreen: All four TextInputs (name, email, password, confirm password) got the same cursor visibility fix.
+Session Expiry Bug Fix
+Bookings with pending or confirmed status but a past date were staying in "Upcoming Sessions" forever. Fixed in both CallsScreen (Mentor) and BookingsScreen (Learner): after fetching upcoming bookings, a client-side isSessionPast() check splits them. Past-dated sessions move to history with an "Expired" label. The mentor screen also re-checks every 30 seconds so sessions shift automatically while the screen is open.
+
+Deep Linking
+Added a connectiqo:// custom URL scheme. Created src/navigators/linkingConfig.js with routes for every screen (home, mentor profile, booking, video call, review, wallet, transactions, category). Wired it into NavigationContainer via the linking prop. Added the Android intent-filter to AndroidManifest.xml. This means booking confirmation links, referral links, and notification taps can all deep-link directly into the right screen.
+
+Remote Config (Live Updates Without App Store)
+Created src/utils/remoteConfig.js — a Supabase-backed key-value config with a 5-minute TTL cache. The owner can update values like video IDs, messages, and feature flags directly from the Supabase dashboard. All 100 installed devices pick up changes within 5 minutes of next open. No Play Store update needed. loadRemoteConfig() is now called on app startup in App.js.
+
+Force Update Mechanism
+Created src/utils/forceUpdate.js. It reads min_android_version and min_ios_version from the app_config Supabase table. If the installed app's version code is below the minimum, it returns required: true with the store URL and a configurable message. The UI screen to block the user and show the update prompt is the remaining piece to build.
+
+Mentor Search Pagination
+getMentorsByCategory in mentorApi.js previously fetched every single mentor from the database with no limit — it just sliced to 6 per category in JavaScript. Added .limit(300) at the database level to prevent unbounded queries at scale.
+
+Added a new searchMentors(query, page, pageSize) function that does a server-side ilike search across specialization, category, and bio with pagination — so search queries go against the full mentor database, not just the 6 already loaded per category.
+
+Updated LearnerHomeScreen to use this: typing in the search bar now triggers a debounced (400ms) server-side search instead of filtering the local cache.
+
+Slot Conflict Guard
+Before creating a booking, bookingApi.createBooking now reads the slot's is_booked flag first. If another learner grabbed the same slot between the time it was displayed and the time the booking was submitted, the user gets a clear error message: "This time slot was just booked by someone else. Please choose a different slot." Previously the insert would succeed silently and create a double-booking.
+
+What's Still Left Before Launch
+Strip 89 console.log statements across 14 files — exposes userId, earnings, recording URLs in device logs
+Force Update UI screen — the logic exists, the blocking modal doesn't
+Real push notifications — FCM/APNs for booking confirmations (current NotificationContext is just an in-app counter)
+Crash reporting — Sentry or Crashlytics, currently zero visibility into production crashes
+Privacy Policy screen — required by both app stores, must be accessible from Settings
+
+****Add Real Time Update which is needed**** as much before versio update we can update through database & Admin section****
+
+Scheduing Screen Should Also Need to Update

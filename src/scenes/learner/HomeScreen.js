@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef, useCallback } from 'react';
 import {
   View,
   Text,
@@ -6,6 +6,7 @@ import {
   StyleSheet,
   TouchableOpacity,
   RefreshControl,
+  Animated,
   Platform,
 } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
@@ -13,7 +14,6 @@ import Toast from 'react-native-simple-toast';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import { SafeScreen } from '../../components/SafeScreen';
 import { UNIFIED_THEME } from '../../unifiedTheme';
-import { LoadingOverlay } from '../../components/LoadingOverlay';
 import { SearchBar } from '../../components/SearchBar';
 import { SectionHeader } from '../../components/SectionHeader';
 import { LearnerMentorCard } from '../../components/LearnerMentorCard';
@@ -24,12 +24,121 @@ import { SCREEN_NAMES } from '../../navigators/screenNames';
 const T = UNIFIED_THEME;
 const TB = T.colors.tabBar;
 
+// ─── Skeleton ─────────────────────────────────────────────────────────────────
+function SkeletonBone({ style }) {
+  const anim = useRef(new Animated.Value(0)).current;
+  useEffect(() => {
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(anim, { toValue: 1, duration: 900, useNativeDriver: true }),
+        Animated.timing(anim, { toValue: 0, duration: 900, useNativeDriver: true }),
+      ]),
+    ).start();
+  }, []);
+  const opacity = anim.interpolate({ inputRange: [0, 1], outputRange: [0.2, 0.5] });
+  return <Animated.View style={[sk.bone, style, { opacity }]} />;
+}
+
+function SkeletonMentorCard() {
+  return (
+    <View style={sk.card}>
+      <View style={sk.topRow}>
+        <SkeletonBone style={sk.avatar} />
+        <View style={sk.headCol}>
+          <SkeletonBone style={sk.nameLine} />
+          <SkeletonBone style={sk.ratingLine} />
+        </View>
+      </View>
+      <SkeletonBone style={sk.specLine} />
+      <SkeletonBone style={sk.specShort} />
+      <SkeletonBone style={sk.priceLine} />
+      <SkeletonBone style={sk.btnLine} />
+    </View>
+  );
+}
+
+function SkeletonCategoryRow() {
+  return (
+    <View style={sk.section}>
+      <SkeletonBone style={sk.sectionTitle} />
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={sk.row}>
+        {[0, 1, 2].map(i => <SkeletonMentorCard key={i} />)}
+      </ScrollView>
+    </View>
+  );
+}
+
+function HomeScreenSkeleton() {
+  return (
+    <>
+      {/* hero placeholder */}
+      <View style={sk.hero}>
+        <SkeletonBone style={sk.heroBadge} />
+        <SkeletonBone style={sk.heroTitle} />
+        <SkeletonBone style={sk.heroSubtitle} />
+        <View style={sk.heroStatsRow}>
+          <SkeletonBone style={sk.heroStat} />
+          <SkeletonBone style={sk.heroStat} />
+        </View>
+      </View>
+      {/* search bar placeholder */}
+      <SkeletonBone style={sk.searchBar} />
+      {/* 2 category rows */}
+      <SkeletonCategoryRow />
+      <SkeletonCategoryRow />
+    </>
+  );
+}
+
+const sk = StyleSheet.create({
+  bone: { backgroundColor: T.colors.border.default, borderRadius: T.borderRadius.sm },
+  hero: {
+    borderRadius: T.borderRadius.sm,
+    backgroundColor: T.colors.component.card,
+    borderWidth: 1,
+    borderColor: T.colors.border.light,
+    padding: T.spacing.lg,
+    marginBottom: T.spacing.md,
+    gap: T.spacing.sm,
+  },
+  heroBadge: { height: 26, width: 90, borderRadius: T.borderRadius.sm },
+  heroTitle: { height: 20, width: '60%' },
+  heroSubtitle: { height: 14, width: '85%' },
+  heroStatsRow: { flexDirection: 'row', gap: T.spacing.md, marginTop: T.spacing.xs },
+  heroStat: { height: 36, flex: 1, borderRadius: T.borderRadius.sm },
+  searchBar: { height: 44, width: '100%', marginBottom: T.spacing.lg },
+  section: { marginBottom: T.spacing.xxl },
+  sectionTitle: { height: 16, width: 120, marginBottom: T.spacing.md },
+  row: { gap: T.spacing.sm, paddingBottom: T.spacing.sm },
+  card: {
+    width: 176,
+    backgroundColor: T.colors.component.card,
+    borderRadius: T.borderRadius.sm,
+    padding: T.spacing.md,
+    borderWidth: 1,
+    borderColor: T.colors.border.light,
+    gap: T.spacing.sm,
+  },
+  topRow: { flexDirection: 'row', gap: T.spacing.sm, marginBottom: T.spacing.xs },
+  headCol: { flex: 1, gap: 6, justifyContent: 'center' },
+  avatar: { width: 48, height: 48, borderRadius: T.borderRadius.sm },
+  nameLine: { height: 12, width: '80%' },
+  ratingLine: { height: 10, width: '50%' },
+  specLine: { height: 10, width: '100%' },
+  specShort: { height: 10, width: '65%' },
+  priceLine: { height: 14, width: '45%' },
+  btnLine: { height: 32, width: '100%', borderRadius: T.borderRadius.sm },
+});
+
 export default function LearnerHomeScreen({ navigation }) {
   const { profile } = useAuth();
   const [mentorsByCategory, setMentorsByCategory] = useState({});
+  const [searchResults, setSearchResults] = useState(null); // null = not searching
   const [loading, setLoading] = useState(true);
+  const [searchLoading, setSearchLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const searchDebounce = useRef(null);
 
   useEffect(() => {
     loadMentors();
@@ -45,8 +154,7 @@ export default function LearnerHomeScreen({ navigation }) {
         if (withoutSelf.length > 0) filtered[category] = withoutSelf;
       });
       setMentorsByCategory(filtered);
-    } catch (error) {
-      console.error('Error loading mentors:', error);
+    } catch {
       Toast.show('Failed to load mentors');
     } finally {
       setLoading(false);
@@ -59,33 +167,34 @@ export default function LearnerHomeScreen({ navigation }) {
     setRefreshing(false);
   };
 
-  const getFilteredMentors = () => {
-    if (!searchQuery.trim()) {
-      return mentorsByCategory;
+  const handleSearchChange = useCallback((text) => {
+    setSearchQuery(text);
+    if (searchDebounce.current) clearTimeout(searchDebounce.current);
+
+    if (!text.trim()) {
+      setSearchResults(null);
+      setSearchLoading(false);
+      return;
     }
 
-    const query = searchQuery.toLowerCase();
-    const filtered = {};
-
-    Object.entries(mentorsByCategory).forEach(([category, mentors]) => {
-      const filteredMentors = mentors.filter(mentor => {
-        const name = mentor.profiles?.name?.toLowerCase() || '';
-        const specialization = mentor.specialization?.toLowerCase() || '';
-        const cat = category.toLowerCase();
-
-        return (
-          name.includes(query) ||
-          specialization.includes(query) ||
-          cat.includes(query)
-        );
-      });
-
-      if (filteredMentors.length > 0) {
-        filtered[category] = filteredMentors;
+    setSearchLoading(true);
+    searchDebounce.current = setTimeout(async () => {
+      try {
+        const results = await mentorApi.searchMentors(text);
+        const withoutSelf = results.filter(m => m.id !== profile?.id);
+        setSearchResults(withoutSelf);
+      } catch {
+        Toast.show('Search failed');
+        setSearchResults([]);
+      } finally {
+        setSearchLoading(false);
       }
-    });
+    }, 400);
+  }, [profile?.id]);
 
-    return filtered;
+  const getFilteredMentors = () => {
+    if (searchResults !== null) return null; // using flat search results instead
+    return mentorsByCategory;
   };
 
   const handleBookMentor = mentor => {
@@ -99,12 +208,12 @@ export default function LearnerHomeScreen({ navigation }) {
     navigation.navigate(SCREEN_NAMES.MentorProfile, { mentorId: mentor.id });
   };
 
-  const filteredMentors = getFilteredMentors();
-  const filteredCategories = Object.keys(filteredMentors).sort();
-  const totalMentors = filteredCategories.reduce(
-    (sum, c) => sum + filteredMentors[c].length,
-    0,
-  );
+  const isSearching = searchQuery.trim().length > 0;
+  const groupedMentors = getFilteredMentors();
+  const filteredCategories = groupedMentors ? Object.keys(groupedMentors).sort() : [];
+  const totalMentors = isSearching
+    ? (searchResults?.length ?? 0)
+    : filteredCategories.reduce((sum, c) => sum + groupedMentors[c].length, 0);
 
   const renderCategorySection = (category, mentors) => (
     <View key={category} style={styles.section}>
@@ -199,34 +308,48 @@ export default function LearnerHomeScreen({ navigation }) {
 
       <SearchBar
         value={searchQuery}
-        onChangeText={setSearchQuery}
+        onChangeText={handleSearchChange}
         placeholder="Search by name, skill, or category…"
       />
 
-      {filteredCategories.length > 0 ? (
-        <View style={styles.content}>
-          {filteredCategories.map(category =>
-            renderCategorySection(category, filteredMentors[category]),
-          )}
-        </View>
-      ) : (
-        !loading && (
+      {loading ? (
+        <HomeScreenSkeleton />
+      ) : isSearching ? (
+        searchLoading ? (
+          <HomeScreenSkeleton />
+        ) : searchResults && searchResults.length > 0 ? (
+          <View style={styles.content}>
+            {renderCategorySection('Search Results', searchResults)}
+          </View>
+        ) : (
           <View style={styles.emptyPanel}>
             <View style={styles.emptyIconTile}>
               <MaterialIcons name="travel-explore" size={30} color={T.colors.accent.secondary} />
             </View>
-            <Text style={styles.emptyTitle}>No mentors match your search</Text>
+            <Text style={styles.emptyTitle}>No mentors found</Text>
             <Text style={styles.emptySubtitle}>
-              Try another keyword or clear the search to browse all categories.
+              Try a different keyword or clear the search to browse all categories.
             </Text>
           </View>
         )
+      ) : filteredCategories.length > 0 ? (
+        <View style={styles.content}>
+          {filteredCategories.map(category =>
+            renderCategorySection(category, groupedMentors[category]),
+          )}
+        </View>
+      ) : (
+        <View style={styles.emptyPanel}>
+          <View style={styles.emptyIconTile}>
+            <MaterialIcons name="travel-explore" size={30} color={T.colors.accent.secondary} />
+          </View>
+          <Text style={styles.emptyTitle}>No mentors available</Text>
+          <Text style={styles.emptySubtitle}>
+            Pull down to refresh or check back later.
+          </Text>
+        </View>
       )}
 
-      <LoadingOverlay
-        visible={loading && !refreshing}
-        message={refreshing ? 'Refreshing…' : 'Loading mentors…'}
-      />
     </SafeScreen>
   );
 }

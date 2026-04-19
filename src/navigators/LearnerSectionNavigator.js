@@ -22,7 +22,7 @@ const tabIcon =
 export const LearnerSectionNavigator = () => {
   return (
     <TopTab.Navigator
-      tabBar={props => <CapsuleTabBar {...props} />}
+      tabBar={props => <CapsuleTabBar {...props} compact />}
       screenOptions={{
         swipeEnabled: true,
         lazy: true,

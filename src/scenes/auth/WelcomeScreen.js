@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
+import { Image } from 'react-native';
 import CosmicBackground from '../../components/CosmicBackground';
 import { UNIFIED_THEME } from '../../unifiedTheme';
 
@@ -177,21 +178,11 @@ export default function WelcomeScreen({ navigation }) {
             <Animated.View
               style={[styles.logoContainer, { transform: [{ scale: logoPulse }] }]}
             >
-              <LinearGradient
-                colors={[
-                  'rgba(167, 139, 250, 0.35)',
-                  'rgba(94, 234, 212, 0.2)',
-                ]}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={styles.logoGradient}
-              >
-                <MaterialIcons
-                  name="videocam"
-                  size={44}
-                  color={UNIFIED_THEME.colors.accent.primary}
-                />
-              </LinearGradient>
+              <Image
+                source={require('../../assets/images/logo.png')}
+                style={styles.logoImage}
+                resizeMode="contain"
+              />
             </Animated.View>
           </Animated.View>
 
@@ -201,7 +192,7 @@ export default function WelcomeScreen({ navigation }) {
               { opacity: titleO, transform: [{ translateY: titleY }] },
             ]}
           >
-            Your universe of learning
+            1-on-1 Live Mentorship
           </Animated.Text>
 
           <Animated.Text
@@ -306,37 +297,22 @@ export default function WelcomeScreen({ navigation }) {
             ]}
           >
             <View style={styles.statItem}>
-              <MaterialIcons
-                name="star"
-                size={22}
-                color={UNIFIED_THEME.colors.accent.primary}
-                style={styles.statIconSpacing}
-              />
-              <Text style={styles.statText}>Expert mentors</Text>
+              <MaterialIcons name="verified-user" size={20} color={UNIFIED_THEME.colors.accent.primary} style={styles.statIcon} />
+              <Text style={styles.statText}>Expert Mentors</Text>
             </View>
 
             <View style={styles.divider} />
 
             <View style={styles.statItem}>
-              <MaterialIcons
-                name="lock"
-                size={22}
-                color={UNIFIED_THEME.colors.accent.secondary}
-                style={styles.statIconSpacing}
-              />
-              <Text style={styles.statText}>Secure payments</Text>
+              <MaterialIcons name="videocam" size={20} color={UNIFIED_THEME.colors.accent.secondary} style={styles.statIcon} />
+              <Text style={styles.statText}>Live 1-on-1</Text>
             </View>
 
             <View style={styles.divider} />
 
             <View style={styles.statItem}>
-              <MaterialIcons
-                name="videocam"
-                size={22}
-                color={UNIFIED_THEME.colors.accent.primary}
-                style={styles.statIconSpacing}
-              />
-              <Text style={styles.statText}>HD video</Text>
+              <MaterialIcons name="lock" size={20} color={UNIFIED_THEME.colors.accent.primary} style={styles.statIcon} />
+              <Text style={styles.statText}>Secure Payments</Text>
             </View>
           </Animated.View>
         </View>
@@ -392,16 +368,14 @@ const styles = StyleSheet.create({
   logoContainer: {
     width: 88,
     height: 88,
-    borderRadius: 44,
+    borderRadius: 20,
     overflow: 'hidden',
-    borderWidth: 2,
-    borderColor: UNIFIED_THEME.colors.border.default,
   },
 
-  logoGradient: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+  logoImage: {
+    width: 88,
+    height: 88,
+    borderRadius: 44
   },
 
   eyebrow: {
@@ -554,8 +528,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
 
-  statIconSpacing: {
-    marginBottom: UNIFIED_THEME.spacing.xs,
+  statIcon: {
+    marginBottom: 4,
   },
 
   statText: {

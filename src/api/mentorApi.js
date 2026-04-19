@@ -141,7 +141,6 @@ export const mentorApi = {
 
   getMentorsByCategory: async (limitPerCategory = 6) => {
     try {
-      console.log('📂 Fetching mentors by category...');
       const { data, error } = await supabase
         .from('mentor_profiles')
         .select(`
@@ -161,11 +160,11 @@ export const mentorApi = {
           )
         `)
         .order('category', { ascending: true })
-        .order('rating', { ascending: false });
+        .order('rating', { ascending: false })
+        .limit(300);
 
       if (error) throw error;
 
-      // Group mentors by category, limit per category
       const grouped = {};
       (data || []).forEach(mentor => {
         const category = mentor.category || 'Others';
@@ -175,8 +174,41 @@ export const mentorApi = {
         }
       });
 
-      console.log('✅ Mentors grouped by category:', Object.keys(grouped));
       return grouped;
+    } catch (error) {
+      throw new Error(getSupabaseErrorMessage(error));
+    }
+  },
+
+  searchMentors: async (query, page = 0, pageSize = 20) => {
+    try {
+      const from = page * pageSize;
+      const to = from + pageSize - 1;
+      const term = query.trim().toLowerCase();
+      const { data, error } = await supabase
+        .from('mentor_profiles')
+        .select(`
+          id,
+          category,
+          specialization,
+          bio,
+          experience_years,
+          price_per_hour,
+          rating,
+          total_sessions,
+          profiles:id (
+            id,
+            name,
+            email,
+            avatar_url
+          )
+        `)
+        .or(`specialization.ilike.%${term}%,category.ilike.%${term}%,bio.ilike.%${term}%`)
+        .order('rating', { ascending: false })
+        .range(from, to);
+
+      if (error) throw error;
+      return data || [];
     } catch (error) {
       throw new Error(getSupabaseErrorMessage(error));
     }
