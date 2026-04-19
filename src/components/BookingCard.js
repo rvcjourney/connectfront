@@ -41,6 +41,7 @@ export const BookingCard = ({
   onPressJoin,
   onPressCancel,
   onPressRecording = null,
+  onPressRate = null,
   statusLabel = null,
 }) => {
   const showLearnerDetails = isMentor || showLearnerInfo;
@@ -157,6 +158,16 @@ export const BookingCard = ({
           >
             <MaterialIcons name="play-circle-filled" size={18} color={T.accent.secondary} />
             <Text style={styles.recordingBtnText}>View recording</Text>
+          </TouchableOpacity>
+        ) : null}
+        {onPressRate ? (
+          <TouchableOpacity
+            style={styles.rateBtn}
+            onPress={onPressRate}
+            activeOpacity={0.85}
+          >
+            <MaterialIcons name="star-outline" size={18} color={T.accent.warning} />
+            <Text style={styles.rateBtnText}>Rate session</Text>
           </TouchableOpacity>
         ) : null}
       </View>
@@ -310,5 +321,21 @@ const styles = StyleSheet.create({
     ...UNIFIED_THEME.typography.labelMd,
     color: T.accent.secondary,
     fontWeight: '800',
+  },
+  rateBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 8,
+    backgroundColor: 'rgba(251,191,36,0.1)',
+    borderWidth: 1,
+    borderColor: UNIFIED_THEME.colors.accent.warning,
+  },
+  rateBtnText: {
+    ...UNIFIED_THEME.typography.labelMd,
+    color: UNIFIED_THEME.colors.accent.warning,
+    fontWeight: '700',
   },
 });

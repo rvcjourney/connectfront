@@ -1,5 +1,6 @@
 import { supabase } from '../lib/supabase';
 import { getSupabaseErrorMessage } from '../lib/supabaseErrorHandler';
+import { cancelSessionReminder } from '../utils/sessionReminder';
 
 export const bookingApi = {
   createBooking: async ({ learnerId, mentorId, slotId, message }) => {
@@ -90,6 +91,49 @@ export const bookingApi = {
     }
   },
 
+  getUpcomingBookingsByLearner: async (learnerId) => {
+    try {
+      const { data, error } = await supabase
+        .from('bookings')
+        .select(`
+          *,
+          profiles:mentor_id (id, name, avatar_url),
+          availability_slots (date, start_time, end_time)
+        `)
+        .eq('learner_id', learnerId)
+        .in('status', ['pending', 'confirmed'])
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      return data || [];
+    } catch (error) {
+      throw new Error(getSupabaseErrorMessage(error));
+    }
+  },
+
+  getBookingHistoryByLearner: async (learnerId, page = 0, pageSize = 10) => {
+    try {
+      const from = page * pageSize;
+      const to = from + pageSize - 1;
+      const { data, error } = await supabase
+        .from('bookings')
+        .select(`
+          *,
+          profiles:mentor_id (id, name, avatar_url),
+          availability_slots (date, start_time, end_time)
+        `)
+        .eq('learner_id', learnerId)
+        .in('status', ['completed', 'cancelled', 'rejected'])
+        .order('created_at', { ascending: false })
+        .range(from, to);
+
+      if (error) throw error;
+      return data || [];
+    } catch (error) {
+      throw new Error(getSupabaseErrorMessage(error));
+    }
+  },
+
   getBookingsByMentor: async (mentorId) => {
     try {
       const { data, error } = await supabase
@@ -119,6 +163,49 @@ export const bookingApi = {
     }
   },
 
+  getUpcomingBookingsByMentor: async (mentorId) => {
+    try {
+      const { data, error } = await supabase
+        .from('bookings')
+        .select(`
+          *,
+          profiles:learner_id (id, name, avatar_url),
+          availability_slots (date, start_time, end_time)
+        `)
+        .eq('mentor_id', mentorId)
+        .in('status', ['pending', 'confirmed'])
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      return data || [];
+    } catch (error) {
+      throw new Error(getSupabaseErrorMessage(error));
+    }
+  },
+
+  getBookingHistoryByMentor: async (mentorId, page = 0, pageSize = 10) => {
+    try {
+      const from = page * pageSize;
+      const to = from + pageSize - 1;
+      const { data, error } = await supabase
+        .from('bookings')
+        .select(`
+          *,
+          profiles:learner_id (id, name, avatar_url),
+          availability_slots (date, start_time, end_time)
+        `)
+        .eq('mentor_id', mentorId)
+        .in('status', ['completed', 'cancelled', 'rejected'])
+        .order('created_at', { ascending: false })
+        .range(from, to);
+
+      if (error) throw error;
+      return data || [];
+    } catch (error) {
+      throw new Error(getSupabaseErrorMessage(error));
+    }
+  },
+
   updateBookingStatus: async ({ bookingId, status }) => {
     try {
       console.log(`📊 Updating booking ${bookingId} status to: ${status}`);
@@ -133,11 +220,13 @@ export const bookingApi = {
 
       if (error) throw error;
 
-      // If status is 'completed', increment mentor's total_sessions
+      // If status is 'completed':
+      // 1. Increment mentor's total_sessions
+      // 2. Move earnings from pending → available balance (complete_session_payment RPC)
       if (status === 'completed' && data?.mentor_id) {
-        console.log(`✅ Session completed! Incrementing total_sessions for mentor: ${data.mentor_id}`);
+        console.log(`✅ Session completed for mentor: ${data.mentor_id}`);
 
-        // Get current count and increment by 1
+        // Increment total_sessions
         const { data: mentorData, error: fetchError } = await supabase
           .from('mentor_profiles')
           .select('total_sessions')
@@ -146,16 +235,23 @@ export const bookingApi = {
 
         if (!fetchError && mentorData) {
           const newCount = (mentorData.total_sessions || 0) + 1;
-          const { error: incrementError } = await supabase
+          await supabase
             .from('mentor_profiles')
             .update({ total_sessions: newCount })
             .eq('id', data.mentor_id);
+          console.log(`✅ total_sessions updated to: ${newCount}`);
+        }
 
-          if (incrementError) {
-            console.error('❌ Failed to increment total_sessions:', incrementError);
-          } else {
-            console.log(`✅ Mentor total_sessions updated to: ${newCount}`);
-          }
+        // Credit wallet: move pending earnings → available balance
+        const { error: walletError } = await supabase.rpc('complete_session_payment', {
+          p_booking_id: bookingId,
+          p_mentor_id:  data.mentor_id,
+        });
+
+        if (walletError) {
+          console.error('❌ Failed to credit wallet:', walletError);
+        } else {
+          console.log(`✅ Wallet credited for booking: ${bookingId}`);
         }
       }
 
@@ -210,6 +306,46 @@ export const bookingApi = {
     }
   },
 
+  getTransactionsAsMentor: async (mentorId) => {
+    try {
+      const { data, error } = await supabase
+        .from('bookings')
+        .select(`
+          *,
+          profiles:learner_id (id, name, avatar_url),
+          availability_slots (date, start_time, end_time),
+          mentor_profiles:mentor_id (price_per_hour)
+        `)
+        .eq('mentor_id', mentorId)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      return data || [];
+    } catch (error) {
+      throw new Error(getSupabaseErrorMessage(error));
+    }
+  },
+
+  getTransactionsAsLearner: async (learnerId) => {
+    try {
+      const { data, error } = await supabase
+        .from('bookings')
+        .select(`
+          *,
+          profiles:mentor_id (id, name, avatar_url),
+          availability_slots (date, start_time, end_time),
+          mentor_profiles:mentor_id (price_per_hour)
+        `)
+        .eq('learner_id', learnerId)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      return data || [];
+    } catch (error) {
+      throw new Error(getSupabaseErrorMessage(error));
+    }
+  },
+
   cancelBooking: async (bookingId) => {
     try {
       // Get the booking to find the slot
@@ -230,6 +366,10 @@ export const bookingApi = {
         .single();
 
       if (error) throw error;
+
+      // Cancel the scheduled reminder since booking is cancelled
+      await cancelSessionReminder(bookingId).catch(() => {});
+
       return data;
     } catch (error) {
       throw new Error(getSupabaseErrorMessage(error));

@@ -7,7 +7,7 @@ export const profileApi = {
     try {
       const { data, error } = await supabase
         .from('profiles')
-        .select('*')
+        .select('id, name, avatar_url, email, role')
         .eq('id', userId)
         .single();
 
@@ -41,7 +41,7 @@ export const profileApi = {
     try {
       const { data, error } = await supabase
         .from('mentor_profiles')
-        .select('*')
+        .select('id, specialization, bio, experience_years, price_per_hour, rating, total_sessions')
         .eq('id', mentorId)
         .single();
 
@@ -83,7 +83,7 @@ export const profileApi = {
     try {
       const { data, error } = await supabase
         .from('learner_profiles')
-        .select('*')
+        .select('id, bio, interests')
         .eq('id', learnerId)
         .single();
 

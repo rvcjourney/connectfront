@@ -75,25 +75,9 @@ export default function UnifiedSettingsScreen({ navigation }) {
 
   return (
     <SafeScreen scrollable={false} padding={UNIFIED_THEME.spacing.lg} hasBottomTabs={false}>
-      <View style={styles.header}>
-        <LinearGradient
-          colors={[
-            'rgba(167, 139, 250, 0.16)',
-            'rgba(94, 234, 212, 0.1)',
-            'rgba(2, 0, 20, 0.45)',
-          ]}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={StyleSheet.absoluteFill}
-          pointerEvents="none"
-        />
-        <Text style={styles.eyebrow}>Preferences</Text>
-        <Text style={styles.title}>Settings</Text>
-        <Text style={styles.subtitle}>Manage your account, content, and support options.</Text>
-      </View>
-
       <ScrollView showsVerticalScrollIndicator={false}>
 
+        <Text style={styles.title}>Settings</Text> 
         {/* Profile Card */}
         <View style={styles.profileCard}>
           <View style={styles.avatarRow}>
@@ -142,10 +126,24 @@ export default function UnifiedSettingsScreen({ navigation }) {
             <MaterialIcons name="chevron-right" size={22} color={UNIFIED_THEME.colors.text.secondary} />
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.menuItem}>
+          <TouchableOpacity
+            style={styles.menuItem}
+            onPress={() => navigation.navigate(SCREEN_NAMES.Wallet)}
+          >
             <View style={styles.menuLeft}>
               <MaterialIcons name="account-balance-wallet" size={20} color={UNIFIED_THEME.colors.accent.primary} />
-              <Text style={styles.menuLabel}>Payments</Text>
+              <Text style={styles.menuLabel}>My Wallet</Text>
+            </View>
+            <MaterialIcons name="chevron-right" size={22} color={UNIFIED_THEME.colors.text.secondary} />
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.menuItem}
+            onPress={() => navigation.navigate(SCREEN_NAMES.TransactionHistory)}
+          >
+            <View style={styles.menuLeft}>
+              <MaterialIcons name="history" size={20} color={UNIFIED_THEME.colors.accent.primary} />
+              <Text style={styles.menuLabel}>Transaction history</Text>
             </View>
             <MaterialIcons name="chevron-right" size={22} color={UNIFIED_THEME.colors.text.secondary} />
           </TouchableOpacity>
@@ -209,10 +207,10 @@ const styles = StyleSheet.create({
     marginBottom: UNIFIED_THEME.spacing.xs,
   },
   title: {
-    ...UNIFIED_THEME.typography.headingLg,
+    ...UNIFIED_THEME.typography.headingMd,
     color: UNIFIED_THEME.colors.text.primary,
     fontWeight: '700',
-    marginBottom: UNIFIED_THEME.spacing.xs,
+    marginBottom: UNIFIED_THEME.spacing.sm,
   },
   subtitle: {
     ...UNIFIED_THEME.typography.bodySm,

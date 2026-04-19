@@ -22,6 +22,7 @@ export function LearnerMentorCard({
   onViewProfile,
   onPress,
   showSessionCount = false,
+  fullWidth = false,
 }) {
   const name = mentor.profiles?.name || 'Unknown';
   const initial = name.charAt(0).toUpperCase();
@@ -66,11 +67,11 @@ export function LearnerMentorCard({
       </Text>
 
       {showSessionCount ? (
-        <View style={styles.sessionsRow}>
-          <MaterialIcons name="history-edu" size={14} color={C.text.muted} />
-          <Text style={styles.sessionsText}>
-            {mentor.total_sessions ?? 0} sessions
-          </Text>
+        <View style={styles.metaRow}>
+          <View style={styles.metaItem}>
+            <MaterialIcons name="history-edu" size={13} color={C.text.muted} />
+            <Text style={styles.metaText}>{mentor.total_sessions ?? 0} sessions</Text>
+          </View>
         </View>
       ) : null}
 
@@ -110,7 +111,7 @@ export function LearnerMentorCard({
     );
   }
 
-  return <View style={styles.card}>{body}</View>;
+  return <View style={[styles.card, fullWidth && styles.cardFullWidth]}>{body}</View>;
 }
 
 const styles = StyleSheet.create({
@@ -122,6 +123,11 @@ const styles = StyleSheet.create({
     padding: T.spacing.md,
     borderWidth: 1,
     borderColor: C.border.light,
+  },
+  cardFullWidth: {
+    width: '100%',
+    flex: undefined,
+    marginRight: 0,
     borderLeftWidth: 3,
     borderLeftColor: C.accent.primary,
     ...Platform.select({
@@ -197,13 +203,18 @@ const styles = StyleSheet.create({
     color: C.text.secondary,
     fontWeight: '600',
   },
-  sessionsRow: {
+  metaRow: {
+    flexDirection: 'row',
+    gap: T.spacing.sm,
+    marginBottom: T.spacing.sm,
+    flexWrap: 'wrap',
+  },
+  metaItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
-    marginBottom: T.spacing.sm,
+    gap: 3,
   },
-  sessionsText: {
+  metaText: {
     ...T.typography.bodyXs,
     color: C.text.muted,
   },

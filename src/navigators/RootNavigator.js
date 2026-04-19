@@ -17,6 +17,10 @@ import RecordingPlayerScreen from '../scenes/shared/RecordingPlayerScreen';
 import MentorAvailabilityScreen from '../scenes/mentor/AvailabilityScreen';
 import EditProfileScreen from '../scenes/settings/EditProfileScreen';
 import RecordedLecturesScreen from '../scenes/settings/RecordedLecturesScreen';
+import TransactionHistoryScreen from '../scenes/settings/TransactionHistoryScreen';
+import WalletScreen from '../scenes/settings/WalletScreen';
+import ReviewScreen from '../scenes/shared/ReviewScreen';
+import CategoryMentorsScreen from '../scenes/learner/CategoryMentorsScreen';
 
 const RootStack = createStackNavigator();
 
@@ -114,6 +118,14 @@ export const RootNavigator = () => {
               component={RecordedLecturesScreen}
             />
             <RootStack.Screen
+              name={SCREEN_NAMES.TransactionHistory}
+              component={TransactionHistoryScreen}
+            />
+            <RootStack.Screen
+              name={SCREEN_NAMES.Wallet}
+              component={WalletScreen}
+            />
+            <RootStack.Screen
               name={SCREEN_NAMES.MentorProfile}
               component={SharedMentorProfileScreen}
             />
@@ -124,6 +136,14 @@ export const RootNavigator = () => {
             <RootStack.Screen
               name={SCREEN_NAMES.MentorAvailability}
               component={MentorAvailabilityScreen}
+            />
+            <RootStack.Screen
+              name={SCREEN_NAMES.Review}
+              component={ReviewScreen}
+            />
+            <RootStack.Screen
+              name={SCREEN_NAMES.CategoryMentors}
+              component={CategoryMentorsScreen}
             />
           </RootStack.Group>
           <RootStack.Screen

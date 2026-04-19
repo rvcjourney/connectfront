@@ -6,7 +6,7 @@ export const availabilityApi = {
     try {
       const { data, error } = await supabase
         .from('availability_slots')
-        .select('*')
+        .select('id, date, start_time, end_time, is_booked')
         .eq('mentor_id', mentorId)
         .order('date', { ascending: true });
 
@@ -21,7 +21,7 @@ export const availabilityApi = {
     try {
       const { data, error } = await supabase
         .from('availability_slots')
-        .select('*')
+        .select('id, date, start_time, end_time')
         .eq('mentor_id', mentorId)
         .eq('date', date)
         .eq('is_booked', false)

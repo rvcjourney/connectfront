@@ -4,6 +4,7 @@ import {
   Text,
   ScrollView,
   StyleSheet,
+  TouchableOpacity,
   RefreshControl,
   Platform,
 } from 'react-native';
@@ -107,12 +108,18 @@ export default function LearnerHomeScreen({ navigation }) {
 
   const renderCategorySection = (category, mentors) => (
     <View key={category} style={styles.section}>
-      <View>
-        <SectionHeader
-          title={category}
-          // subtitle="Swipe for more mentors in this topic"
-          count={mentors.length}
-        />
+      <View style={styles.sectionHeaderRow}>
+        <View style={styles.sectionHeaderFlex}>
+          <SectionHeader title={category} />
+        </View>
+        <TouchableOpacity
+          style={styles.seeAllBtn}
+          onPress={() => navigation.navigate(SCREEN_NAMES.CategoryMentors, { category })}
+          activeOpacity={0.7}
+        >
+          <Text style={styles.seeAllTxt}>See all</Text>
+          <MaterialIcons name="chevron-right" size={14} color={T.colors.primary.dark} />
+        </TouchableOpacity>
       </View>
       <ScrollView
         horizontal
@@ -320,6 +327,29 @@ const styles = StyleSheet.create({
   },
   section: {
     marginBottom: T.spacing.xxl,
+  },
+  sectionHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  sectionHeaderFlex: {
+    flex: 1,
+  },
+  seeAllBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingVertical: 5,
+    paddingHorizontal: T.spacing.sm,
+    borderRadius: T.borderRadius.sm,
+    backgroundColor: T.colors.accent.secondary,
+    marginLeft: T.spacing.sm,
+  },
+  seeAllTxt: {
+    ...T.typography.labelSm,
+    color: T.colors.primary.dark,
+    fontWeight: '700',
   },
 
   mentorsRow: {

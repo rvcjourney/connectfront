@@ -18,6 +18,7 @@ import { LoadingOverlay } from '../../components/LoadingOverlay';
 import Button from '../../components/Button';
 import { StarRating } from '../../components/StarRating';
 import { mentorApi } from '../../api/mentorApi';
+import { reviewsApi } from '../../api/reviewsApi';
 import { formatPrice } from '../../utils/formatCurrency';
 import { SCREEN_NAMES } from '../../navigators/screenNames';
 
@@ -51,6 +52,7 @@ function StatPill({ icon, label, value, accent }) {
 export default function MentorProfileScreen({ navigation, route }) {
   const { mentorId } = route.params;
   const [mentor, setMentor] = useState(null);
+  const [reviews, setReviews] = useState([]);
   const [loading, setLoading] = useState(true);
   const insets = useSafeAreaInsets();
 
@@ -61,8 +63,12 @@ export default function MentorProfileScreen({ navigation, route }) {
   const loadMentorProfile = async () => {
     try {
       setLoading(true);
-      const data = await mentorApi.getMentorWithProfile(mentorId);
+      const [data, reviewData] = await Promise.all([
+        mentorApi.getMentorWithProfile(mentorId),
+        reviewsApi.getReviewsForMentor(mentorId),
+      ]);
       setMentor(data);
+      setReviews(reviewData);
     } catch {
       setMentor(null);
       Toast.show('Failed to load mentor profile');
@@ -232,6 +238,38 @@ export default function MentorProfileScreen({ navigation, route }) {
             <View style={styles.aboutAccent} />
             <Text style={styles.aboutBody}>{bio}</Text>
           </View>
+
+          {/* Reviews */}
+          <Text style={styles.sectionEyebrow}>Reviews ({reviews.length})</Text>
+          {reviews.length > 0 ? (
+            <View style={styles.reviewsList}>
+              {reviews.slice(0, 5).map(r => (
+                <View key={r.id} style={styles.reviewCard}>
+                  <View style={styles.reviewHeader}>
+                    <View style={styles.reviewAvatar}>
+                      {r.profiles?.avatar_url ? (
+                        <Image source={{ uri: r.profiles.avatar_url }} style={styles.reviewAvatarImg} />
+                      ) : (
+                        <MaterialIcons name="person" size={18} color={C.accent.secondary} />
+                      )}
+                    </View>
+                    <View style={styles.reviewMeta}>
+                      <Text style={styles.reviewerName}>{r.profiles?.name || 'Learner'}</Text>
+                      <StarRating rating={r.rating} size={13} />
+                    </View>
+                  </View>
+                  {r.comment ? (
+                    <Text style={styles.reviewComment}>{r.comment}</Text>
+                  ) : null}
+                </View>
+              ))}
+            </View>
+          ) : (
+            <View style={styles.noReviews}>
+              <MaterialIcons name="rate-review" size={28} color={C.text.muted} />
+              <Text style={styles.noReviewsTxt}>No reviews yet</Text>
+            </View>
+          )}
 
           <View style={{ height: T.spacing.xxxl }} />
         </ScrollView>
@@ -547,6 +585,35 @@ const styles = StyleSheet.create({
     color: C.text.secondary,
     lineHeight: 24,
   },
+  reviewsList: { gap: T.spacing.sm, marginBottom: T.spacing.lg },
+  reviewCard: {
+    backgroundColor: T.colors.component.card,
+    borderRadius: T.borderRadius.md,
+    borderWidth: 1,
+    borderColor: T.colors.border.light,
+    padding: T.spacing.md,
+    gap: T.spacing.sm,
+  },
+  reviewHeader: { flexDirection: 'row', alignItems: 'center', gap: T.spacing.sm },
+  reviewAvatar: {
+    width: 34, height: 34, borderRadius: 17,
+    backgroundColor: 'rgba(94,234,212,0.1)',
+    borderWidth: 1, borderColor: 'rgba(94,234,212,0.2)',
+    justifyContent: 'center', alignItems: 'center',
+    overflow: 'hidden',
+  },
+  reviewAvatarImg: { width: 34, height: 34, borderRadius: 17 },
+  reviewMeta: { gap: 2 },
+  reviewerName: { fontSize: 13, fontWeight: '700', color: C.text.primary },
+  reviewComment: { fontSize: 13, color: C.text.secondary, lineHeight: 20 },
+  noReviews: {
+    alignItems: 'center', paddingVertical: T.spacing.xl, gap: T.spacing.sm,
+    backgroundColor: T.colors.component.card,
+    borderRadius: T.borderRadius.md,
+    borderWidth: 1, borderColor: T.colors.border.light,
+    marginBottom: T.spacing.lg,
+  },
+  noReviewsTxt: { fontSize: 13, color: C.text.muted },
   footer: {
     borderTopWidth: 1,
     borderTopColor: C.border.light,

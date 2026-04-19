@@ -45,36 +45,37 @@ export default function MentorDashboardScreen() {
     }
   }, [profile?.id]);
 
+  const isSessionPast = (dateStr, timeStr) => {
+    const now = new Date();
+    const [year, month, day] = dateStr.split('-').map(Number);
+    const sessionDate = new Date(year, month - 1, day);
+    if (timeStr) {
+      const [hours, minutes] = timeStr.split(':').map(Number);
+      sessionDate.setHours(hours, minutes, 0, 0);
+    } else {
+      sessionDate.setHours(23, 59, 59, 999);
+    }
+    return sessionDate < now;
+  };
+
   const loadDashboardData = async () => {
     if (!profile?.id) return;
     try {
       setLoading(true);
 
-      let mentorData = null;
-      try {
-        mentorData = await profileApi.getMentorProfile(profile.id);
-        setMentorProfile(mentorData);
-        setRating(mentorData.rating || 4.5);
-      } catch (err) {
-        setRating(4.5);
-      }
+      // All three fetches fire in parallel
+      const [mentorData, bookings, earnings] = await Promise.all([
+        profileApi.getMentorProfile(profile.id).catch(() => null),
+        bookingApi.getBookingsByMentor(profile.id).catch(() => []),
+        earningsApi.getTotalEarnings(profile.id).catch(() => 0),
+      ]);
 
-      const bookings = await bookingApi.getBookingsByMentor(profile.id);
+      setMentorProfile(mentorData);
+      setRating(mentorData?.rating || 0);
+      setTotalEarnings(earnings || 0);
+      setTotalSessions(mentorData?.total_sessions || 0);
 
-      const isSessionPast = (dateStr, timeStr) => {
-        const now = new Date();
-        const [year, month, day] = dateStr.split('-').map(Number);
-        const sessionDate = new Date(year, month - 1, day);
-        if (timeStr) {
-          const [hours, minutes] = timeStr.split(':').map(Number);
-          sessionDate.setHours(hours, minutes, 0, 0);
-        } else {
-          sessionDate.setHours(23, 59, 59, 999);
-        }
-        return sessionDate < now;
-      };
-
-      const upcomingBookings = bookings.filter(b => {
+      const upcomingBookings = (bookings || []).filter(b => {
         const dateStr = b.availability_slots?.date;
         const timeStr = b.availability_slots?.start_time;
         if (!dateStr) return false;
@@ -83,12 +84,7 @@ export default function MentorDashboardScreen() {
           (b.status === 'pending' || b.status === 'confirmed')
         );
       });
-      setTodaySessions(upcomingBookings || []);
-
-      const earnings = await earningsApi.getTotalEarnings(profile.id);
-      setTotalEarnings(earnings?.total || 0);
-
-      setTotalSessions(mentorData?.total_sessions || 0);
+      setTodaySessions(upcomingBookings);
     } catch (error) {
       Toast.show('Failed to load dashboard');
       console.error(error);
@@ -126,8 +122,18 @@ export default function MentorDashboardScreen() {
   const ratingDisplay =
     typeof rating === 'number' ? rating.toFixed(1) : String(rating);
 
-  const profileComplete =
-    Boolean(mentorProfile?.specialization) && Boolean(mentorProfile?.bio);
+  const PROFILE_FIELDS = [
+    { key: 'photo',          label: 'Profile photo',    done: Boolean(profile?.avatar_url) },
+    { key: 'name',           label: 'Full name',         done: Boolean(profile?.name?.trim()) },
+    { key: 'specialization', label: 'Specialization',    done: Boolean(mentorProfile?.specialization?.trim()) },
+    { key: 'bio',            label: 'Bio',               done: Boolean(mentorProfile?.bio?.trim()) },
+    { key: 'price',          label: 'Session rate',      done: Boolean(mentorProfile?.price_per_hour > 0) },
+    { key: 'experience',     label: 'Years of experience', done: Boolean(mentorProfile?.experience_years > 0) },
+  ];
+  const completedCount = PROFILE_FIELDS.filter(f => f.done).length;
+  const completionPct  = Math.round((completedCount / PROFILE_FIELDS.length) * 100);
+  const isComplete     = completionPct === 100;
+  const missing        = PROFILE_FIELDS.filter(f => !f.done);
 
   const firstName = profile?.name?.split(/\s+/)[0] || 'there';
 
@@ -221,19 +227,63 @@ export default function MentorDashboardScreen() {
           </View>
         </View>
 
-        {!profileComplete ? (
+        {!isComplete ? (
           <TouchableOpacity
-            style={styles.completionStrip}
+            style={styles.completionCard}
             onPress={() => navigation.navigate(SCREEN_NAMES.EditProfile)}
             activeOpacity={0.85}
           >
-            <MaterialIcons name="bolt" size={20} color={T.colors.accent.warning} />
-            <Text style={styles.completionText}>
-              Complete your profile so learners can find and trust you.
-            </Text>
-            <MaterialIcons name="chevron-right" size={22} color={T.colors.text.muted} />
+            {/* Header row */}
+            <View style={styles.completionHeader}>
+              <View style={styles.completionTitleRow}>
+                <MaterialIcons name="bolt" size={18} color={T.colors.accent.warning} />
+                <Text style={styles.completionTitle}>Complete your profile</Text>
+              </View>
+              <Text style={[
+                styles.completionPct,
+                completionPct >= 80 && { color: T.colors.accent.success },
+              ]}>
+                {completionPct}%
+              </Text>
+            </View>
+
+            {/* Progress bar */}
+            <View style={styles.progressTrack}>
+              <LinearGradient
+                colors={completionPct >= 80
+                  ? [T.colors.accent.success, T.colors.accent.secondary]
+                  : [T.colors.accent.warning, T.colors.accent.primary]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+                style={[styles.progressFill, { width: `${completionPct}%` }]}
+              />
+            </View>
+
+            {/* Missing fields */}
+            <View style={styles.missingRow}>
+              {missing.slice(0, 3).map(f => (
+                <View key={f.key} style={styles.missingChip}>
+                  <MaterialIcons name="add-circle-outline" size={12} color={T.colors.accent.warning} />
+                  <Text style={styles.missingLabel}>{f.label}</Text>
+                </View>
+              ))}
+              {missing.length > 3 && (
+                <View style={styles.missingChip}>
+                  <Text style={styles.missingLabel}>+{missing.length - 3} more</Text>
+                </View>
+              )}
+            </View>
+
+            <View style={styles.completionFooter}>
+              <Text style={styles.completionCta}>Tap to complete →</Text>
+            </View>
           </TouchableOpacity>
-        ) : null}
+        ) : (
+          <View style={styles.completionDone}>
+            <MaterialIcons name="verified" size={16} color={T.colors.accent.success} />
+            <Text style={styles.completionDoneTxt}>Profile complete — you're discoverable!</Text>
+          </View>
+        )}
 
         <View style={styles.heroSnapshot}>
           <View style={styles.snapshotItem}>
@@ -433,23 +483,91 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 4,
   },
-  completionStrip: {
+  completionCard: {
+    backgroundColor: 'rgba(251,191,36,0.07)',
+    borderRadius: T.borderRadius.lg,
+    borderWidth: 1,
+    borderColor: 'rgba(251,191,36,0.25)',
+    padding: T.spacing.md,
+    marginTop: T.spacing.md,
+    gap: T.spacing.sm,
+  },
+  completionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  completionTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: T.spacing.xs,
+  },
+  completionTitle: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: T.colors.text.primary,
+  },
+  completionPct: {
+    fontSize: 18,
+    fontWeight: '800',
+    color: T.colors.accent.warning,
+  },
+  progressTrack: {
+    height: 6,
+    backgroundColor: 'rgba(255,255,255,0.08)',
+    borderRadius: 3,
+    overflow: 'hidden',
+  },
+  progressFill: {
+    height: '100%',
+    borderRadius: 3,
+    minWidth: 6,
+  },
+  missingRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: T.spacing.xs,
+  },
+  missingChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: 'rgba(251,191,36,0.1)',
+    borderRadius: T.borderRadius.round,
+    paddingHorizontal: T.spacing.sm,
+    paddingVertical: 3,
+    borderWidth: 1,
+    borderColor: 'rgba(251,191,36,0.2)',
+  },
+  missingLabel: {
+    fontSize: 11,
+    color: T.colors.accent.warning,
+    fontWeight: '600',
+  },
+  completionFooter: {
+    alignItems: 'flex-end',
+  },
+  completionCta: {
+    fontSize: 12,
+    color: T.colors.text.muted,
+    fontWeight: '600',
+  },
+  completionDone: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: T.spacing.sm,
-    paddingVertical: T.spacing.md,
-    paddingHorizontal: T.spacing.lg,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: T.colors.border.light,
-    backgroundColor: 'rgba(251, 191, 36, 0.08)',
-    borderLeftWidth: 3,
-    borderLeftColor: T.colors.accent.warning,
+    backgroundColor: 'rgba(52,211,153,0.08)',
+    borderRadius: T.borderRadius.md,
+    borderWidth: 1,
+    borderColor: 'rgba(52,211,153,0.2)',
+    paddingHorizontal: T.spacing.md,
+    paddingVertical: T.spacing.sm,
+    marginTop: T.spacing.md,
   },
-  completionText: {
-    ...T.typography.bodySm,
-    color: T.colors.text.secondary,
-    flex: 1,
-    lineHeight: 19,
+  completionDoneTxt: {
+    fontSize: 13,
+    color: T.colors.accent.success,
+    fontWeight: '600',
   },
   avatarImg: {
     width: '100%',

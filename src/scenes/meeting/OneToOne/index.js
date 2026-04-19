@@ -256,6 +256,7 @@ export default function OneToOneMeetingViewer({ isHost }) {
         payload.requesterId !== localParticipantIdRef.current &&
         isHost
       ) {
+        // Only start if truly stopped — not if already starting/started (avoids double-call)
         if (
           !recordingState ||
           recordingState === Constants.recordingEvents.RECORDING_STOPPED
@@ -397,7 +398,7 @@ export default function OneToOneMeetingViewer({ isHost }) {
             <Text
               style={{
                 marginLeft: 8,
-                color: colors.primary[100],
+                color: '#4DA6FF',
                 fontFamily: ROBOTO_FONTS.RobotoBold,
                 fontSize: 13,
               }}
@@ -525,7 +526,7 @@ export default function OneToOneMeetingViewer({ isHost }) {
       >
         {audioDevice.map((device, index) => {
           return (
-            <>
+            <React.Fragment key={device}>
               <MenuItem
                 title={
                   device == "SPEAKER_PHONE"
@@ -550,7 +551,7 @@ export default function OneToOneMeetingViewer({ isHost }) {
                   }}
                 />
               )}
-            </>
+            </React.Fragment>
           );
         })}
       </Menu>

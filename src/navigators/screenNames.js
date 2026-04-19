@@ -38,4 +38,8 @@ export const SCREEN_NAMES = {
   RecordingPlayer: "RecordingPlayer_Screen",
   MentorAvailability: "MentorAvailability_Screen",
   RecordedLectures: "RecordedLectures_Screen",
+  TransactionHistory: "TransactionHistory_Screen",
+  Wallet: "Wallet_Screen",
+  Review: "Review_Screen",
+  CategoryMentors: "CategoryMentors_Screen",
 };

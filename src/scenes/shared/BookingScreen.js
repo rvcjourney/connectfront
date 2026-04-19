@@ -1,5 +1,13 @@
-import React, { useEffect, useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, TextInput } from 'react-native';
+import React, { useEffect, useState, useCallback } from 'react';
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  StyleSheet,
+  TextInput,
+  ScrollView,
+} from 'react-native';
+import RazorpayCheckout from 'react-native-razorpay';
 import Toast from 'react-native-simple-toast';
 import LinearGradient from 'react-native-linear-gradient';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
@@ -8,186 +16,235 @@ import { UNIFIED_THEME } from '../../unifiedTheme';
 import { LoadingOverlay } from '../../components/LoadingOverlay';
 import Button from '../../components/Button';
 import { availabilityApi } from '../../api/availabilityApi';
-import { bookingApi } from '../../api/bookingApi';
+import { paymentApi } from '../../api/paymentApi';
+import { profileApi } from '../../api/profileApi';
+import { scheduleSessionReminder, requestNotificationPermission } from '../../utils/sessionReminder';
+import { calculateFees } from '../../utils/feeCalculator';
 import { useAuth } from '../../hooks/useAuth';
 
-// Get days in month
-const getDaysInMonth = (date) => {
-  return new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate();
-};
+const T = UNIFIED_THEME;
 
-const getFirstDayOfMonth = (date) => {
-  return new Date(date.getFullYear(), date.getMonth(), 1).getDay();
-};
+// ─── Date helpers ──────────────────────────────────────────────────────────
+const getDaysInMonth  = d => new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate();
+const getFirstDayOfMonth = d => new Date(d.getFullYear(), d.getMonth(), 1).getDay();
 
-// Format date as YYYY-MM-DD without timezone conversion
 const formatDate = (date) => {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
-  return `${year}-${month}-${day}`;
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  const d = String(date.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
 };
 
-// Safe date parsing without timezone issues
-const parseLocalDate = (dateStr) => {
-  const [year, month, day] = dateStr.split('-').map(Number);
-  return new Date(year, month - 1, day);
+const parseLocalDate = (s) => {
+  const [y, m, d] = s.split('-').map(Number);
+  return new Date(y, m - 1, d);
 };
 
-// Format date for display
-const formatDisplayDate = (dateStr) => {
-  const date = parseLocalDate(dateStr);
-  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-};
+const formatDisplayDate = (s) =>
+  parseLocalDate(s).toLocaleDateString('en-IN', {
+    month: 'short', day: 'numeric', year: 'numeric',
+  });
 
-// Check if date is in the past (compared to today)
-const isPastDate = (dateStr) => {
-  const date = parseLocalDate(dateStr);
+const isPastDate = (s) => {
+  const d = parseLocalDate(s);
   const today = new Date();
   today.setHours(0, 0, 0, 0);
-  date.setHours(0, 0, 0, 0);
-  return date < today;
+  d.setHours(0, 0, 0, 0);
+  return d < today;
 };
 
+// ─── Fee Breakdown Row ─────────────────────────────────────────────────────
+function FeeRow({ label, amount, accent, bold }) {
+  return (
+    <View style={feeStyles.row}>
+      <Text style={[feeStyles.label, bold && feeStyles.bold]}>{label}</Text>
+      <Text style={[feeStyles.amount, bold && feeStyles.bold, accent && feeStyles.accent]}>
+        ₹{amount}
+      </Text>
+    </View>
+  );
+}
+
+const feeStyles = StyleSheet.create({
+  row:    { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 6 },
+  label:  { ...T.typography.bodySm, color: T.colors.text.secondary },
+  amount: { ...T.typography.bodySm, color: T.colors.text.secondary },
+  bold:   { fontWeight: '700', color: T.colors.text.primary, fontSize: 14 },
+  accent: { color: T.colors.accent.primary },
+});
+
+// ─── Main Screen ───────────────────────────────────────────────────────────
 export default function BookingScreen({ navigation, route }) {
   const { mentorId, mentorName } = route.params;
   const { profile } = useAuth();
 
-  const [loading, setLoading] = useState(true);
-  const [bookingInProgress, setBookingInProgress] = useState(false);
-  const [currentDate, setCurrentDate] = useState(new Date());
-  const [selectedDate, setSelectedDate] = useState(formatDate(new Date()));
-  const [selectedTime, setSelectedTime] = useState(null);
+  const [loading, setLoading]               = useState(true);
+  const [paying, setPaying]                 = useState(false);
+  const [currentDate, setCurrentDate]       = useState(new Date());
+  const [selectedDate, setSelectedDate]     = useState(formatDate(new Date()));
+  const [selectedTime, setSelectedTime]     = useState(null);
   const [mentorAvailability, setMentorAvailability] = useState({});
-  const [timeSlotsForDate, setTimeSlotsForDate] = useState([]);
-  const [message, setMessage] = useState('');
+  const [timeSlotsForDate, setTimeSlotsForDate]     = useState([]);
+  const [message, setMessage]               = useState('');
+  const [pricePerHour, setPricePerHour]     = useState(0);
 
-  // Load mentor's availability
-  useEffect(() => {
-    loadMentorAvailability();
-  }, [mentorId]);
-
-  // Load time slots when date changes
-  useEffect(() => {
-    loadTimeSlotsForDate();
-  }, [selectedDate, mentorAvailability]);
-
-  const loadMentorAvailability = async () => {
+  // ── Load mentor availability + price ──────────────────────────────────────
+  const loadMentorData = useCallback(async () => {
     try {
       setLoading(true);
-      console.log('📅 Loading availability for mentor:', mentorId);
+      const [availability, mentorProfile] = await Promise.all([
+        availabilityApi.getAvailabilityForMentor(mentorId),
+        profileApi.getMentorProfile(mentorId),
+      ]);
 
-      const availability = await availabilityApi.getAvailabilityForMentor(mentorId);
-      console.log('📅 Availability loaded:', availability);
+      setPricePerHour(mentorProfile?.price_per_hour || 0);
 
-      if (!availability || availability.length === 0) {
-        console.log('⚠️ No availability found for this mentor');
+      if (!availability?.length) {
         setMentorAvailability({});
         return;
       }
 
-      // Group by date (keep slot IDs)
       const byDate = {};
       availability.forEach(slot => {
-        if (!byDate[slot.date]) {
-          byDate[slot.date] = [];
-        }
+        if (!byDate[slot.date]) byDate[slot.date] = [];
         byDate[slot.date].push({
-          id: slot.id,
+          id:         slot.id,
           start_time: slot.start_time,
-          end_time: slot.end_time,
-          is_booked: slot.is_booked,
+          end_time:   slot.end_time,
+          is_booked:  slot.is_booked,
         });
       });
-
-      console.log('✅ Availability grouped by date:', byDate);
       setMentorAvailability(byDate);
-    } catch (error) {
-      console.error('❌ Failed to load availability:', error.message);
-      Toast.show('Failed to load mentor availability: ' + error.message);
+    } catch (err) {
+      Toast.show('Failed to load mentor data: ' + err.message);
       setMentorAvailability({});
     } finally {
       setLoading(false);
     }
-  };
+  }, [mentorId]);
 
-  const loadTimeSlotsForDate = () => {
+  useEffect(() => { loadMentorData(); }, [loadMentorData]);
+
+  useEffect(() => {
     const slots = mentorAvailability[selectedDate] || [];
-    // Filter out booked slots
-    const availableSlots = slots.filter(s => !s.is_booked);
-    setTimeSlotsForDate(availableSlots);
+    setTimeSlotsForDate(slots.filter(s => !s.is_booked));
     setSelectedTime(null);
-  };
+  }, [selectedDate, mentorAvailability]);
 
   const handleSelectDate = (dateStr) => {
-    const slots = mentorAvailability[dateStr] || [];
-    if (slots.length === 0) {
+    if (!(mentorAvailability[dateStr]?.length)) {
       Toast.show('No availability on this date');
       return;
     }
     setSelectedDate(dateStr);
   };
 
-  const handleBooking = async () => {
+  // ── Fee calculation (derived from pricePerHour) ───────────────────────────
+  const fees = pricePerHour > 0 ? calculateFees(pricePerHour) : null;
+
+  // ── Payment flow ──────────────────────────────────────────────────────────
+  const handlePay = async () => {
     if (!selectedDate || !selectedTime) {
-      Toast.show('Please select date and time');
+      Toast.show('Please select a date and time slot');
       return;
     }
-
     if (!message.trim()) {
-      Toast.show('Please share what you would like to achieve');
+      Toast.show('Please share what you want to achieve');
+      return;
+    }
+    if (!fees) {
+      Toast.show('Unable to load pricing. Please go back and try again.');
       return;
     }
 
     try {
-      setBookingInProgress(true);
-      console.log('📝 Creating booking:', {
+      setPaying(true);
+
+      // 1. Create Razorpay order (server-side via Edge Function)
+      const order = await paymentApi.createOrder({
         mentorId,
-        learnerId: profile.id,
-        slotId: selectedTime.id,
-        startTime: selectedTime.start_time,
-        endTime: selectedTime.end_time,
-        message,
+        learnerId:         profile.id,
+        slotId:            selectedTime.id,
+        amountPaise:       fees.totalAmountPaise,
+        mentorAmountPaise: fees.mentorAmountPaise,
+        platformFeePaise:  fees.platformFeePaise,
       });
 
-      const booking = await bookingApi.createBooking({
+      // 2. Open Razorpay checkout
+      const razorpayOptions = {
+        description:  `1-on-1 session with ${mentorName}`,
+        currency:     order.currency,
+        key:          order.keyId,
+        amount:       String(order.amount),
+        order_id:     order.orderId,
+        name:         'Connectiqo',
+        prefill: {
+          email:   profile.email  || '',
+          contact: profile.phone  || '',
+          name:    profile.name   || '',
+        },
+        theme: { color: T.colors.accent.primary },
+      };
+
+      const paymentData = await RazorpayCheckout.open(razorpayOptions);
+
+      // 3. Verify + create booking atomically (server-side)
+      await paymentApi.verifyAndBook({
+        razorpayOrderId:    order.orderId,
+        razorpayPaymentId:  paymentData.razorpay_payment_id,
+        razorpaySignature:  paymentData.razorpay_signature,
         mentorId,
-        learnerId: profile.id,
-        slotId: selectedTime.id,
-        message,
+        learnerId:   profile.id,
+        slotId:      selectedTime.id,
+        message:     message.trim(),
+        mentorAmount: fees.mentorAmount,
+        platformFee:  fees.convenienceFee,
       });
 
-      console.log('✅ Booking created:', booking);
-      Toast.show('Booking confirmed!');
+      // 4. Schedule 15-min reminder for learner
+      await requestNotificationPermission();
+      await scheduleSessionReminder({
+        bookingId:   selectedTime.id,
+        sessionDate: selectedDate,
+        sessionTime: selectedTime.start_time,
+        mentorName,
+        isMentor:    false,
+      });
+
+      Toast.show('Booking confirmed! Payment successful.');
       navigation.goBack();
-    } catch (error) {
-      console.error('❌ Failed to create booking:', error.message);
-      Toast.show('Booking failed: ' + error.message);
+    } catch (err) {
+      // Razorpay cancellation returns a specific error code
+      if (err?.code === 'PAYMENT_CANCELLED' || err?.description === 'Payment cancelled') {
+        Toast.show('Payment cancelled');
+      } else {
+        console.error('Payment error:', err);
+        Toast.show(err.message || 'Payment failed. Please try again.');
+      }
     } finally {
-      setBookingInProgress(false);
+      setPaying(false);
     }
   };
 
-  // Calendar rendering
+  // ── Calendar ─────────────────────────────────────────────────────────────
   const daysInMonth = getDaysInMonth(currentDate);
-  const firstDay = getFirstDayOfMonth(currentDate);
-  const days = Array(firstDay).fill(null).concat(Array.from({ length: daysInMonth }, (_, i) => i + 1));
-
-  const monthYear = currentDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
-  const calendarDays = [];
+  const firstDay   = getFirstDayOfMonth(currentDate);
+  const days       = Array(firstDay).fill(null).concat(
+    Array.from({ length: daysInMonth }, (_, i) => i + 1),
+  );
+  const monthYear  = currentDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+  const calendarWeeks = [];
   for (let i = 0; i < days.length; i += 7) {
-    calendarDays.push(days.slice(i, i + 7));
+    calendarWeeks.push(days.slice(i, i + 7));
   }
 
   return (
-    <SafeScreen scrollable={true} padding={UNIFIED_THEME.spacing.lg} hasBottomTabs={true}>
+    <SafeScreen scrollable={true} padding={T.spacing.lg} hasBottomTabs={false}>
+
+      {/* Header */}
       <View style={styles.headerCard}>
         <LinearGradient
-          colors={[
-            'rgba(167, 139, 250, 0.18)',
-            'rgba(94, 234, 212, 0.1)',
-            'rgba(2, 0, 20, 0.45)',
-          ]}
+          colors={['rgba(167,139,250,0.18)', 'rgba(94,234,212,0.1)', 'rgba(2,0,20,0.45)']}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
           style={StyleSheet.absoluteFill}
@@ -199,16 +256,15 @@ export default function BookingScreen({ navigation, route }) {
       </View>
 
       {/* Calendar */}
-      <View style={styles.calendarContainer}>
+      <View style={styles.card}>
         <Text style={styles.sectionEyebrow}>Select Date</Text>
-        {/* Month Header */}
         <View style={styles.monthHeader}>
           <TouchableOpacity
             style={styles.monthNavBtn}
             onPress={() => {
-              const prev = new Date(currentDate);
-              prev.setMonth(prev.getMonth() - 1);
-              setCurrentDate(prev);
+              const p = new Date(currentDate);
+              p.setMonth(p.getMonth() - 1);
+              setCurrentDate(p);
             }}
           >
             <Text style={styles.navButton}>‹</Text>
@@ -217,68 +273,50 @@ export default function BookingScreen({ navigation, route }) {
           <TouchableOpacity
             style={styles.monthNavBtn}
             onPress={() => {
-              const next = new Date(currentDate);
-              next.setMonth(next.getMonth() + 1);
-              setCurrentDate(next);
+              const n = new Date(currentDate);
+              n.setMonth(n.getMonth() + 1);
+              setCurrentDate(n);
             }}
           >
             <Text style={styles.navButton}>›</Text>
           </TouchableOpacity>
         </View>
 
-        {/* Day Headers */}
         <View style={styles.dayHeadersRow}>
-          {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
-            <Text key={day} style={styles.dayHeader}>
-              {day}
-            </Text>
+          {['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].map(d => (
+            <Text key={d} style={styles.dayHeader}>{d}</Text>
           ))}
         </View>
 
-        {/* Calendar Days */}
-        {calendarDays.map((week, weekIndex) => (
-          <View key={weekIndex} style={styles.weekRow}>
-            {week.map((day, dayIndex) => {
-              if (!day) {
-                return <View key={`empty-${dayIndex}`} style={styles.emptyDay} />;
-              }
-
-              const dayDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), day);
-              const dateStr = formatDate(dayDate);
-              const isSelected = selectedDate === dateStr;
-              const isFuture = !isPastDate(dateStr);
-              const hasAvailability = (mentorAvailability[dateStr] || []).length > 0;
+        {calendarWeeks.map((week, wi) => (
+          <View key={wi} style={styles.weekRow}>
+            {week.map((day, di) => {
+              if (!day) return <View key={`e-${di}`} style={styles.emptyDay} />;
+              const dayDate       = new Date(currentDate.getFullYear(), currentDate.getMonth(), day);
+              const dateStr       = formatDate(dayDate);
+              const isSelected    = selectedDate === dateStr;
+              const isFuture      = !isPastDate(dateStr);
+              const hasSlots      = (mentorAvailability[dateStr] || []).length > 0;
               const availableCount = (mentorAvailability[dateStr] || []).filter(s => !s.is_booked).length;
-              const canBook = isFuture && hasAvailability;
+              const canBook       = isFuture && hasSlots;
 
               return (
                 <TouchableOpacity
-                  key={`day-${day}`}
+                  key={`d-${day}`}
                   style={[
                     styles.dayButton,
-                    isSelected && styles.dayButtonSelected,
-                    canBook && styles.dayButtonWithAvailability,
-                    !isFuture && styles.dayButtonPast,
+                    isSelected  && styles.dayButtonSelected,
+                    canBook     && styles.dayButtonWithAvailability,
+                    !isFuture   && styles.dayButtonPast,
                   ]}
                   onPress={() => canBook && handleSelectDate(dateStr)}
                   disabled={!canBook}
                 >
-                  <Text
-                    style={[
-                      styles.dayNumber,
-                      isSelected && styles.dayNumberSelected,
-                      !hasAvailability && styles.dayNumberDisabled,
-                    ]}
-                  >
+                  <Text style={[styles.dayNumber, isSelected && styles.dayNumberSelected, !hasSlots && styles.dayNumberDisabled]}>
                     {day}
                   </Text>
-                  {hasAvailability && (
-                    <Text
-                      style={[
-                        styles.slotCount,
-                        isSelected && styles.slotCountSelected,
-                      ]}
-                    >
+                  {hasSlots && (
+                    <Text style={[styles.slotCount, isSelected && styles.slotCountSelected]}>
                       {availableCount}
                     </Text>
                   )}
@@ -289,94 +327,69 @@ export default function BookingScreen({ navigation, route }) {
         ))}
       </View>
 
-      {/* Available Time Slots */}
+      {/* Time slots */}
       {timeSlotsForDate.length > 0 && (
-        <View style={styles.timeSlotsContainer}>
+        <View style={styles.card}>
           <Text style={styles.sectionEyebrow}>Select Time</Text>
           <Text style={styles.sectionTitle}>
-            Available Times for {formatDisplayDate(selectedDate)}
+            Available for {formatDisplayDate(selectedDate)}
           </Text>
-
           <View style={styles.timeSlotsGrid}>
-            {timeSlotsForDate.map((slot, index) => {
-              // Format time without seconds (14:00:00 → 14:00)
-              const formatTime = (timeStr) => timeStr.substring(0, 5);
-              const displayText = `${formatTime(slot.start_time)}-${formatTime(slot.end_time)}`;
-              const isSelected = selectedTime &&
-                selectedTime.start_time === slot.start_time &&
-                selectedTime.end_time === slot.end_time;
-
+            {timeSlotsForDate.map((slot, idx) => {
+              const fmt = t => t.substring(0, 5);
+              const label = `${fmt(slot.start_time)}–${fmt(slot.end_time)}`;
+              const isSel = selectedTime?.start_time === slot.start_time &&
+                            selectedTime?.end_time   === slot.end_time;
               return (
                 <TouchableOpacity
-                  key={index}
-                  style={[
-                    styles.timeSlot,
-                    isSelected && styles.timeSlotSelected,
-                  ]}
+                  key={idx}
+                  style={[styles.timeSlot, isSel && styles.timeSlotSelected]}
                   onPress={() => setSelectedTime(slot)}
                 >
-                  <Text
-                    style={[
-                      styles.timeSlotText,
-                      isSelected && styles.timeSlotTextSelected,
-                    ]}
-                  >
-                    {displayText}
+                  <Text style={[styles.timeSlotText, isSel && styles.timeSlotTextSelected]}>
+                    {label}
                   </Text>
                 </TouchableOpacity>
               );
             })}
           </View>
-
           {selectedTime && (
             <View style={styles.selectedInfo}>
-              <MaterialIcons
-                name="check-circle"
-                size={16}
-                color={UNIFIED_THEME.colors.text.onAccent}
-              />
+              <MaterialIcons name="check-circle" size={16} color={T.colors.text.onAccent} />
               <Text style={styles.selectedInfoText}>
-                Selected Slot: {selectedTime.start_time.substring(0, 5)}-{selectedTime.end_time.substring(0, 5)}
+                Slot: {selectedTime.start_time.substring(0, 5)}–{selectedTime.end_time.substring(0, 5)}
               </Text>
             </View>
           )}
         </View>
       )}
 
-      {timeSlotsForDate.length === 0 && selectedDate && (
-        <View style={styles.noSlotsContainer}>
-          <MaterialIcons name="event-busy" size={24} color={UNIFIED_THEME.colors.text.muted} />
+      {timeSlotsForDate.length === 0 && selectedDate && !loading && (
+        <View style={styles.noSlotsCard}>
+          <MaterialIcons name="event-busy" size={24} color={T.colors.text.muted} />
           <Text style={styles.noSlotsText}>
-            No available time slots for {formatDisplayDate(selectedDate)}
+            No available slots for {formatDisplayDate(selectedDate)}
           </Text>
         </View>
       )}
 
       {Object.keys(mentorAvailability).length === 0 && !loading && (
-        <View style={styles.noAvailabilityContainer}>
-          <MaterialIcons
-            name="sentiment-dissatisfied"
-            size={28}
-            color={UNIFIED_THEME.colors.accent.secondary}
-            style={styles.emptyIcon}
-          />
-          <Text style={styles.noAvailabilityText}>
-            This mentor has not set their availability yet
-          </Text>
-          <Text style={styles.noAvailabilitySubtext}>
-            Please check back later or book with another mentor
-          </Text>
+        <View style={styles.noAvailCard}>
+          <MaterialIcons name="sentiment-dissatisfied" size={28} color={T.colors.accent.secondary} />
+          <Text style={styles.noAvailText}>This mentor hasn't set availability yet</Text>
+          <Text style={styles.noAvailSub}>Please check back later or try another mentor</Text>
         </View>
       )}
 
+      {/* Message / Goal */}
       {selectedTime && (
-        <View style={styles.messageContainer}>
+        <View style={styles.card}>
           <Text style={styles.sectionEyebrow}>Session Goal</Text>
-          <Text style={styles.messageLabel}>What would you like to achieve in this session?</Text>
+          <Text style={styles.messageLabel}>What would you like to achieve?</Text>
           <TextInput
             style={styles.messageInput}
             placeholder="Share your learning goals or questions..."
-            placeholderTextColor={UNIFIED_THEME.colors.text.muted}
+            placeholderTextColor={T.colors.text.muted}
             value={message}
             onChangeText={setMessage}
             multiline
@@ -385,322 +398,268 @@ export default function BookingScreen({ navigation, route }) {
         </View>
       )}
 
-      {/* Action Buttons */}
-      <Text style={styles.bookingHint}>
-        You can review and change your slot anytime before confirming.
+      {/* ── Fee Breakdown ─────────────────────────────────────────────────── */}
+      {selectedTime && fees && (
+        <View style={styles.feeCard}>
+          <View style={styles.feeHeader}>
+            <MaterialIcons name="receipt-long" size={18} color={T.colors.accent.primary} />
+            <Text style={styles.feeTitle}>Price Breakdown</Text>
+          </View>
+
+          <View style={styles.feeDivider} />
+
+          <FeeRow label="Session fee (1 hr)"   amount={fees.mentorAmount}   />
+          <FeeRow label={`Platform fee (${5}%)`} amount={fees.platformBaseFee} />
+          <FeeRow label={`GST (18% on fee)`}   amount={fees.gstOnFee}       />
+
+          <View style={styles.feeDivider} />
+
+          <FeeRow
+            label="Total payable"
+            amount={fees.totalAmount}
+            bold
+            accent
+          />
+
+          <Text style={styles.feeNote}>
+            ₹{fees.mentorAmount} goes directly to your mentor · ₹{fees.convenienceFee} convenience charge
+          </Text>
+        </View>
+      )}
+
+      {/* ── Actions ──────────────────────────────────────────────────────── */}
+      <Text style={styles.hint}>
+        You can review and change your slot before paying.
       </Text>
       <View style={styles.actions}>
         <Button
           text="Cancel"
           onPress={() => navigation.goBack()}
           variant="ghost"
-          disabled={bookingInProgress}
-          style={styles.actionButton}
+          disabled={paying}
+          style={styles.actionBtn}
         />
         <Button
-          text={bookingInProgress ? 'Booking...' : 'Confirm Booking'}
-          onPress={handleBooking}
-          disabled={!selectedTime || bookingInProgress}
-          style={styles.actionButton}
+          text={
+            paying
+              ? 'Processing...'
+              : fees
+              ? `Pay ₹${fees.totalAmount}`
+              : 'Confirm Booking'
+          }
+          onPress={handlePay}
+          disabled={!selectedTime || paying}
+          style={styles.actionBtn}
         />
-        
       </View>
 
       <LoadingOverlay
-        visible={loading || bookingInProgress}
-        message={bookingInProgress ? "Creating booking..." : "Loading availability..."}
+        visible={loading || paying}
+        message={paying ? 'Processing payment...' : 'Loading availability...'}
       />
     </SafeScreen>
   );
 }
 
+// ─── Styles ──────────────────────────────────────────────────────────────────
 const styles = StyleSheet.create({
   headerCard: {
     borderRadius: 14,
     borderWidth: 1,
-    borderColor: UNIFIED_THEME.colors.border.light,
-    backgroundColor: UNIFIED_THEME.colors.component.input,
-    padding: UNIFIED_THEME.spacing.lg,
-    marginBottom: UNIFIED_THEME.spacing.lg,
+    borderColor: T.colors.border.light,
+    backgroundColor: T.colors.component.input,
+    padding: T.spacing.lg,
+    marginBottom: T.spacing.lg,
     overflow: 'hidden',
   },
   eyebrow: {
-    ...UNIFIED_THEME.typography.labelSm,
-    color: UNIFIED_THEME.colors.accent.secondary,
+    ...T.typography.labelSm,
+    color: T.colors.accent.secondary,
     letterSpacing: 1.2,
     textTransform: 'uppercase',
-    marginBottom: UNIFIED_THEME.spacing.xs,
+    marginBottom: T.spacing.xs,
   },
   title: {
-    ...UNIFIED_THEME.typography.headingMd,
-    color: UNIFIED_THEME.colors.text.primary,
-    marginBottom: UNIFIED_THEME.spacing.sm,
+    ...T.typography.headingMd,
+    color: T.colors.text.primary,
+    marginBottom: T.spacing.sm,
     textAlign: 'center',
   },
   subtitle: {
-    ...UNIFIED_THEME.typography.bodySm,
-    color: UNIFIED_THEME.colors.text.secondary,
-    marginBottom: UNIFIED_THEME.spacing.lg,
+    ...T.typography.bodySm,
+    color: T.colors.text.secondary,
     textAlign: 'center',
   },
-  calendarContainer: {
-    backgroundColor: UNIFIED_THEME.colors.component.input,
+
+  card: {
+    backgroundColor: T.colors.component.input,
     borderRadius: 12,
-    padding: UNIFIED_THEME.spacing.md,
-    marginBottom: UNIFIED_THEME.spacing.lg,
+    padding: T.spacing.md,
+    marginBottom: T.spacing.lg,
     borderWidth: 1,
-    borderColor: UNIFIED_THEME.colors.primary.light,
+    borderColor: T.colors.primary.light,
   },
+
   sectionEyebrow: {
-    ...UNIFIED_THEME.typography.labelSm,
-    color: UNIFIED_THEME.colors.text.muted,
+    ...T.typography.labelSm,
+    color: T.colors.text.muted,
     textTransform: 'uppercase',
     letterSpacing: 0.8,
-    marginBottom: UNIFIED_THEME.spacing.xs,
+    marginBottom: T.spacing.xs,
     fontWeight: '700',
   },
+  sectionTitle: {
+    ...T.typography.bodyMd,
+    color: T.colors.text.primary,
+    fontWeight: '600',
+    marginBottom: T.spacing.md,
+  },
+
+  // Calendar
   monthHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: UNIFIED_THEME.spacing.md,
+    marginBottom: T.spacing.md,
   },
   monthNavBtn: {
-    width: 34,
-    height: 34,
-    borderRadius: 17,
-    borderWidth: 1,
-    borderColor: UNIFIED_THEME.colors.border.light,
-    backgroundColor: UNIFIED_THEME.colors.primary.light,
-    justifyContent: 'center',
-    alignItems: 'center',
+    width: 34, height: 34, borderRadius: 17,
+    borderWidth: 1, borderColor: T.colors.border.light,
+    backgroundColor: T.colors.primary.light,
+    justifyContent: 'center', alignItems: 'center',
   },
   monthYear: {
-    ...UNIFIED_THEME.typography.bodyMd,
-    color: UNIFIED_THEME.colors.text.primary,
+    ...T.typography.bodyMd,
+    color: T.colors.text.primary,
     fontWeight: '600',
   },
   navButton: {
-    fontSize: 24,
-    color: UNIFIED_THEME.colors.text.primary,
-    fontWeight: 'bold',
-    lineHeight: 26,
+    fontSize: 24, color: T.colors.text.primary, fontWeight: 'bold', lineHeight: 26,
   },
   dayHeadersRow: {
-    flexDirection: 'row',
-    marginBottom: UNIFIED_THEME.spacing.sm,
+    flexDirection: 'row', marginBottom: T.spacing.sm,
   },
   dayHeader: {
-    flex: 1,
-    textAlign: 'center',
-    ...UNIFIED_THEME.typography.bodySm,
-    color: UNIFIED_THEME.colors.text.secondary,
-    fontWeight: '600',
+    flex: 1, textAlign: 'center',
+    ...T.typography.bodySm,
+    color: T.colors.text.secondary, fontWeight: '600',
   },
   weekRow: {
     flexDirection: 'row',
-    marginBottom: UNIFIED_THEME.spacing.sm,
+    marginBottom: T.spacing.sm,
     justifyContent: 'space-between',
   },
-  emptyDay: {
-    width: '13.5%',
-    aspectRatio: 1,
-  },
+  emptyDay:  { width: '13.5%', aspectRatio: 1 },
   dayButton: {
-    width: '13.5%',
-    aspectRatio: 1,
-    backgroundColor: UNIFIED_THEME.colors.primary.light,
-    borderRadius: 8,
-    justifyContent: 'center',
-    alignItems: 'center',
-    position: 'relative',
-    opacity: 0.4,
+    width: '13.5%', aspectRatio: 1,
+    backgroundColor: T.colors.primary.light,
+    borderRadius: 8, justifyContent: 'center', alignItems: 'center',
+    position: 'relative', opacity: 0.4,
   },
   dayButtonSelected: {
-    backgroundColor: UNIFIED_THEME.colors.accent.primary,
-    opacity: 1,
-    borderWidth: 2,
-    borderColor: UNIFIED_THEME.colors.primary.light,
+    backgroundColor: T.colors.accent.primary, opacity: 1,
+    borderWidth: 2, borderColor: T.colors.primary.light,
   },
   dayButtonWithAvailability: {
-    opacity: 1,
-    borderWidth: 1,
-    borderColor: UNIFIED_THEME.colors.accent.secondary,
+    opacity: 1, borderWidth: 1, borderColor: T.colors.accent.secondary,
   },
-  dayButtonPast: {
-    opacity: 0.3,
-    backgroundColor: UNIFIED_THEME.colors.primary.light,
-  },
-  dayNumber: {
-    ...UNIFIED_THEME.typography.bodySm,
-    color: UNIFIED_THEME.colors.text.primary,
-    fontWeight: '600',
-  },
-  dayNumberSelected: {
-    color: UNIFIED_THEME.colors.primary.light,
-  },
-  dayNumberDisabled: {
-    color: UNIFIED_THEME.colors.text.muted,
-  },
+  dayButtonPast: { opacity: 0.3, backgroundColor: T.colors.primary.light },
+  dayNumber:         { ...T.typography.bodySm, color: T.colors.text.primary, fontWeight: '600' },
+  dayNumberSelected: { color: T.colors.primary.light },
+  dayNumberDisabled: { color: T.colors.text.muted },
   slotCount: {
-    position: 'absolute',
-    bottom: 2,
-    right: 2,
-    ...UNIFIED_THEME.typography.bodySm,
-    color: UNIFIED_THEME.colors.accent.primary,
-    backgroundColor: UNIFIED_THEME.colors.component.input,
-    borderRadius: 10,
-    paddingHorizontal: 4,
-    paddingVertical: 1,
-    fontSize: 9,
-    fontWeight: 'bold',
+    position: 'absolute', bottom: 2, right: 2,
+    ...T.typography.bodySm, color: T.colors.accent.primary,
+    backgroundColor: T.colors.component.input,
+    borderRadius: 10, paddingHorizontal: 4, paddingVertical: 1,
+    fontSize: 9, fontWeight: 'bold',
   },
-  slotCountSelected: {
-    color: UNIFIED_THEME.colors.primary.light,
-  },
-  timeSlotsContainer: {
-    backgroundColor: UNIFIED_THEME.colors.component.input,
-    borderRadius: 12,
-    padding: UNIFIED_THEME.spacing.md,
-    borderWidth: 1,
-    borderColor: UNIFIED_THEME.colors.primary.light,
-    marginBottom: UNIFIED_THEME.spacing.lg,
-  },
-  sectionTitle: {
-    ...UNIFIED_THEME.typography.bodyMd,
-    color: UNIFIED_THEME.colors.text.primary,
-    fontWeight: '600',
-    marginBottom: UNIFIED_THEME.spacing.md,
-  },
+  slotCountSelected: { color: T.colors.primary.light },
+
+  // Time slots
   timeSlotsGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
+    flexDirection: 'row', flexWrap: 'wrap',
     justifyContent: 'space-between',
-    marginBottom: UNIFIED_THEME.spacing.md,
-    gap: UNIFIED_THEME.spacing.sm,
+    marginBottom: T.spacing.md, gap: T.spacing.sm,
   },
   timeSlot: {
-    width: '32%',
-    paddingVertical: UNIFIED_THEME.spacing.md,
-    paddingHorizontal: UNIFIED_THEME.spacing.sm,
-    marginVertical: UNIFIED_THEME.spacing.xs,
-    backgroundColor: UNIFIED_THEME.colors.component.input,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: UNIFIED_THEME.colors.primary.light,
-    justifyContent: 'center',
-    alignItems: 'center',
+    width: '32%', paddingVertical: T.spacing.md, paddingHorizontal: T.spacing.sm,
+    marginVertical: T.spacing.xs,
+    backgroundColor: T.colors.component.input, borderRadius: 8,
+    borderWidth: 1, borderColor: T.colors.primary.light,
+    justifyContent: 'center', alignItems: 'center',
   },
-  timeSlotSelected: {
-    backgroundColor: UNIFIED_THEME.colors.accent.primary,
-    borderColor: UNIFIED_THEME.colors.primary.dark,
-  },
-  timeSlotText: {
-    ...UNIFIED_THEME.typography.bodySm,
-    color: UNIFIED_THEME.colors.text.primary,
-    fontWeight: '600',
-    fontSize: 11,
-    textAlign: 'center',
-  },
-  timeSlotTextSelected: {
-    color: UNIFIED_THEME.colors.primary.light,
-  },
+  timeSlotSelected: { backgroundColor: T.colors.accent.primary, borderColor: T.colors.primary.dark },
+  timeSlotText:         { ...T.typography.bodySm, color: T.colors.text.primary, fontWeight: '600', fontSize: 11, textAlign: 'center' },
+  timeSlotTextSelected: { color: T.colors.primary.light },
   selectedInfo: {
-    backgroundColor: UNIFIED_THEME.colors.accent.success,
-    borderRadius: 8,
-    paddingVertical: UNIFIED_THEME.spacing.md,
-    paddingHorizontal: UNIFIED_THEME.spacing.lg,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: UNIFIED_THEME.spacing.sm,
+    backgroundColor: T.colors.accent.success,
+    borderRadius: 8, paddingVertical: T.spacing.md, paddingHorizontal: T.spacing.lg,
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: T.spacing.sm,
   },
   selectedInfoText: {
-    ...UNIFIED_THEME.typography.bodySm,
-    color: UNIFIED_THEME.colors.text.primary,
-    textAlign: 'center',
-    fontWeight: '600',
-  },
-  noSlotsContainer: {
-    backgroundColor: UNIFIED_THEME.colors.component.input,
-    borderRadius: 8,
-    paddingVertical: UNIFIED_THEME.spacing.lg,
-    paddingHorizontal: UNIFIED_THEME.spacing.lg,
-    marginBottom: UNIFIED_THEME.spacing.lg,
-    alignItems: 'center',
-    gap: UNIFIED_THEME.spacing.sm,
-    borderWidth: 1,
-    borderColor: UNIFIED_THEME.colors.border.light,
-  },
-  noSlotsText: {
-    ...UNIFIED_THEME.typography.bodySm,
-    color: UNIFIED_THEME.colors.text.secondary,
-    textAlign: 'center',
-  },
-  noAvailabilityContainer: {
-    backgroundColor: UNIFIED_THEME.colors.component.input,
-    borderRadius: 8,
-    paddingVertical: UNIFIED_THEME.spacing.lg,
-    paddingHorizontal: UNIFIED_THEME.spacing.lg,
-    marginBottom: UNIFIED_THEME.spacing.lg,
-    borderLeftWidth: 4,
-    borderLeftColor: UNIFIED_THEME.colors.accent.secondary,
-    alignItems: 'center',
-  },
-  emptyIcon: {
-    marginBottom: UNIFIED_THEME.spacing.sm,
-  },
-  noAvailabilityText: {
-    ...UNIFIED_THEME.typography.bodyMd,
-    color: UNIFIED_THEME.colors.text.primary,
-    textAlign: 'center',
-    fontWeight: '600',
-    marginBottom: UNIFIED_THEME.spacing.sm,
-  },
-  noAvailabilitySubtext: {
-    ...UNIFIED_THEME.typography.bodySm,
-    color: UNIFIED_THEME.colors.text.secondary,
-    textAlign: 'center',
-  },
-  messageContainer: {
-    backgroundColor: UNIFIED_THEME.colors.component.input,
-    borderRadius: 12,
-    padding: UNIFIED_THEME.spacing.md,
-    marginBottom: UNIFIED_THEME.spacing.lg,
-    borderWidth: 1,
-    borderColor: UNIFIED_THEME.colors.primary.light,
-  },
-  messageLabel: {
-    ...UNIFIED_THEME.typography.bodyMd,
-    color: UNIFIED_THEME.colors.text.primary,
-    fontWeight: '600',
-    marginBottom: UNIFIED_THEME.spacing.sm,
-  },
-  messageInput: {
-    backgroundColor: UNIFIED_THEME.colors.primary.light,
-    color: UNIFIED_THEME.colors.text.primary,
-    paddingHorizontal: UNIFIED_THEME.spacing.md,
-    paddingVertical: UNIFIED_THEME.spacing.lg,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: UNIFIED_THEME.colors.border.default,
-    ...UNIFIED_THEME.typography.bodySm,
-    textAlignVertical: 'top',
-  },
-  actions: {
-    flexDirection: 'row',
-    gap: UNIFIED_THEME.spacing.md,
-    marginTop: UNIFIED_THEME.spacing.md,
-    marginBottom: UNIFIED_THEME.spacing.lg,
-  },
-  bookingHint: {
-    ...UNIFIED_THEME.typography.bodySm,
-    color: UNIFIED_THEME.colors.text.muted,
-    textAlign: 'center',
-    marginTop: UNIFIED_THEME.spacing.md,
+    ...T.typography.bodySm, color: T.colors.text.primary, textAlign: 'center', fontWeight: '600',
   },
 
-  actionButton: {
-    flex: 1,
+  // No slots / no availability
+  noSlotsCard: {
+    backgroundColor: T.colors.component.input, borderRadius: 8,
+    paddingVertical: T.spacing.lg, paddingHorizontal: T.spacing.lg,
+    marginBottom: T.spacing.lg, alignItems: 'center', gap: T.spacing.sm,
+    borderWidth: 1, borderColor: T.colors.border.light,
   },
+  noSlotsText: { ...T.typography.bodySm, color: T.colors.text.secondary, textAlign: 'center' },
+  noAvailCard: {
+    backgroundColor: T.colors.component.input, borderRadius: 8,
+    paddingVertical: T.spacing.lg, paddingHorizontal: T.spacing.lg,
+    marginBottom: T.spacing.lg, borderLeftWidth: 4,
+    borderLeftColor: T.colors.accent.secondary, alignItems: 'center',
+  },
+  noAvailText: { ...T.typography.bodyMd, color: T.colors.text.primary, textAlign: 'center', fontWeight: '600', marginTop: T.spacing.sm, marginBottom: T.spacing.sm },
+  noAvailSub:  { ...T.typography.bodySm, color: T.colors.text.secondary, textAlign: 'center' },
+
+  // Message
+  messageLabel: {
+    ...T.typography.bodyMd, color: T.colors.text.primary, fontWeight: '600', marginBottom: T.spacing.sm,
+  },
+  messageInput: {
+    backgroundColor: T.colors.primary.light, color: T.colors.text.primary,
+    paddingHorizontal: T.spacing.md, paddingVertical: T.spacing.lg,
+    borderRadius: 8, borderWidth: 1, borderColor: T.colors.border.default,
+    ...T.typography.bodySm, textAlignVertical: 'top',
+  },
+
+  // Fee card
+  feeCard: {
+    backgroundColor: T.colors.component.input,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: T.colors.accent.primary + '44',
+    padding: T.spacing.lg,
+    marginBottom: T.spacing.lg,
+  },
+  feeHeader: {
+    flexDirection: 'row', alignItems: 'center', gap: T.spacing.sm, marginBottom: T.spacing.md,
+  },
+  feeTitle: {
+    ...T.typography.bodyMd, color: T.colors.text.primary, fontWeight: '700',
+  },
+  feeDivider: {
+    height: StyleSheet.hairlineWidth,
+    backgroundColor: T.colors.border.light,
+    marginVertical: T.spacing.sm,
+  },
+  feeNote: {
+    ...T.typography.bodySm, color: T.colors.text.muted, marginTop: T.spacing.sm, lineHeight: 18,
+  },
+
+  // Actions
+  hint: {
+    ...T.typography.bodySm, color: T.colors.text.muted, textAlign: 'center', marginBottom: T.spacing.sm,
+  },
+  actions: {
+    flexDirection: 'row', gap: T.spacing.md,
+    marginBottom: T.spacing.lg,
+  },
+  actionBtn: { flex: 1 },
 });
