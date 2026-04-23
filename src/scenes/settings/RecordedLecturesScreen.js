@@ -18,7 +18,12 @@ import { LoadingOverlay } from '../../components/LoadingOverlay';
 import { BookingCard } from '../../components/BookingCard';
 import { useAuth } from '../../hooks/useAuth';
 import { bookingApi } from '../../api/bookingApi';
-import { getToken, fetchRecordingUrl, normalizeRecordingUrl } from '../../api/api';
+import {
+  getToken,
+  fetchRecordingUrls,
+  normalizeRecordingUrl,
+  isTokenEndpointConfigured,
+} from '../../api/api';
 import { SCREEN_NAMES } from '../../navigators/screenNames';
 
 const T = UNIFIED_THEME;
@@ -38,23 +43,33 @@ function useRecordingsContext() {
 }
 
 async function enrichBookingsWithRecordings(bookings, token) {
-  return Promise.all(
+  const enrichedGroups = await Promise.all(
     (bookings || []).map(async booking => {
       const existing =
         booking?.recording_playback_url || booking?.recording_url || null;
       if (existing) {
-        return { ...booking, recordingUrl: existing };
+        return [{ ...booking, recordingUrl: existing, recordingIndex: 0 }];
       }
+
       if (!token || !booking?.meeting_id || booking?.status !== 'completed') {
-        return { ...booking, recordingUrl: null };
+        return [];
       }
-      const recordingUrl = await fetchRecordingUrl({
+
+      const urls = await fetchRecordingUrls({
         meetingId: booking.meeting_id,
         token,
       });
-      return { ...booking, recordingUrl: recordingUrl || null };
+
+      return urls.map((recordingUrl, idx) => ({
+        ...booking,
+        id: `${booking.id}-rec-${idx}`,
+        recordingUrl,
+        recordingIndex: idx,
+      }));
     }),
   );
+
+  return enrichedGroups.flat();
 }
 
 const tabIcon =
@@ -144,6 +159,10 @@ function LearnerRecordingsTab() {
 }
 
 async function getTokenWithTimeout(timeoutMs = 6000) {
+  if (!isTokenEndpointConfigured) {
+    return null;
+  }
+
   return Promise.race([
     getToken(),
     new Promise((_, reject) =>

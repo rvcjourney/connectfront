@@ -9,8 +9,8 @@
  *   total_amount       = mentor_amount + convenience_fee
  */
 
-const PLATFORM_FEE_PERCENT = 5;
-const GST_PERCENT = 18;
+export const DEFAULT_PLATFORM_FEE_PERCENT = 5;
+export const DEFAULT_GST_PERCENT = 18;
 
 /**
  * @param {number} pricePerHour - Mentor's price in ₹ (e.g. 500)
@@ -25,14 +25,22 @@ const GST_PERCENT = 18;
  *   platformFeePaise: number,
  * }}
  */
-export function calculateFees(pricePerHour) {
+export function calculateFees(pricePerHour, config = {}) {
+  const platformFeePercent =
+    Number(config.platformFeePercent ?? DEFAULT_PLATFORM_FEE_PERCENT) ||
+    DEFAULT_PLATFORM_FEE_PERCENT;
+  const gstPercent =
+    Number(config.gstPercent ?? DEFAULT_GST_PERCENT) || DEFAULT_GST_PERCENT;
+
   const mentorAmount    = Math.round(pricePerHour);
-  const platformBaseFee = Math.round(mentorAmount * PLATFORM_FEE_PERCENT / 100);
-  const gstOnFee        = Math.round(platformBaseFee * GST_PERCENT / 100);
+  const platformBaseFee = Math.round(mentorAmount * platformFeePercent / 100);
+  const gstOnFee        = Math.round(platformBaseFee * gstPercent / 100);
   const convenienceFee  = platformBaseFee + gstOnFee;
   const totalAmount     = mentorAmount + convenienceFee;
 
   return {
+    platformFeePercent,
+    gstPercent,
     mentorAmount,
     platformBaseFee,
     gstOnFee,

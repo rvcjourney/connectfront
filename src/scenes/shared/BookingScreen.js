@@ -87,6 +87,7 @@ export default function BookingScreen({ navigation, route }) {
   const [timeSlotsForDate, setTimeSlotsForDate]     = useState([]);
   const [message, setMessage]               = useState('');
   const [pricePerHour, setPricePerHour]     = useState(0);
+  const [feeConfig, setFeeConfig]           = useState(null);
 
   // ── Load mentor availability + price ──────────────────────────────────────
   const loadMentorData = useCallback(async () => {
@@ -98,6 +99,21 @@ export default function BookingScreen({ navigation, route }) {
       ]);
 
       setPricePerHour(mentorProfile?.price_per_hour || 0);
+
+      if (profile?.id) {
+        const rule = await paymentApi.getFeeRule({
+          learnerId: profile.id,
+          mentorId,
+        });
+        setFeeConfig(
+          rule
+            ? {
+                platformFeePercent: Number(rule.platform_fee_percent),
+                gstPercent: Number(rule.gst_percent),
+              }
+            : null
+        );
+      }
 
       if (!availability?.length) {
         setMentorAvailability({});
@@ -121,7 +137,7 @@ export default function BookingScreen({ navigation, route }) {
     } finally {
       setLoading(false);
     }
-  }, [mentorId]);
+  }, [mentorId, profile?.id]);
 
   useEffect(() => { loadMentorData(); }, [loadMentorData]);
 
@@ -140,7 +156,7 @@ export default function BookingScreen({ navigation, route }) {
   };
 
   // ── Fee calculation (derived from pricePerHour) ───────────────────────────
-  const fees = pricePerHour > 0 ? calculateFees(pricePerHour) : null;
+  const fees = pricePerHour > 0 ? calculateFees(pricePerHour, feeConfig || undefined) : null;
 
   // ── Payment flow ──────────────────────────────────────────────────────────
   const handlePay = async () => {
@@ -409,8 +425,8 @@ export default function BookingScreen({ navigation, route }) {
           <View style={styles.feeDivider} />
 
           <FeeRow label="Session fee (1 hr)"   amount={fees.mentorAmount}   />
-          <FeeRow label={`Platform fee (${5}%)`} amount={fees.platformBaseFee} />
-          <FeeRow label={`GST (18% on fee)`}   amount={fees.gstOnFee}       />
+          <FeeRow label={`Platform fee (${fees.platformFeePercent}%)`} amount={fees.platformBaseFee} />
+          <FeeRow label={`GST (${fees.gstPercent}% on fee)`}   amount={fees.gstOnFee}       />
 
           <View style={styles.feeDivider} />
 

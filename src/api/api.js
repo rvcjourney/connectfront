@@ -10,6 +10,8 @@ const API_AUTH_URL = (
   ""
 ).trim();
 
+export const isTokenEndpointConfigured = Boolean(API_AUTH_URL);
+
 export const getToken = async () => {
   try {
     if (!API_AUTH_URL) {
@@ -313,5 +315,64 @@ export const fetchRecordingUrl = async ({ meetingId, token }) => {
   } catch (error) {
     ApiErrorHandler.logError("fetchRecordingUrl", error);
     return null;
+  }
+};
+
+export const fetchRecordingUrls = async ({ meetingId, token }) => {
+  try {
+    if (!meetingId || !token) return [];
+
+    const sessions = await fetchSessionsByRoom({ meetingId, token });
+    if (!sessions.length) return [];
+
+    const sortedSessions = [...sessions].sort((a, b) => {
+      const aTime = new Date(a?.end || a?.start || 0).getTime();
+      const bTime = new Date(b?.end || b?.start || 0).getTime();
+      return bTime - aTime;
+    });
+
+    const urls = [];
+    const seen = new Set();
+    const pushUrl = (rawUrl) => {
+      const normalized = normalizeRecordingUrl(rawUrl);
+      if (!normalized || seen.has(normalized)) return;
+      seen.add(normalized);
+      urls.push(normalized);
+    };
+
+    for (const session of sortedSessions) {
+      const recordingLog = Array.isArray(session?.recordingLog)
+        ? session.recordingLog
+        : [];
+
+      pushUrl(pickRecordingUrlFromObject(session.recording));
+      pushUrl(pickRecordingUrlFromObject(session.recordings));
+
+      for (let i = recordingLog.length - 1; i >= 0; i -= 1) {
+        const recordingId = recordingLog[i]?.recordingId;
+        if (!recordingId) continue;
+
+        const recording = await fetchRecordingById({ recordingId, token });
+        pushUrl(pickRecordingUrlFromObject(recording?.file));
+        pushUrl(pickRecordingUrlFromObject(recording));
+      }
+
+      if (Array.isArray(session.recordings)) {
+        session.recordings.forEach((item) =>
+          pushUrl(pickRecordingUrlFromObject(item))
+        );
+      }
+
+      if (Array.isArray(session.files)) {
+        session.files.forEach((item) =>
+          pushUrl(pickRecordingUrlFromObject(item))
+        );
+      }
+    }
+
+    return urls;
+  } catch (error) {
+    ApiErrorHandler.logError("fetchRecordingUrls", error);
+    return [];
   }
 };

@@ -51,3 +51,5 @@ buck-out/
 yarn.lock
 android/local.properties
 .github/
+connectback/
+admin/

@@ -168,4 +168,47 @@ export const paymentApi = {
       throw new Error(getSupabaseErrorMessage(error));
     }
   },
+
+  /**
+   * Resolve fee/GST rule for a learner+mentor combination.
+   * Priority:
+   * 1) exact learner+mentor
+   * 2) learner-specific (mentor null)
+   * 3) mentor-specific (learner null)
+   * 4) global default (both null)
+   */
+  getFeeRule: async ({ learnerId, mentorId }) => {
+    try {
+      const { data, error } = await supabase
+        .from('platform_fee_rules')
+        .select('learner_id, mentor_id, platform_fee_percent, gst_percent, is_active, updated_at')
+        .eq('is_active', true)
+        .or(
+          `and(learner_id.eq.${learnerId},mentor_id.eq.${mentorId}),and(learner_id.eq.${learnerId},mentor_id.is.null),and(learner_id.is.null,mentor_id.eq.${mentorId}),and(learner_id.is.null,mentor_id.is.null)`
+        )
+        .order('updated_at', { ascending: false });
+
+      if (error) throw error;
+
+      const rows = data || [];
+      if (!rows.length) return null;
+
+      const pick = (predicate) => rows.find(predicate) || null;
+
+      const exact = pick((r) => r.learner_id === learnerId && r.mentor_id === mentorId);
+      if (exact) return exact;
+
+      const learnerOnly = pick((r) => r.learner_id === learnerId && !r.mentor_id);
+      if (learnerOnly) return learnerOnly;
+
+      const mentorOnly = pick((r) => !r.learner_id && r.mentor_id === mentorId);
+      if (mentorOnly) return mentorOnly;
+
+      return pick((r) => !r.learner_id && !r.mentor_id);
+    } catch (error) {
+      // Keep booking flow resilient if rules table is absent or unavailable.
+      console.warn('⚠️ Fee rule lookup failed, using defaults:', error?.message);
+      return null;
+    }
+  },
 };
