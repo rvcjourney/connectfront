@@ -307,9 +307,9 @@ export default function HomeScreen() {
           <View style={styles.catHeader}>
             <View style={styles.catHeaderLeft}>
               <View style={[styles.sectionDot, { backgroundColor: C.accent.primary }]} />
-              <Text style={styles.sectionLabel}>BROWSE CATEGORIES</Text>
+              <Text style={styles.sectionLabel}>Session</Text>
             </View>
-            <Text style={styles.catSubtitle}>Tap a card to watch</Text>
+            {/* <Text style={styles.catSubtitle}>Tap a card to watch</Text> */}
           </View>
 
           <ScrollView
@@ -748,7 +748,7 @@ const styles = StyleSheet.create({
     borderRadius: 3,
   },
   sectionLabel: {
-    fontSize: 10,
+    fontSize: 15,
     fontWeight: '700',
     color: C.text.muted,
     letterSpacing: 1.4,
