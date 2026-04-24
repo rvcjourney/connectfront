@@ -15,14 +15,45 @@ import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import { SafeScreen } from '../../components/SafeScreen';
 import { UNIFIED_THEME } from '../../unifiedTheme';
 import { SearchBar } from '../../components/SearchBar';
-import { SectionHeader } from '../../components/SectionHeader';
-import { LearnerMentorCard } from '../../components/LearnerMentorCard';
+import { MentorImageCard } from '../../components/MentorImageCard';
+import { MentorDetailSheet } from '../../components/MentorDetailSheet';
 import { mentorApi } from '../../api/mentorApi';
 import { useAuth } from '../../hooks/useAuth';
 import { SCREEN_NAMES } from '../../navigators/screenNames';
 
 const T = UNIFIED_THEME;
 const TB = T.colors.tabBar;
+
+const CATEGORY_ICONS = {
+  technology:   'computer',
+  programming:  'code',
+  design:       'palette',
+  business:     'business-center',
+  marketing:    'campaign',
+  finance:      'account-balance',
+  data:         'bar-chart',
+  science:      'biotech',
+  language:     'translate',
+  music:        'music-note',
+  art:          'brush',
+  photography:  'camera-alt',
+  fitness:      'fitness-center',
+  health:       'favorite',
+  law:          'gavel',
+  education:    'school',
+  leadership:   'groups',
+  writing:      'edit-note',
+  career:       'work',
+  others:       'auto-awesome',
+};
+
+function getCategoryIcon(category = '') {
+  const key = category.toLowerCase().trim();
+  for (const [k, v] of Object.entries(CATEGORY_ICONS)) {
+    if (key.includes(k)) return v;
+  }
+  return 'auto-awesome';
+}
 
 // ─── Skeleton ─────────────────────────────────────────────────────────────────
 function SkeletonBone({ style }) {
@@ -35,34 +66,24 @@ function SkeletonBone({ style }) {
       ]),
     ).start();
   }, []);
-  const opacity = anim.interpolate({ inputRange: [0, 1], outputRange: [0.2, 0.5] });
+  const opacity = anim.interpolate({ inputRange: [0, 1], outputRange: [0.15, 0.45] });
   return <Animated.View style={[sk.bone, style, { opacity }]} />;
 }
 
-function SkeletonMentorCard() {
-  return (
-    <View style={sk.card}>
-      <View style={sk.topRow}>
-        <SkeletonBone style={sk.avatar} />
-        <View style={sk.headCol}>
-          <SkeletonBone style={sk.nameLine} />
-          <SkeletonBone style={sk.ratingLine} />
-        </View>
-      </View>
-      <SkeletonBone style={sk.specLine} />
-      <SkeletonBone style={sk.specShort} />
-      <SkeletonBone style={sk.priceLine} />
-      <SkeletonBone style={sk.btnLine} />
-    </View>
-  );
+function SkeletonImageCard() {
+  return <SkeletonBone style={sk.imageCard} />;
 }
 
 function SkeletonCategoryRow() {
   return (
     <View style={sk.section}>
-      <SkeletonBone style={sk.sectionTitle} />
+      {/* section header placeholder */}
+      <View style={sk.headerRow}>
+        <SkeletonBone style={sk.iconBox} />
+        <SkeletonBone style={sk.sectionTitle} />
+      </View>
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={sk.row}>
-        {[0, 1, 2].map(i => <SkeletonMentorCard key={i} />)}
+        {[0, 1, 2, 3].map(i => <SkeletonImageCard key={i} />)}
       </ScrollView>
     </View>
   );
@@ -71,19 +92,6 @@ function SkeletonCategoryRow() {
 function HomeScreenSkeleton() {
   return (
     <>
-      {/* hero placeholder */}
-      <View style={sk.hero}>
-        <SkeletonBone style={sk.heroBadge} />
-        <SkeletonBone style={sk.heroTitle} />
-        <SkeletonBone style={sk.heroSubtitle} />
-        <View style={sk.heroStatsRow}>
-          <SkeletonBone style={sk.heroStat} />
-          <SkeletonBone style={sk.heroStat} />
-        </View>
-      </View>
-      {/* search bar placeholder */}
-      <SkeletonBone style={sk.searchBar} />
-      {/* 2 category rows */}
       <SkeletonCategoryRow />
       <SkeletonCategoryRow />
     </>
@@ -91,43 +99,22 @@ function HomeScreenSkeleton() {
 }
 
 const sk = StyleSheet.create({
-  bone: { backgroundColor: T.colors.border.default, borderRadius: T.borderRadius.sm },
-  hero: {
-    borderRadius: T.borderRadius.sm,
-    backgroundColor: T.colors.component.card,
-    borderWidth: 1,
-    borderColor: T.colors.border.light,
-    padding: T.spacing.lg,
-    marginBottom: T.spacing.md,
-    gap: T.spacing.sm,
+  bone: { backgroundColor: T.colors.border.default, borderRadius: T.borderRadius.lg },
+  imageCard: {
+    width: 120,
+    height: 172,
+    borderRadius: T.borderRadius.lg,
   },
-  heroBadge: { height: 26, width: 90, borderRadius: T.borderRadius.sm },
-  heroTitle: { height: 20, width: '60%' },
-  heroSubtitle: { height: 14, width: '85%' },
-  heroStatsRow: { flexDirection: 'row', gap: T.spacing.md, marginTop: T.spacing.xs },
-  heroStat: { height: 36, flex: 1, borderRadius: T.borderRadius.sm },
-  searchBar: { height: 44, width: '100%', marginBottom: T.spacing.lg },
   section: { marginBottom: T.spacing.xxl },
-  sectionTitle: { height: 16, width: 120, marginBottom: T.spacing.md },
-  row: { gap: T.spacing.sm, paddingBottom: T.spacing.sm },
-  card: {
-    width: 176,
-    backgroundColor: T.colors.component.card,
-    borderRadius: T.borderRadius.sm,
-    padding: T.spacing.md,
-    borderWidth: 1,
-    borderColor: T.colors.border.light,
+  headerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
     gap: T.spacing.sm,
+    marginBottom: T.spacing.md,
   },
-  topRow: { flexDirection: 'row', gap: T.spacing.sm, marginBottom: T.spacing.xs },
-  headCol: { flex: 1, gap: 6, justifyContent: 'center' },
-  avatar: { width: 48, height: 48, borderRadius: T.borderRadius.sm },
-  nameLine: { height: 12, width: '80%' },
-  ratingLine: { height: 10, width: '50%' },
-  specLine: { height: 10, width: '100%' },
-  specShort: { height: 10, width: '65%' },
-  priceLine: { height: 14, width: '45%' },
-  btnLine: { height: 32, width: '100%', borderRadius: T.borderRadius.sm },
+  iconBox: { width: 26, height: 26, borderRadius: 7 },
+  sectionTitle: { height: 14, width: 110, borderRadius: T.borderRadius.sm },
+  row: { gap: T.spacing.sm, paddingBottom: T.spacing.sm },
 });
 
 export default function LearnerHomeScreen({ navigation }) {
@@ -138,6 +125,7 @@ export default function LearnerHomeScreen({ navigation }) {
   const [searchLoading, setSearchLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [selectedMentor, setSelectedMentor] = useState(null);
   const searchDebounce = useRef(null);
 
   useEffect(() => {
@@ -215,20 +203,39 @@ export default function LearnerHomeScreen({ navigation }) {
     ? (searchResults?.length ?? 0)
     : filteredCategories.reduce((sum, c) => sum + groupedMentors[c].length, 0);
 
-  const renderCategorySection = (category, mentors) => (
+  const renderCategorySection = (category, mentors, isSearch = false) => (
     <View key={category} style={styles.section}>
       <View style={styles.sectionHeaderRow}>
-        <View style={styles.sectionHeaderFlex}>
-          <SectionHeader title={category} />
+        <View style={styles.categoryLabel}>
+          <View style={styles.categoryIconBox}>
+            <MaterialIcons
+              name={getCategoryIcon(category)}
+              size={14}
+              color={T.colors.accent.secondary}
+            />
+          </View>
+          <Text style={styles.categoryTitle}>{category}</Text>
+          {!isSearch && (
+            <View style={styles.countPill}>
+              <Text style={styles.countPillTxt}>{mentors.length}</Text>
+            </View>
+          )}
         </View>
-        <TouchableOpacity
-          style={styles.seeAllBtn}
-          onPress={() => navigation.navigate(SCREEN_NAMES.CategoryMentors, { category })}
-          activeOpacity={0.7}
-        >
-          <Text style={styles.seeAllTxt}>See all</Text>
-          <MaterialIcons name="chevron-right" size={14} color={T.colors.primary.dark} />
-        </TouchableOpacity>
+        {!isSearch && (
+          <TouchableOpacity
+            style={styles.seeAllBtn}
+            onPress={() => navigation.navigate(SCREEN_NAMES.CategoryMentors, { category })}
+            activeOpacity={0.7}
+          >
+            <Text style={styles.seeAllTxt}>See all</Text>
+            <MaterialIcons name="chevron-right" size={13} color={T.colors.accent.secondary} />
+          </TouchableOpacity>
+        )}
+        {isSearch && (
+          <View style={styles.resultBadge}>
+            <Text style={styles.resultBadgeTxt}>{mentors.length} found</Text>
+          </View>
+        )}
       </View>
       <ScrollView
         horizontal
@@ -236,11 +243,10 @@ export default function LearnerHomeScreen({ navigation }) {
         contentContainerStyle={styles.mentorsRow}
       >
         {mentors.map(mentor => (
-          <LearnerMentorCard
+          <MentorImageCard
             key={mentor.id}
             mentor={mentor}
-            onBook={handleBookMentor}
-            onViewProfile={handleViewProfile}
+            onPress={setSelectedMentor}
           />
         ))}
       </ScrollView>
@@ -261,7 +267,7 @@ export default function LearnerHomeScreen({ navigation }) {
         />
       }
     >
-      <View style={styles.hero}>
+      {/*<View style={styles.hero}>
         <LinearGradient
           colors={TB.flatBarEdge}
           locations={[0, 0.4, 0.7, 1]}
@@ -270,7 +276,7 @@ export default function LearnerHomeScreen({ navigation }) {
           style={styles.heroBeam}
           pointerEvents="none"
         />
-        <LinearGradient
+          <LinearGradient
           colors={[
             'rgba(167, 139, 250, 0.14)',
             'rgba(94, 234, 212, 0.1)',
@@ -282,7 +288,7 @@ export default function LearnerHomeScreen({ navigation }) {
           pointerEvents="none"
         />
 
-        <View style={styles.heroTop}>
+         <View style={styles.heroTop}>
           <View style={styles.heroBadge}>
             <MaterialIcons name="explore" size={16} color={T.colors.accent.secondary} />
             <Text style={styles.heroBadgeText}>Discover</Text>
@@ -291,7 +297,7 @@ export default function LearnerHomeScreen({ navigation }) {
         <Text style={styles.heroTitle}>Find your mentor</Text>
         <Text style={styles.heroSubtitle}>
           Search by name or skill, then book a session in a few taps.
-        </Text>
+        </Text> 
 
         <View style={styles.heroStats}>
           <View style={styles.heroStat}>
@@ -304,13 +310,24 @@ export default function LearnerHomeScreen({ navigation }) {
             <Text style={styles.heroStatLabel}>Mentors</Text>
           </View>
         </View>
-      </View>
+      </View>  */}
 
-      <SearchBar
-        value={searchQuery}
-        onChangeText={handleSearchChange}
-        placeholder="Search by name, skill, or category…"
-      />
+      <View style={styles.searchWrap}>
+        <View style={styles.searchLabelRow}>
+          <MaterialIcons name="explore" size={15} color={T.colors.accent.secondary} />
+          <Text style={styles.searchLabel}>
+            {isSearching
+              ? 'Search results'
+              : `${filteredCategories.length} topics · ${totalMentors} mentors`}
+          </Text>
+        </View>
+        <SearchBar
+          value={searchQuery}
+          onChangeText={handleSearchChange}
+          placeholder="Search by name, skill, or category…"
+          containerStyle={styles.searchBarInner}
+        />
+      </View>
 
       {loading ? (
         <HomeScreenSkeleton />
@@ -319,7 +336,7 @@ export default function LearnerHomeScreen({ navigation }) {
           <HomeScreenSkeleton />
         ) : searchResults && searchResults.length > 0 ? (
           <View style={styles.content}>
-            {renderCategorySection('Search Results', searchResults)}
+            {renderCategorySection('Search Results', searchResults, true)}
           </View>
         ) : (
           <View style={styles.emptyPanel}>
@@ -350,6 +367,19 @@ export default function LearnerHomeScreen({ navigation }) {
         </View>
       )}
 
+      <MentorDetailSheet
+        mentor={selectedMentor}
+        visible={selectedMentor !== null}
+        onClose={() => setSelectedMentor(null)}
+        onBook={mentor => {
+          setSelectedMentor(null);
+          handleBookMentor(mentor);
+        }}
+        onViewProfile={mentor => {
+          setSelectedMentor(null);
+          handleViewProfile(mentor);
+        }}
+      />
     </SafeScreen>
   );
 }
@@ -444,6 +474,26 @@ const styles = StyleSheet.create({
     color: T.colors.text.muted,
     marginTop: 2,
   },
+  searchWrap: {
+    marginBottom: T.spacing.lg,
+  },
+  searchLabelRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: T.spacing.xs,
+    marginBottom: T.spacing.sm,
+    paddingHorizontal: 2,
+  },
+  searchLabel: {
+    ...T.typography.labelSm,
+    color: T.colors.text.muted,
+    fontWeight: '600',
+    letterSpacing: 0.3,
+  },
+  searchBarInner: {
+    marginBottom: 0,
+  },
+
   content: {
     flex: 1,
     paddingBottom: 80,
@@ -455,30 +505,75 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    marginBottom: T.spacing.md,
   },
-  sectionHeaderFlex: {
+  categoryLabel: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: T.spacing.sm,
     flex: 1,
+  },
+  categoryIconBox: {
+    width: 26,
+    height: 26,
+    borderRadius: 7,
+    backgroundColor: 'rgba(94, 234, 212, 0.12)',
+    borderWidth: 1,
+    borderColor: 'rgba(94, 234, 212, 0.2)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  categoryTitle: {
+    ...T.typography.bodyMd,
+    color: T.colors.text.primary,
+    fontWeight: '700',
+  },
+  countPill: {
+    paddingHorizontal: 7,
+    paddingVertical: 2,
+    borderRadius: 10,
+    backgroundColor: T.colors.component.input,
+    borderWidth: 1,
+    borderColor: T.colors.border.light,
+  },
+  countPillTxt: {
+    ...T.typography.labelSm,
+    color: T.colors.text.muted,
+    fontWeight: '600',
+    fontSize: 11,
   },
   seeAllBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
-    paddingVertical: 5,
-    paddingHorizontal: T.spacing.sm,
-    borderRadius: T.borderRadius.sm,
-    backgroundColor: T.colors.accent.secondary,
-    marginLeft: T.spacing.sm,
+    gap: 2,
+    paddingVertical: 4,
+    paddingLeft: T.spacing.sm,
   },
   seeAllTxt: {
     ...T.typography.labelSm,
-    color: T.colors.primary.dark,
+    color: T.colors.accent.secondary,
+    fontWeight: '600',
+  },
+  resultBadge: {
+    paddingHorizontal: T.spacing.sm,
+    paddingVertical: 3,
+    borderRadius: T.borderRadius.sm,
+    backgroundColor: 'rgba(94, 234, 212, 0.12)',
+    borderWidth: 1,
+    borderColor: 'rgba(94, 234, 212, 0.2)',
+  },
+  resultBadgeTxt: {
+    ...T.typography.labelSm,
+    color: T.colors.accent.secondary,
     fontWeight: '700',
+    fontSize: 11,
   },
 
   mentorsRow: {
     paddingLeft: 2,
     paddingRight: T.spacing.lg,
     paddingBottom: T.spacing.sm,
+    gap: T.spacing.sm,
   },
   emptyPanel: {
     alignItems: 'center',

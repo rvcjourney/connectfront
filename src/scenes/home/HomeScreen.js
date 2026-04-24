@@ -50,12 +50,59 @@ const STEPS = [
   },
 ];
 
-// Replace this ID with your own app demo/explainer video
 const APP_DEMO_VIDEO = {
   id: 'qp0HIF3SfI4',
   title: 'Book, connect, and learn in real time with Connectiqo.',
   duration: '18:01',
 };
+
+const VIDEO_CATEGORIES = [
+  { id: 'qp0HIF3SfI4', label: 'Getting Started',      icon: 'play-lesson',        accent: C.accent.secondary },
+  { id: 'qp0HIF3SfI4', label: 'Mentor Tips',           icon: 'tips-and-updates',   accent: C.accent.primary },
+  { id: 'qp0HIF3SfI4', label: 'Session Walkthrough',   icon: 'videocam',           accent: '#a78bfa' },
+  { id: 'qp0HIF3SfI4', label: 'Earnings Guide',        icon: 'payments',           accent: C.accent.secondary },
+];
+
+function VideoTileCard({ item, onPress }) {
+  return (
+    <TouchableOpacity
+      style={styles.tile}
+      onPress={() => onPress(item)}
+      activeOpacity={0.85}
+      accessibilityRole="button"
+      accessibilityLabel={`Play ${item.label}`}
+    >
+      <LinearGradient
+        colors={['rgba(40,20,80,0.9)', 'rgba(2,0,20,0.97)']}
+        style={StyleSheet.absoluteFill}
+      />
+      <LinearGradient
+        colors={[`${item.accent}22`, 'transparent']}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={StyleSheet.absoluteFill}
+      />
+
+      {/* Camera badge */}
+      <View style={[styles.tileBadge, { backgroundColor: `${item.accent}22`, borderColor: `${item.accent}44` }]}>
+        <MaterialIcons name={item.icon} size={12} color={item.accent} />
+      </View>
+
+      {/* Play button */}
+      <View style={styles.tilePlayWrap}>
+        <View style={styles.tilePlayBtn}>
+          <MaterialIcons name="play-arrow" size={26} color="#fff" style={{ marginLeft: 3 }} />
+        </View>
+      </View>
+
+      {/* Bottom label */}
+      <View style={styles.tileBottom}>
+        <Text style={styles.tileTitle} numberOfLines={2}>{item.label}</Text>
+        <Text style={styles.tileSub}>Tap to play in app</Text>
+      </View>
+    </TouchableOpacity>
+  );
+}
 
 const TRUST = [
   { icon: 'verified-user', label: 'Verified Mentors' },
@@ -85,10 +132,12 @@ export default function HomeScreen() {
   const { width, height } = useWindowDimensions();
   const [playerVisible, setPlayerVisible] = useState(false);
   const [playerError, setPlayerError] = useState(false);
+  const [currentVideoId, setCurrentVideoId] = useState(APP_DEMO_VIDEO.id);
 
   const s0 = useEntrance(); // app bar
   const s1 = useEntrance(); // hero
   const s2 = useEntrance(); // video card
+  const s2b = useEntrance(); // video categories
   const s3 = useEntrance(); // dual role
   const s4 = useEntrance(); // how it works
   const s5 = useEntrance(); // trust strip
@@ -98,6 +147,7 @@ export default function HomeScreen() {
       anim(s0.o, s0.y),
       anim(s1.o, s1.y),
       anim(s2.o, s2.y),
+      anim(s2b.o, s2b.y),
       anim(s3.o, s3.y),
       anim(s4.o, s4.y),
       anim(s5.o, s5.y),
@@ -179,7 +229,7 @@ export default function HomeScreen() {
           <TouchableOpacity
             style={styles.videoCard}
             activeOpacity={0.88}
-            onPress={() => { setPlayerError(false); setPlayerVisible(true); }}
+            onPress={() => { setCurrentVideoId(APP_DEMO_VIDEO.id); setPlayerError(false); setPlayerVisible(true); }}
           >
             <LinearGradient
               colors={['rgba(167,139,250,0.22)', 'rgba(94,234,212,0.1)', 'rgba(2,0,20,0.6)']}
@@ -217,6 +267,35 @@ export default function HomeScreen() {
               <MaterialIcons name="chevron-right" size={22} color={C.text.muted} />
             </View>
           </TouchableOpacity>
+        </Animated.View>
+
+        {/* ── VIDEO CATEGORIES ── */}
+        <Animated.View style={[styles.catSection, s2b.style]}>
+          <View style={styles.catHeader}>
+            <View style={styles.catHeaderLeft}>
+              <View style={[styles.sectionDot, { backgroundColor: C.accent.primary }]} />
+              <Text style={styles.sectionLabel}>BROWSE CATEGORIES</Text>
+            </View>
+            <Text style={styles.catSubtitle}>Tap a card to watch</Text>
+          </View>
+
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.tileRow}
+          >
+            {VIDEO_CATEGORIES.map(item => (
+              <VideoTileCard
+                key={item.label}
+                item={item}
+                onPress={cat => {
+                  setCurrentVideoId(cat.id);
+                  setPlayerError(false);
+                  setPlayerVisible(true);
+                }}
+              />
+            ))}
+          </ScrollView>
         </Animated.View>
 
         {/* ── DUAL ROLE CARDS ── */}
@@ -326,11 +405,11 @@ export default function HomeScreen() {
         <View style={styles.playerScreen}>
           {playerVisible ? (
             <YoutubePlayer
-              key={APP_DEMO_VIDEO.id}
+              key={currentVideoId}
               height={height}
               width={width}
               play
-              videoId={APP_DEMO_VIDEO.id}
+              videoId={currentVideoId}
               initialPlayerParams={{ controls: 1, rel: 0, fs: 1 }}
               webViewProps={{
                 allowsInlineMediaPlayback: false,
@@ -473,6 +552,89 @@ const styles = StyleSheet.create({
     ...T.typography.labelSm,
     color: C.text.muted,
     marginTop: 2,
+  },
+
+  // Video categories
+  catSection: {
+    marginBottom: T.spacing.xl,
+  },
+  catHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: T.spacing.md,
+  },
+  catHeaderLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  catSubtitle: {
+    ...T.typography.labelSm,
+    color: C.text.muted,
+    fontSize: 11,
+  },
+  tileRow: {
+    gap: T.spacing.md,
+    paddingRight: T.spacing.xs,
+  },
+  tile: {
+    width: 148,
+    height: 186,
+    borderRadius: T.borderRadius.lg,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: C.border.light,
+    backgroundColor: C.primary.dark,
+    justifyContent: 'space-between',
+    ...Platform.select({
+      ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.25, shadowRadius: 10 },
+      android: { elevation: 6 },
+    }),
+  },
+  tileBadge: {
+    position: 'absolute',
+    top: T.spacing.sm,
+    left: T.spacing.sm,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 7,
+    paddingVertical: 4,
+    borderRadius: 6,
+    borderWidth: 1,
+    gap: 4,
+    zIndex: 2,
+  },
+  tilePlayWrap: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  tilePlayBtn: {
+    width: 54,
+    height: 54,
+    borderRadius: 27,
+    backgroundColor: 'rgba(255,255,255,0.15)',
+    borderWidth: 2,
+    borderColor: 'rgba(255,255,255,0.55)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  tileBottom: {
+    padding: T.spacing.sm,
+    paddingBottom: T.spacing.md,
+  },
+  tileTitle: {
+    color: '#ffffff',
+    fontWeight: '700',
+    fontSize: 13,
+    lineHeight: 17,
+    marginBottom: 3,
+  },
+  tileSub: {
+    fontSize: 10,
+    color: 'rgba(255,255,255,0.42)',
+    fontWeight: '500',
   },
 
   // Dual role

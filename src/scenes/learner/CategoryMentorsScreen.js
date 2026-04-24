@@ -10,7 +10,7 @@ import {
   RefreshControl,
   Animated,
   Platform,
-  StatusBar,
+  useWindowDimensions,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import LinearGradient from 'react-native-linear-gradient';
@@ -18,7 +18,8 @@ import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import Toast from 'react-native-simple-toast';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import CosmicBackground from '../../components/CosmicBackground';
-import { LearnerMentorCard } from '../../components/LearnerMentorCard';
+import { MentorImageCard } from '../../components/MentorImageCard';
+import { MentorDetailSheet } from '../../components/MentorDetailSheet';
 import { UNIFIED_THEME } from '../../unifiedTheme';
 import { mentorApi } from '../../api/mentorApi';
 import { useAuth } from '../../hooks/useAuth';
@@ -55,31 +56,17 @@ function SkeletonBone({ style }) {
   );
 }
 
-function SkeletonCard() {
+function SkeletonCard({ cardWidth, cardHeight }) {
   return (
-    <View style={skeletonStyles.card}>
-      <View style={skeletonStyles.topRow}>
-        <SkeletonBone style={skeletonStyles.avatar} />
-        <View style={skeletonStyles.headCol}>
-          <SkeletonBone style={skeletonStyles.nameLine} />
-          <SkeletonBone style={skeletonStyles.ratingLine} />
-        </View>
-      </View>
-      <SkeletonBone style={skeletonStyles.specLine} />
-      <SkeletonBone style={skeletonStyles.specLineShort} />
-      <SkeletonBone style={skeletonStyles.priceLine} />
-      <SkeletonBone style={skeletonStyles.btnLine} />
-    </View>
+    <SkeletonBone style={[skeletonStyles.card, { width: cardWidth, height: cardHeight }]} />
   );
 }
 
-function SkeletonGrid() {
+function SkeletonGrid({ cardWidth, cardHeight }) {
   return (
     <View style={skeletonStyles.grid}>
       {[0, 1, 2, 3, 4, 5].map(i => (
-        <View key={i} style={skeletonStyles.cardWrap}>
-          <SkeletonCard />
-        </View>
+        <SkeletonCard key={i} cardWidth={cardWidth} cardHeight={cardHeight} />
       ))}
     </View>
   );
@@ -89,41 +76,16 @@ const skeletonStyles = StyleSheet.create({
   grid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    justifyContent: 'space-between',
     padding: UNIFIED_THEME.spacing.lg,
     gap: UNIFIED_THEME.spacing.md,
   },
-  cardWrap: {
-    width: '48%',
-  },
   card: {
-    backgroundColor: UNIFIED_THEME.colors.component.card,
-    borderRadius: UNIFIED_THEME.borderRadius.sm,
-    padding: UNIFIED_THEME.spacing.md,
-    borderWidth: 1,
-    borderColor: UNIFIED_THEME.colors.border.light,
+    borderRadius: UNIFIED_THEME.borderRadius.lg,
   },
   bone: {
     backgroundColor: UNIFIED_THEME.colors.border.default,
-    borderRadius: UNIFIED_THEME.borderRadius.sm,
+    borderRadius: UNIFIED_THEME.borderRadius.lg,
   },
-  topRow: {
-    flexDirection: 'row',
-    gap: UNIFIED_THEME.spacing.sm,
-    marginBottom: UNIFIED_THEME.spacing.sm,
-  },
-  headCol: {
-    flex: 1,
-    gap: 6,
-    justifyContent: 'center',
-  },
-  avatar: { width: 48, height: 48, borderRadius: UNIFIED_THEME.borderRadius.sm },
-  nameLine: { height: 12, width: '80%' },
-  ratingLine: { height: 10, width: '50%' },
-  specLine: { height: 10, width: '100%', marginBottom: 5 },
-  specLineShort: { height: 10, width: '65%', marginBottom: UNIFIED_THEME.spacing.sm },
-  priceLine: { height: 14, width: '45%', marginBottom: UNIFIED_THEME.spacing.sm },
-  btnLine: { height: 32, width: '100%', borderRadius: UNIFIED_THEME.borderRadius.sm },
 });
 
 // ─── Sort ─────────────────────────────────────────────────────────────────────
@@ -146,6 +108,7 @@ export default function CategoryMentorsScreen({ route, navigation }) {
   const { category } = route.params;
   const { profile } = useAuth();
   const insets = useSafeAreaInsets();
+  const { width: screenWidth } = useWindowDimensions();
   const [mentors, setMentors] = useState([]);
   const [totalCount, setTotalCount] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -154,6 +117,12 @@ export default function CategoryMentorsScreen({ route, navigation }) {
   const [loadingMore, setLoadingMore] = useState(false);
   const [hasMore, setHasMore] = useState(true);
   const [sortBy, setSortBy] = useState('rating');
+  const [selectedMentor, setSelectedMentor] = useState(null);
+
+  const CARD_GAP    = T.spacing.md;
+  const H_PADDING   = T.spacing.lg * 2;
+  const cardWidth   = Math.floor((screenWidth - H_PADDING - CARD_GAP) / 2);
+  const cardHeight  = Math.floor(cardWidth * 1.45);
 
   useEffect(() => {
     loadInitial();
@@ -306,42 +275,49 @@ export default function CategoryMentorsScreen({ route, navigation }) {
           <View style={styles.backBtn} />
         </View>
 
-        {loading ? <SkeletonGrid /> : <FlatList
-        style={{ flex: 1 }}
-        data={sortedMentors}
-        keyExtractor={item => item.id}
-        numColumns={2}
-        columnWrapperStyle={styles.row}
-        contentContainerStyle={styles.listContent}
-        showsVerticalScrollIndicator={false}
-        ListHeaderComponent={ListHeader}
-        ListEmptyComponent={
-          !loading ? (
-            <View style={styles.empty}>
-              <MaterialIcons name="person-search" size={36} color={T.colors.text.muted} />
-              <Text style={styles.emptyTxt}>No mentors in this category</Text>
-            </View>
-          ) : null
-        }
-        ListFooterComponent={renderFooter}
-        renderItem={({ item }) => (
-          <View style={styles.cardWrap}>
-            <LearnerMentorCard
-              mentor={item}
-              onBook={handleBookMentor}
-              onViewProfile={handleViewProfile}
-              fullWidth
-            />
-          </View>
-        )}
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={handleRefresh}
-            tintColor={T.colors.accent.secondary}
+        {loading ? (
+          <SkeletonGrid cardWidth={cardWidth} cardHeight={cardHeight} />
+        ) : (
+          <FlatList
+            style={{ flex: 1 }}
+            data={sortedMentors}
+            keyExtractor={item => item.id}
+            numColumns={2}
+            columnWrapperStyle={styles.row}
+            contentContainerStyle={styles.listContent}
+            showsVerticalScrollIndicator={false}
+            ListHeaderComponent={ListHeader}
+            ListEmptyComponent={
+              <View style={styles.empty}>
+                <MaterialIcons name="person-search" size={36} color={T.colors.text.muted} />
+                <Text style={styles.emptyTxt}>No mentors in this category</Text>
+              </View>
+            }
+            ListFooterComponent={renderFooter}
+            renderItem={({ item }) => (
+              <MentorImageCard
+                mentor={item}
+                onPress={setSelectedMentor}
+                style={{ width: cardWidth, height: cardHeight }}
+              />
+            )}
+            refreshControl={
+              <RefreshControl
+                refreshing={refreshing}
+                onRefresh={handleRefresh}
+                tintColor={T.colors.accent.secondary}
+              />
+            }
           />
-        }
-      />}
+        )}
+
+        <MentorDetailSheet
+          mentor={selectedMentor}
+          visible={selectedMentor !== null}
+          onClose={() => setSelectedMentor(null)}
+          onBook={mentor => { setSelectedMentor(null); handleBookMentor(mentor); }}
+          onViewProfile={mentor => { setSelectedMentor(null); handleViewProfile(mentor); }}
+        />
       </SafeAreaView>
     </CosmicBackground>
   );
@@ -471,11 +447,8 @@ const styles = StyleSheet.create({
     color: T.colors.primary.dark,
   },
   row: {
-    justifyContent: 'space-between',
+    gap: T.spacing.md,
     marginBottom: T.spacing.md,
-  },
-  cardWrap: {
-    width: '48%',
   },
   loadMoreBtn: {
     flexDirection: 'row',

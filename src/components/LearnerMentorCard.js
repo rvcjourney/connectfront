@@ -21,14 +21,15 @@ export function LearnerMentorCard({
   onBook,
   onViewProfile,
   onPress,
-  showSessionCount = false,
   fullWidth = false,
 }) {
   const name = mentor.profiles?.name || 'Unknown';
   const initial = name.charAt(0).toUpperCase();
-  const rating =
-    mentor.rating != null && mentor.rating !== '' ? String(mentor.rating) : '—';
-  const price = mentor.price_per_hour ?? '0';
+  const rating = mentor.rating != null && mentor.rating !== '' ? String(mentor.rating) : null;
+  const price = mentor.price_per_hour;
+  const priceLabel = !price || price === 0 ? 'Free' : `₹${price}`;
+  const expYears = mentor.experience_years;
+  const sessions = mentor.total_sessions ?? 0;
   const hasActions = Boolean(onBook && onViewProfile);
 
   const body = (
@@ -36,10 +37,7 @@ export function LearnerMentorCard({
       <View style={styles.topRow}>
         <View style={styles.avatarTile}>
           {mentor.profiles?.avatar_url ? (
-            <Image
-              source={{ uri: mentor.profiles.avatar_url }}
-              style={styles.avatarImg}
-            />
+            <Image source={{ uri: mentor.profiles.avatar_url }} style={styles.avatarImg} />
           ) : (
             <View style={[styles.avatarImg, styles.avatarPh]}>
               <Text style={styles.avatarLetter}>{initial}</Text>
@@ -47,12 +45,19 @@ export function LearnerMentorCard({
           )}
         </View>
         <View style={styles.headMain}>
-          <Text style={styles.name} numberOfLines={2}>
-            {name}
-          </Text>
-          <View style={styles.ratingRow}>
-            <MaterialIcons name="star" size={14} color={C.accent.warning} />
-            <Text style={styles.ratingText}>{rating}</Text>
+          <Text style={styles.name} numberOfLines={2}>{name}</Text>
+          <View style={styles.badgeRow}>
+            {rating ? (
+              <View style={styles.ratingBadge}>
+                <MaterialIcons name="star" size={11} color={C.accent.warning} />
+                <Text style={styles.ratingText}>{rating}</Text>
+              </View>
+            ) : null}
+            {expYears ? (
+              <View style={styles.expBadge}>
+                <Text style={styles.expText}>{expYears}yr</Text>
+              </View>
+            ) : null}
           </View>
         </View>
       </View>
@@ -61,19 +66,15 @@ export function LearnerMentorCard({
         {mentor.specialization || 'Specialist'}
       </Text>
 
-      <Text style={styles.price}>
-        ₹{price}
-        <Text style={styles.priceUnit}>/hr</Text>
-      </Text>
+      <View style={styles.priceRow}>
+        <Text style={[styles.price, !price && styles.priceFree]}>{priceLabel}</Text>
+        {price ? <Text style={styles.priceUnit}>/hr</Text> : null}
+      </View>
 
-      {showSessionCount ? (
-        <View style={styles.metaRow}>
-          <View style={styles.metaItem}>
-            <MaterialIcons name="history-edu" size={13} color={C.text.muted} />
-            <Text style={styles.metaText}>{mentor.total_sessions ?? 0} sessions</Text>
-          </View>
-        </View>
-      ) : null}
+      <View style={styles.metaRow}>
+        <MaterialIcons name="history-edu" size={12} color={C.text.muted} />
+        <Text style={styles.metaText}>{sessions} sessions</Text>
+      </View>
 
       {hasActions ? (
         <View style={styles.actions}>
@@ -117,17 +118,26 @@ export function LearnerMentorCard({
 const styles = StyleSheet.create({
   card: {
     width: 176,
-    marginRight: T.spacing.md,
     backgroundColor: C.component.card,
-    borderRadius: T.borderRadius.sm,
+    borderRadius: T.borderRadius.md,
     padding: T.spacing.md,
     borderWidth: 1,
     borderColor: C.border.light,
+    borderLeftWidth: 3,
+    borderLeftColor: 'rgba(94,234,212,0.35)',
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.12,
+        shadowRadius: 6,
+      },
+      android: { elevation: 3 },
+    }),
   },
   cardFullWidth: {
     width: '100%',
     flex: undefined,
-    marginRight: 0,
     borderLeftWidth: 3,
     borderLeftColor: C.accent.primary,
     ...Platform.select({
@@ -142,12 +152,12 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
   },
   avatarTile: {
-    width: 52,
-    height: 52,
-    borderRadius: T.borderRadius.sm,
+    width: 48,
+    height: 48,
+    borderRadius: 24,
     overflow: 'hidden',
-    borderWidth: 1,
-    borderColor: C.border.light,
+    borderWidth: 2,
+    borderColor: 'rgba(94,234,212,0.25)',
     backgroundColor: C.primary.dark,
   },
   avatarImg: {
@@ -163,7 +173,7 @@ const styles = StyleSheet.create({
     ...T.typography.headingSm,
     color: C.accent.secondary,
     fontWeight: '700',
-    fontSize: 20,
+    fontSize: 18,
   },
   headMain: {
     flex: 1,
@@ -173,30 +183,61 @@ const styles = StyleSheet.create({
     ...T.typography.labelMd,
     color: C.text.primary,
     fontWeight: '700',
-    marginBottom: 4,
+    marginBottom: 5,
+    lineHeight: 17,
   },
-  ratingRow: {
+  badgeRow: {
+    flexDirection: 'row',
+    gap: 5,
+    flexWrap: 'wrap',
+  },
+  ratingBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
+    gap: 2,
+    backgroundColor: 'rgba(240,216,117,0.12)',
+    borderRadius: 5,
+    paddingHorizontal: 5,
+    paddingVertical: 2,
   },
   ratingText: {
     ...T.typography.labelSm,
-    color: C.text.secondary,
+    color: C.accent.warning,
     fontWeight: '700',
+    fontSize: 11,
+  },
+  expBadge: {
+    backgroundColor: 'rgba(94,234,212,0.1)',
+    borderRadius: 5,
+    paddingHorizontal: 5,
+    paddingVertical: 2,
+  },
+  expText: {
+    ...T.typography.labelSm,
+    color: C.accent.secondary,
+    fontWeight: '700',
+    fontSize: 11,
   },
   spec: {
     ...T.typography.bodyXs,
     color: C.text.muted,
     marginBottom: T.spacing.sm,
-    minHeight: 28,
+    minHeight: 26,
     lineHeight: 16,
+  },
+  priceRow: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    gap: 2,
+    marginBottom: T.spacing.xs,
   },
   price: {
     ...T.typography.labelMd,
     color: C.accent.primary,
-    fontWeight: '700',
-    marginBottom: T.spacing.sm,
+    fontWeight: '800',
+  },
+  priceFree: {
+    color: C.accent.secondary,
   },
   priceUnit: {
     ...T.typography.bodyXs,
@@ -205,14 +246,9 @@ const styles = StyleSheet.create({
   },
   metaRow: {
     flexDirection: 'row',
-    gap: T.spacing.sm,
-    marginBottom: T.spacing.sm,
-    flexWrap: 'wrap',
-  },
-  metaItem: {
-    flexDirection: 'row',
     alignItems: 'center',
-    gap: 3,
+    gap: 4,
+    marginBottom: T.spacing.sm,
   },
   metaText: {
     ...T.typography.bodyXs,
@@ -230,18 +266,17 @@ const styles = StyleSheet.create({
     borderRadius: T.borderRadius.sm,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'rgba(52, 211, 153, 0.12)',
-    borderWidth: 1,
-    borderColor: C.accent.success,
+    backgroundColor: C.accent.secondary,
   },
   bookText: {
     ...T.typography.labelMd,
-    color: C.accent.success,
+    color: C.primary.void,
     fontWeight: '800',
+    fontSize: 13,
   },
   profileBtn: {
-    width: 40,
-    height: 40,
+    width: 38,
+    height: 38,
     borderRadius: T.borderRadius.sm,
     borderWidth: 1,
     borderColor: C.border.light,

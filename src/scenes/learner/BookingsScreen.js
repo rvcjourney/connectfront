@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
 import {
   View,
   Text,
@@ -7,6 +7,7 @@ import {
   RefreshControl,
   ActivityIndicator,
   TouchableOpacity,
+  Animated,
   Platform,
 } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
@@ -14,9 +15,113 @@ import Toast from 'react-native-simple-toast';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import { SafeScreen } from '../../components/SafeScreen';
 import { UNIFIED_THEME } from '../../unifiedTheme';
-import { LoadingOverlay } from '../../components/LoadingOverlay';
 import { BookingCard } from '../../components/BookingCard';
 import { SectionHeader } from '../../components/SectionHeader';
+
+// ─── Skeleton ─────────────────────────────────────────────────────────────────
+function SkeletonBone({ style }) {
+  const anim = useRef(new Animated.Value(0)).current;
+  useEffect(() => {
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(anim, { toValue: 1, duration: 900, useNativeDriver: true }),
+        Animated.timing(anim, { toValue: 0, duration: 900, useNativeDriver: true }),
+      ]),
+    ).start();
+  }, []);
+  const opacity = anim.interpolate({ inputRange: [0, 1], outputRange: [0.15, 0.45] });
+  return <Animated.View style={[sk.bone, style, { opacity }]} />;
+}
+
+function SkeletonBookingCard() {
+  return (
+    <View style={sk.card}>
+      <View style={sk.cardTop}>
+        <SkeletonBone style={sk.avatar} />
+        <View style={sk.cardMeta}>
+          <SkeletonBone style={sk.nameLine} />
+          <SkeletonBone style={sk.dateLine} />
+          <SkeletonBone style={sk.statusBadge} />
+        </View>
+        <SkeletonBone style={sk.amountLine} />
+      </View>
+      <View style={sk.cardActions}>
+        <SkeletonBone style={sk.actionBtn} />
+        <SkeletonBone style={sk.actionBtn} />
+      </View>
+    </View>
+  );
+}
+
+function SkeletonSectionHeader() {
+  return (
+    <View style={sk.sectionHeader}>
+      <SkeletonBone style={sk.sectionTitle} />
+      <SkeletonBone style={sk.sectionCount} />
+    </View>
+  );
+}
+
+function BookingsSkeleton() {
+  return (
+    <View style={sk.wrap}>
+      <SkeletonSectionHeader />
+      <SkeletonBookingCard />
+      <SkeletonBookingCard />
+      <SkeletonSectionHeader />
+      <SkeletonBookingCard />
+      <SkeletonBookingCard />
+      <SkeletonBookingCard />
+    </View>
+  );
+}
+
+const sk = StyleSheet.create({
+  bone: {
+    backgroundColor: UNIFIED_THEME.colors.border.default,
+    borderRadius: UNIFIED_THEME.borderRadius.md,
+  },
+  wrap: {
+    padding: UNIFIED_THEME.spacing.lg,
+    gap: UNIFIED_THEME.spacing.md,
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: UNIFIED_THEME.spacing.sm,
+    marginBottom: UNIFIED_THEME.spacing.xs,
+  },
+  sectionTitle: { height: 14, width: 140, borderRadius: 6 },
+  sectionCount: { height: 22, width: 28, borderRadius: 8 },
+  card: {
+    backgroundColor: UNIFIED_THEME.colors.component.card,
+    borderRadius: UNIFIED_THEME.borderRadius.lg,
+    borderWidth: 1,
+    borderColor: UNIFIED_THEME.colors.border.light,
+    padding: UNIFIED_THEME.spacing.md,
+    gap: UNIFIED_THEME.spacing.md,
+  },
+  cardTop: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: UNIFIED_THEME.spacing.md,
+  },
+  avatar: { width: 44, height: 44, borderRadius: 22 },
+  cardMeta: { flex: 1, gap: 8 },
+  nameLine: { height: 13, width: '65%', borderRadius: 6 },
+  dateLine: { height: 11, width: '80%', borderRadius: 6 },
+  statusBadge: { height: 20, width: 70, borderRadius: 6 },
+  amountLine: { height: 18, width: 52, borderRadius: 6 },
+  cardActions: {
+    flexDirection: 'row',
+    gap: UNIFIED_THEME.spacing.sm,
+    paddingTop: UNIFIED_THEME.spacing.xs,
+    borderTopWidth: 1,
+    borderTopColor: UNIFIED_THEME.colors.border.light,
+  },
+  actionBtn: { flex: 1, height: 36, borderRadius: UNIFIED_THEME.borderRadius.md },
+});
 import { useAuth } from '../../hooks/useAuth';
 import { bookingApi } from '../../api/bookingApi';
 import { reviewsApi } from '../../api/reviewsApi';
@@ -299,27 +404,49 @@ export default function LearnerBookingsScreen({ navigation }) {
     }
   };
 
+  const HeroCard = (
+    <View style={styles.hero}>
+      <LinearGradient
+        colors={['rgba(94, 234, 212, 0.14)', 'rgba(167, 139, 250, 0.12)', 'rgba(2, 0, 20, 0.5)']}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={StyleSheet.absoluteFill}
+      />
+      <View style={styles.heroRim} pointerEvents="none" />
+      <View style={styles.heroIconRow}>
+        <MaterialIcons name="menu-book" size={22} color={T.colors.accent.secondary} />
+      </View>
+      <Text style={styles.heroTitle}>My bookings</Text>
+      <Text style={styles.heroSubtitle}>
+        Join calls on time, and review your session history here.
+      </Text>
+    </View>
+  );
+
   return (
     <SafeScreen scrollable={false} padding={0} hasBottomTabs={false} includeTopInset={false}>
-      <FlatList
-        style={{ flex: 1 }}
-        data={listData}
-        keyExtractor={item => item.key}
-        renderItem={renderItem}
-        contentContainerStyle={styles.listContent}
-        showsVerticalScrollIndicator={false}
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={handleRefresh}
-            tintColor={T.colors.accent.secondary}
-          />
-        }
-      />
-      <LoadingOverlay
-        visible={loading}
-        message="Loading bookings…"
-      />
+      {loading ? (
+        <View style={{ flex: 1 }}>
+          <View style={styles.listContent}>{HeroCard}</View>
+          <BookingsSkeleton />
+        </View>
+      ) : (
+        <FlatList
+          style={{ flex: 1 }}
+          data={listData}
+          keyExtractor={item => item.key}
+          renderItem={renderItem}
+          contentContainerStyle={styles.listContent}
+          showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={handleRefresh}
+              tintColor={T.colors.accent.secondary}
+            />
+          }
+        />
+      )}
     </SafeScreen>
   );
 }
