@@ -57,38 +57,71 @@ const APP_DEMO_VIDEO = {
 };
 
 const VIDEO_CATEGORIES = [
-  { id: 'qp0HIF3SfI4', label: 'Getting Started',      icon: 'play-lesson',        accent: C.accent.secondary },
-  { id: 'qp0HIF3SfI4', label: 'Mentor Tips',           icon: 'tips-and-updates',   accent: C.accent.primary },
-  { id: 'qp0HIF3SfI4', label: 'Session Walkthrough',   icon: 'videocam',           accent: '#a78bfa' },
-  { id: 'qp0HIF3SfI4', label: 'Earnings Guide',        icon: 'payments',           accent: C.accent.secondary },
+  {
+    label: 'Instagram\nInfluencers',
+    icon: 'photo-camera',
+    accent: '#a78bfa',
+    videoId: 'zEgOI1rNlyc',
+  },
+  {
+    label: 'Yoga\nTeacher',
+    icon: 'self-improvement',
+    accent: '#5eead4',
+    videoId: 'v7AYKMP6rOE',
+  },
+  {
+    label: 'Academic\nTeacher',
+    icon: 'school',
+    accent: '#f0d875',
+    videoId: 'i58Z3QunlyY',
+  },
+  {
+    label: 'Astrologers',
+    icon: 'auto-awesome',
+    accent: '#f9a8d4',
+    videoId: 'W1s23eDKRQs',
+  },
 ];
 
 function VideoTileCard({ item, onPress }) {
+  const thumbUri = `https://img.youtube.com/vi/${item.videoId}/hqdefault.jpg`;
   return (
     <TouchableOpacity
       style={styles.tile}
       onPress={() => onPress(item)}
       activeOpacity={0.85}
       accessibilityRole="button"
-      accessibilityLabel={`Play ${item.label}`}
+      accessibilityLabel={`Browse ${item.label}`}
     >
-      <LinearGradient
-        colors={['rgba(40,20,80,0.9)', 'rgba(2,0,20,0.97)']}
+      {/* Actual YouTube thumbnail */}
+      <Image
+        source={{ uri: thumbUri }}
         style={StyleSheet.absoluteFill}
+        resizeMode="cover"
       />
+
+      {/* Dark scrim — heavier at bottom so text is always readable */}
       <LinearGradient
-        colors={[`${item.accent}22`, 'transparent']}
+        colors={['rgba(2,0,20,0.18)', 'rgba(2,0,20,0.45)', 'rgba(2,0,20,0.88)']}
         start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
+        end={{ x: 0, y: 1 }}
         style={StyleSheet.absoluteFill}
       />
 
-      {/* Camera badge */}
-      <View style={[styles.tileBadge, { backgroundColor: `${item.accent}22`, borderColor: `${item.accent}44` }]}>
-        <MaterialIcons name={item.icon} size={12} color={item.accent} />
+      {/* Accent tint at top-left corner */}
+      <LinearGradient
+        colors={[`${item.accent}30`, 'transparent']}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 0.6 }}
+        style={StyleSheet.absoluteFill}
+      />
+
+      {/* Category icon badge — top left */}
+      <View style={[styles.tileBadge, { backgroundColor: `${item.accent}33`, borderColor: `${item.accent}66` }]}>
+        <MaterialIcons name={item.icon} size={13} color={item.accent} />
       </View>
 
-      {/* Play button */}
+      {/* Centered play button */}
       <View style={styles.tilePlayWrap}>
         <View style={styles.tilePlayBtn}>
           <MaterialIcons name="play-arrow" size={26} color="#fff" style={{ marginLeft: 3 }} />
@@ -97,8 +130,8 @@ function VideoTileCard({ item, onPress }) {
 
       {/* Bottom label */}
       <View style={styles.tileBottom}>
-        <Text style={styles.tileTitle} numberOfLines={2}>{item.label}</Text>
-        <Text style={styles.tileSub}>Tap to play in app</Text>
+        <Text style={styles.tileTitle}>{item.label}</Text>
+        <Text style={[styles.tileSub, { color: `${item.accent}cc` }]}>Explore mentors</Text>
       </View>
     </TouchableOpacity>
   );
@@ -289,7 +322,7 @@ export default function HomeScreen() {
                 key={item.label}
                 item={item}
                 onPress={cat => {
-                  setCurrentVideoId(cat.id);
+                  setCurrentVideoId(cat.videoId);
                   setPlayerError(false);
                   setPlayerVisible(true);
                 }}
@@ -611,12 +644,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   tilePlayBtn: {
-    width: 54,
-    height: 54,
-    borderRadius: 27,
-    backgroundColor: 'rgba(255,255,255,0.15)',
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    backgroundColor: 'rgba(255,255,255,0.18)',
     borderWidth: 2,
-    borderColor: 'rgba(255,255,255,0.55)',
+    borderColor: 'rgba(255,255,255,0.6)',
     justifyContent: 'center',
     alignItems: 'center',
   },
