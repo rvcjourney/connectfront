@@ -252,7 +252,7 @@ export default function EditProfileScreen({ navigation }) {
   };
 
   return (
-    <SafeScreen scrollable={false} padding={0}>
+    <SafeScreen scrollable={false} padding={0} hasBottomTabs={false}>
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
@@ -438,7 +438,6 @@ export default function EditProfileScreen({ navigation }) {
             </View>
           </View>
 
-          <View style={styles.saveFooter} />
         </View>
       </ScrollView>
 
@@ -500,7 +499,7 @@ const styles = StyleSheet.create({
     letterSpacing: 0.3,
   },
   scrollContent: {
-    paddingBottom: UNIFIED_THEME.spacing.xxxl,
+    paddingBottom: UNIFIED_THEME.spacing.xl,
   },
   avatarSection: {
     alignItems: 'center',
@@ -607,5 +606,4 @@ const styles = StyleSheet.create({
     color: UNIFIED_THEME.colors.accent.primary,
     fontWeight: '600',
   },
-  saveFooter: { height: UNIFIED_THEME.spacing.xxxl },
 });

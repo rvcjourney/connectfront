@@ -185,30 +185,61 @@ export const mentorApi = {
       const from = page * pageSize;
       const to = from + pageSize - 1;
       const term = query.trim().toLowerCase();
-      const { data, error } = await supabase
-        .from('mentor_profiles')
-        .select(`
-          id,
-          category,
-          specialization,
-          bio,
-          experience_years,
-          price_per_hour,
-          rating,
-          total_sessions,
-          profiles:id (
-            id,
-            name,
-            email,
-            avatar_url
-          )
-        `)
-        .or(`specialization.ilike.%${term}%,category.ilike.%${term}%,bio.ilike.%${term}%`)
-        .order('rating', { ascending: false })
-        .range(from, to);
 
-      if (error) throw error;
-      return data || [];
+      const selectFields = `
+        id,
+        category,
+        specialization,
+        bio,
+        experience_years,
+        price_per_hour,
+        rating,
+        total_sessions,
+        profiles:id (
+          id,
+          name,
+          email,
+          avatar_url
+        )
+      `;
+
+      // Run profile field search and name search in parallel
+      const [fieldRes, nameRes] = await Promise.all([
+        supabase
+          .from('mentor_profiles')
+          .select(selectFields)
+          .or(`specialization.ilike.%${term}%,category.ilike.%${term}%,bio.ilike.%${term}%`)
+          .order('rating', { ascending: false })
+          .range(from, to),
+        supabase
+          .from('profiles')
+          .select('id')
+          .ilike('name', `%${term}%`),
+      ]);
+
+      if (fieldRes.error) throw fieldRes.error;
+
+      let results = fieldRes.data || [];
+
+      // Fetch mentor profiles for any name matches not already in results
+      if (nameRes.data?.length > 0) {
+        const existingIds = new Set(results.map(m => m.id));
+        const newIds = nameRes.data.map(p => p.id).filter(id => !existingIds.has(id));
+
+        if (newIds.length > 0) {
+          const { data: byName } = await supabase
+            .from('mentor_profiles')
+            .select(selectFields)
+            .in('id', newIds)
+            .order('rating', { ascending: false });
+
+          if (byName?.length) {
+            results = [...results, ...byName];
+          }
+        }
+      }
+
+      return results;
     } catch (error) {
       throw new Error(getSupabaseErrorMessage(error));
     }
