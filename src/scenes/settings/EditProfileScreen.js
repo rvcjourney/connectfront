@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import {
   View,
   Text,
@@ -17,6 +17,7 @@ import { LoadingOverlay } from '../../components/LoadingOverlay';
 import { useAuth } from '../../hooks/useAuth';
 import { profileApi } from '../../api/profileApi';
 import { MENTOR_CATEGORIES } from '../../constants/mentorCategories';
+import { fetchActiveCategoryNames } from '../../api/contentApi';
 
 const SectionHeader = ({ icon, title, accent }) => (
   <View style={sSection.row}>
@@ -155,6 +156,22 @@ export default function EditProfileScreen({ navigation }) {
   const [pricePerHour, setPricePerHour] = useState('');
   const [category, setCategory] = useState('');
   const [showCategoryPicker, setShowCategoryPicker] = useState(false);
+  const [adminCategoryNames, setAdminCategoryNames] = useState([]);
+
+  const mentorCategoryOptions = useMemo(() => {
+    const merged = new Set([...(adminCategoryNames || []), ...MENTOR_CATEGORIES]);
+    return Array.from(merged);
+  }, [adminCategoryNames]);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetchActiveCategoryNames().then((names) => {
+      if (!cancelled) setAdminCategoryNames(names || []);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   useEffect(() => {
     setAvatarUrl(profile?.avatar_url || '');
@@ -414,12 +431,12 @@ export default function EditProfileScreen({ navigation }) {
               </TouchableOpacity>
               {showCategoryPicker && (
                 <View style={styles.dropdownList}>
-                  {MENTOR_CATEGORIES.map((cat, index) => (
+                  {mentorCategoryOptions.map((cat, index) => (
                     <TouchableOpacity
                       key={cat}
                       style={[
                         styles.dropdownItem,
-                        index === MENTOR_CATEGORIES.length - 1 && styles.dropdownItemLast,
+                        index === mentorCategoryOptions.length - 1 && styles.dropdownItemLast,
                         category === cat && styles.dropdownItemActive,
                       ]}
                       onPress={() => { setCategory(cat); setShowCategoryPicker(false); }}

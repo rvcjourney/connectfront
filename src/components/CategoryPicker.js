@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Modal } from 'react-native';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import { UNIFIED_THEME } from '../unifiedTheme';
+import { fetchActiveCategoryNames } from '../api/contentApi';
 
 const CATEGORIES = [
   'Technology (IT & Software)',
@@ -28,6 +29,24 @@ const CATEGORIES = [
 ];
 
 export const CategoryPicker = ({ visible, selectedCategory, onSelect, onClose }) => {
+  const [adminCategories, setAdminCategories] = useState([]);
+
+  useEffect(() => {
+    if (!visible) return;
+    let cancelled = false;
+    fetchActiveCategoryNames().then((names) => {
+      if (!cancelled) setAdminCategories(names || []);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [visible]);
+
+  const allCategories = useMemo(() => {
+    const set = new Set([...(adminCategories || []), ...CATEGORIES]);
+    return Array.from(set);
+  }, [adminCategories]);
+
   return (
     <Modal visible={visible} animationType="slide" onRequestClose={onClose}>
       <View style={styles.container}>
@@ -40,9 +59,9 @@ export const CategoryPicker = ({ visible, selectedCategory, onSelect, onClose })
         </View>
 
         <ScrollView style={styles.categoryList} showsVerticalScrollIndicator={false}>
-          {CATEGORIES.map((category, index) => (
+          {allCategories.map((category) => (
             <TouchableOpacity
-              key={index}
+              key={category}
               style={[
                 styles.categoryItem,
                 selectedCategory === category && styles.categoryItemSelected,

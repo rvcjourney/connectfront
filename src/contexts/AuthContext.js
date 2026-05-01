@@ -1,4 +1,5 @@
 import { createContext, useState, useEffect } from 'react';
+import { Alert } from 'react-native';
 import { supabase } from '../lib/supabase';
 
 export const AuthContext = createContext();
@@ -123,6 +124,19 @@ export const AuthProvider = ({ children }) => {
         console.warn('⚠️ No profile data returned for userId:', userId);
         setProfile(null);
       } else {
+        if (data.is_frozen === true) {
+          console.warn('🧊 Profile is frozen — signing out');
+          await supabase.auth.signOut();
+          setSession(null);
+          setUser(null);
+          setProfile(null);
+          Alert.alert(
+            'Account suspended',
+            'This account has been frozen by an administrator. Contact support if you believe this is a mistake.'
+          );
+          setLoading(false);
+          return;
+        }
         console.log('✅ Profile loaded:', data.name, data.role);
         setProfile(data);
       }
