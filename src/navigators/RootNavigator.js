@@ -21,6 +21,7 @@ import TransactionHistoryScreen from '../scenes/settings/TransactionHistoryScree
 import WalletScreen from '../scenes/settings/WalletScreen';
 import ReviewScreen from '../scenes/shared/ReviewScreen';
 import CategoryMentorsScreen from '../scenes/learner/CategoryMentorsScreen';
+import MentorVideosScreen from '../scenes/mentor/MentorVideosScreen';
 
 const RootStack = createStackNavigator();
 
@@ -144,6 +145,10 @@ export const RootNavigator = () => {
             <RootStack.Screen
               name={SCREEN_NAMES.CategoryMentors}
               component={CategoryMentorsScreen}
+            />
+            <RootStack.Screen
+              name={SCREEN_NAMES.MentorVideos}
+              component={MentorVideosScreen}
             />
           </RootStack.Group>
           <RootStack.Screen

@@ -1,9 +1,11 @@
 import 'react-native-url-polyfill/auto';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createClient } from '@supabase/supabase-js';
+import { SUPABASE_URL as ENV_URL, SUPABASE_ANON_KEY as ENV_KEY } from '@env';
 
-const SUPABASE_URL = 'https://pkoaxfxejgaawtwnkhvk.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBrb2F4ZnhlamdhYXd0d25raHZrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM4NDcxMTcsImV4cCI6MjA4OTQyMzExN30.xzMh8CqUzQ9MEcSQbfTfr-VLxJxXdfyMcebrjQ4tWXQ';
+// Fallback to hardcoded values if env vars fail to load (e.g. Metro cache not cleared)
+export const SUPABASE_URL = ENV_URL;
+export const SUPABASE_ANON_KEY = ENV_KEY;
 
 export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
   auth: {

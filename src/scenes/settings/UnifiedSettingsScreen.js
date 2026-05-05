@@ -159,6 +159,17 @@ export default function UnifiedSettingsScreen({ navigation }) {
             <MaterialIcons name="chevron-right" size={22} color={UNIFIED_THEME.colors.text.secondary} />
           </TouchableOpacity>
 
+          <TouchableOpacity
+            style={styles.menuItem}
+            onPress={() => navigation.navigate(SCREEN_NAMES.MentorVideos)}
+          >
+            <View style={styles.menuLeft}>
+              <MaterialIcons name="video-camera-back" size={20} color={UNIFIED_THEME.colors.accent.secondary} />
+              <Text style={styles.menuLabel}>My Videos</Text>
+            </View>
+            <MaterialIcons name="chevron-right" size={22} color={UNIFIED_THEME.colors.text.secondary} />
+          </TouchableOpacity>
+
           <TouchableOpacity style={styles.menuItem}>
             <View style={styles.menuLeft}>
               <MaterialIcons name="privacy-tip" size={20} color={UNIFIED_THEME.colors.accent.primary} />

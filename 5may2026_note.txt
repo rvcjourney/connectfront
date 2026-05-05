@@ -1,0 +1,4 @@
+Supabase URL + Anon Key	src/lib/supabase.js (should move to .env)
+VideoSDK Auth URL	.env → REACT_APP_AUTH_URL-> from backend
+Razorpay Key ID	Supabase Edge Function secret ✅
+Razorpay Key Secret	Supabase Edge Function secret ✅

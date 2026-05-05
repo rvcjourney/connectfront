@@ -1,8 +1,5 @@
-import { supabase } from '../lib/supabase';
+import { supabase, SUPABASE_URL, SUPABASE_ANON_KEY } from '../lib/supabase';
 import { getSupabaseErrorMessage } from '../lib/supabaseErrorHandler';
-
-const SUPABASE_URL = 'https://pkoaxfxejgaawtwnkhvk.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBrb2F4ZnhlamdhYXd0d25raHZrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM4NDcxMTcsImV4cCI6MjA4OTQyMzExN30.xzMh8CqUzQ9MEcSQbfTfr-VLxJxXdfyMcebrjQ4tWXQ';
 
 async function invokeFunction(name, body) {
   const url = `${SUPABASE_URL}/functions/v1/${name}`;

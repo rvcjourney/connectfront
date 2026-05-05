@@ -42,4 +42,10 @@ export const SCREEN_NAMES = {
   Wallet: "Wallet_Screen",
   Review: "Review_Screen",
   CategoryMentors: "CategoryMentors_Screen",
+
+  // Mentor video library
+  MentorVideos: "MentorVideos_Screen",
+
+  // Learner video player
+  VideoPlayer: "VideoPlayer_Screen",
 };

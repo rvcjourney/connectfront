@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import {
   View,
   Text,
@@ -7,11 +7,16 @@ import {
   TouchableOpacity,
   StyleSheet,
   Platform,
+  Modal,
+  ActivityIndicator,
+  StatusBar,
 } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Toast from 'react-native-simple-toast';
+import RazorpayCheckout from 'react-native-razorpay';
+import Video from 'react-native-video';
 import { SafeScreen } from '../../components/SafeScreen';
 import { UNIFIED_THEME } from '../../unifiedTheme';
 import { LoadingOverlay } from '../../components/LoadingOverlay';
@@ -19,12 +24,129 @@ import Button from '../../components/Button';
 import { StarRating } from '../../components/StarRating';
 import { mentorApi } from '../../api/mentorApi';
 import { reviewsApi } from '../../api/reviewsApi';
+import { videoApi } from '../../api/videoApi';
+import { paymentApi } from '../../api/paymentApi';
 import { formatPrice } from '../../utils/formatCurrency';
 import { SCREEN_NAMES } from '../../navigators/screenNames';
+import { useAuth } from '../../hooks/useAuth';
 
 const T = UNIFIED_THEME;
 const C = T.colors;
 const TB = C.tabBar;
+const FREE_LIMIT = 2; // first N videos are always free regardless of is_free flag
+
+// ─── Video Player Modal ───────────────────────────────────────────────────────
+function VideoPlayerModal({ video, onClose }) {
+  const [paused, setPaused] = useState(false);
+  const [buffering, setBuffering] = useState(true);
+  const [error, setError] = useState(false);
+
+  if (!video) return null;
+
+  return (
+    <Modal visible animationType="fade" transparent={false} onRequestClose={onClose} statusBarTranslucent>
+      <StatusBar hidden />
+      <View style={vStyles.container}>
+        <Video
+          source={{ uri: video.video_url }}
+          style={vStyles.video}
+          resizeMode="contain"
+          paused={paused}
+          onLoadStart={() => { setBuffering(true); setError(false); }}
+          onLoad={() => setBuffering(false)}
+          onError={() => { setBuffering(false); setError(true); }}
+          repeat={false}
+        />
+        {buffering && !error && (
+          <ActivityIndicator style={vStyles.loader} size="large" color={C.accent.secondary} />
+        )}
+        {error && (
+          <View style={vStyles.errorBox}>
+            <MaterialIcons name="error-outline" size={40} color={C.accent.error} />
+            <Text style={vStyles.errorText}>Could not play video</Text>
+          </View>
+        )}
+        <View style={vStyles.topBar}>
+          <TouchableOpacity onPress={onClose} style={vStyles.closeBtn}>
+            <MaterialIcons name="arrow-back" size={24} color="#fff" />
+          </TouchableOpacity>
+          <Text style={vStyles.titleText} numberOfLines={1}>{video.title}</Text>
+          <View style={{ width: 40 }} />
+        </View>
+        <TouchableOpacity style={vStyles.playArea} onPress={() => setPaused(p => !p)} activeOpacity={1}>
+          {paused && (
+            <View style={vStyles.playBtn}>
+              <MaterialIcons name="play-arrow" size={52} color="#fff" />
+            </View>
+          )}
+        </TouchableOpacity>
+      </View>
+    </Modal>
+  );
+}
+
+const vStyles = StyleSheet.create({
+  container: { flex: 1, backgroundColor: '#000', justifyContent: 'center' },
+  video: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 },
+  loader: { position: 'absolute', alignSelf: 'center' },
+  errorBox: { alignItems: 'center', gap: 8 },
+  errorText: { color: C.accent.error, fontSize: 14 },
+  topBar: {
+    position: 'absolute', top: 0, left: 0, right: 0,
+    flexDirection: 'row', alignItems: 'center',
+    paddingTop: 16, paddingHorizontal: 12, paddingBottom: 12,
+    backgroundColor: 'rgba(0,0,0,0.45)',
+  },
+  closeBtn: { padding: 8, width: 40 },
+  titleText: { flex: 1, color: '#fff', fontSize: 15, fontWeight: '600', textAlign: 'center' },
+  playArea: { position: 'absolute', top: 60, left: 0, right: 0, bottom: 0, justifyContent: 'center', alignItems: 'center' },
+  playBtn: { width: 72, height: 72, borderRadius: 36, backgroundColor: 'rgba(0,0,0,0.55)', alignItems: 'center', justifyContent: 'center' },
+});
+
+// ─── Single Video Tile ────────────────────────────────────────────────────────
+function VideoTile({ video, index, isUnlocked, onPlay, onLockPress }) {
+  const isFree = video.is_free || index < FREE_LIMIT;
+  const canPlay = isFree || isUnlocked;
+
+  return (
+    <TouchableOpacity
+      style={vTile.card}
+      activeOpacity={0.85}
+      onPress={() => canPlay ? onPlay(video) : onLockPress()}
+    >
+      <LinearGradient
+        colors={canPlay
+          ? ['rgba(94,234,212,0.18)', 'rgba(124,58,237,0.22)']
+          : ['rgba(30,20,60,0.9)', 'rgba(10,6,30,0.95)']}
+        style={vTile.thumb}
+      >
+        {canPlay ? (
+          <MaterialIcons name="play-circle-filled" size={38} color="rgba(255,255,255,0.8)" />
+        ) : (
+          <MaterialIcons name="lock" size={30} color="rgba(255,255,255,0.35)" />
+        )}
+        {isFree && (
+          <View style={vTile.freeBadge}>
+            <Text style={vTile.freeBadgeText}>FREE</Text>
+          </View>
+        )}
+      </LinearGradient>
+      <View style={vTile.info}>
+        <Text style={vTile.title} numberOfLines={2}>{video.title}</Text>
+        {!canPlay && <MaterialIcons name="lock" size={12} color={C.text.muted} style={{ marginTop: 2 }} />}
+      </View>
+    </TouchableOpacity>
+  );
+}
+
+const vTile = StyleSheet.create({
+  card: { width: 130, marginRight: 10, borderRadius: 12, overflow: 'hidden', backgroundColor: 'rgba(255,255,255,0.04)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)' },
+  thumb: { width: 130, height: 110, alignItems: 'center', justifyContent: 'center' },
+  freeBadge: { position: 'absolute', top: 6, right: 6, backgroundColor: C.accent.success, borderRadius: 4, paddingHorizontal: 5, paddingVertical: 2 },
+  freeBadgeText: { color: '#000', fontSize: 9, fontWeight: '800', letterSpacing: 0.5 },
+  info: { padding: 8 },
+  title: { color: C.text.secondary, fontSize: 11, fontWeight: '600', lineHeight: 15 },
+});
 
 function StatPill({ icon, label, value, accent }) {
   return (
@@ -51,9 +173,15 @@ function StatPill({ icon, label, value, accent }) {
 
 export default function MentorProfileScreen({ navigation, route }) {
   const { mentorId } = route.params;
+  const { user } = useAuth();
   const [mentor, setMentor] = useState(null);
   const [reviews, setReviews] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [videos, setVideos] = useState([]);
+  const [isUnlocked, setIsUnlocked] = useState(false);
+  const [unlockPrice, setUnlockPrice] = useState(299);
+  const [playingVideo, setPlayingVideo] = useState(null);
+  const [unlocking, setUnlocking] = useState(false);
   const insets = useSafeAreaInsets();
 
   useEffect(() => {
@@ -63,17 +191,60 @@ export default function MentorProfileScreen({ navigation, route }) {
   const loadMentorProfile = async () => {
     try {
       setLoading(true);
-      const [data, reviewData] = await Promise.all([
+      const [data, reviewData, vids, price, unlocked] = await Promise.all([
         mentorApi.getMentorWithProfile(mentorId),
         reviewsApi.getReviewsForMentor(mentorId),
+        videoApi.getMentorVideos(mentorId),
+        videoApi.getUnlockPrice(mentorId),
+        user ? videoApi.checkUnlocked({ learnerId: user.id, mentorId }) : Promise.resolve(false),
       ]);
       setMentor(data);
       setReviews(reviewData);
+      setVideos(vids);
+      setUnlockPrice(price);
+      setIsUnlocked(unlocked);
     } catch {
       setMentor(null);
       Toast.show('Failed to load mentor profile');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleUnlock = async () => {
+    if (!user) { Toast.show('Please log in to unlock'); return; }
+    setUnlocking(true);
+    try {
+      const order = await paymentApi.createOrder({
+        mentorId,
+        learnerId: user.id,
+        slotId: null,
+        amountPaise: unlockPrice * 100,
+        mentorAmountPaise: Math.round(unlockPrice * 80),
+        platformFeePaise: Math.round(unlockPrice * 20),
+      });
+
+      const options = {
+        key: order.keyId,
+        amount: order.amount,
+        currency: order.currency || 'INR',
+        name: 'Connect',
+        description: 'Unlock mentor video library',
+        order_id: order.orderId,
+        prefill: { email: user.email || '' },
+        theme: { color: '#5eead4' },
+      };
+
+      const paymentData = await RazorpayCheckout.open(options);
+      await videoApi.recordUnlock({ learnerId: user.id, mentorId, amountPaid: unlockPrice });
+      setIsUnlocked(true);
+      Toast.show('Library unlocked!', Toast.SHORT);
+    } catch (e) {
+      if (e?.code !== 'PAYMENT_CANCELLED') {
+        Toast.show(e?.message || 'Payment failed', Toast.LONG);
+      }
+    } finally {
+      setUnlocking(false);
     }
   };
 
@@ -271,8 +442,77 @@ export default function MentorProfileScreen({ navigation, route }) {
             </View>
           )}
 
+          {/* ── Videos Section ── */}
+          {videos.length > 0 && (
+            <>
+              <View style={styles.videoSectionHeader}>
+                <Text style={styles.sectionEyebrow}>Videos ({videos.length})</Text>
+                {!isUnlocked && videos.some((v, i) => !v.is_free && i >= FREE_LIMIT) && (
+                  <View style={styles.lockBadge}>
+                    <MaterialIcons name="lock" size={11} color={C.accent.primary} />
+                    <Text style={styles.lockBadgeText}>Some locked</Text>
+                  </View>
+                )}
+              </View>
+
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.videoRow}
+              >
+                {videos.map((v, i) => (
+                  <VideoTile
+                    key={v.id}
+                    video={v}
+                    index={i}
+                    isUnlocked={isUnlocked}
+                    onPlay={setPlayingVideo}
+                    onLockPress={() => {}}
+                  />
+                ))}
+              </ScrollView>
+
+              {/* Unlock paywall */}
+              {!isUnlocked && videos.some((v, i) => !v.is_free && i >= FREE_LIMIT) && (
+                <TouchableOpacity
+                  style={[styles.unlockBtn, unlocking && { opacity: 0.6 }]}
+                  onPress={handleUnlock}
+                  disabled={unlocking}
+                  activeOpacity={0.85}
+                >
+                  <LinearGradient
+                    colors={['rgba(240,216,117,0.18)', 'rgba(94,234,212,0.12)']}
+                    style={styles.unlockBtnInner}
+                    start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
+                  >
+                    {unlocking ? (
+                      <ActivityIndicator color={C.accent.primary} size="small" />
+                    ) : (
+                      <>
+                        <MaterialIcons name="lock-open" size={18} color={C.accent.primary} />
+                        <Text style={styles.unlockBtnText}>
+                          Unlock full library · ₹{unlockPrice}
+                        </Text>
+                        <MaterialIcons name="chevron-right" size={18} color={C.accent.primary} />
+                      </>
+                    )}
+                  </LinearGradient>
+                </TouchableOpacity>
+              )}
+
+              {isUnlocked && (
+                <View style={styles.unlockedBadge}>
+                  <MaterialIcons name="check-circle" size={14} color={C.accent.success} />
+                  <Text style={styles.unlockedText}>Library unlocked — watch all videos</Text>
+                </View>
+              )}
+            </>
+          )}
+
           <View style={{ height: T.spacing.xxxl }} />
         </ScrollView>
+
+        <VideoPlayerModal video={playingVideo} onClose={() => setPlayingVideo(null)} />
 
         <View
           style={[
@@ -669,4 +909,61 @@ const styles = StyleSheet.create({
   errorBtn: {
     minWidth: 200,
   },
+
+  // Videos section
+  videoSectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: T.spacing.lg,
+    marginBottom: T.spacing.sm,
+  },
+  lockBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: 'rgba(240,216,117,0.1)',
+    borderRadius: 6,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderWidth: 1,
+    borderColor: 'rgba(240,216,117,0.2)',
+  },
+  lockBadgeText: { color: C.accent.primary, fontSize: 10, fontWeight: '700' },
+  videoRow: {
+    paddingHorizontal: T.spacing.lg,
+    paddingBottom: T.spacing.sm,
+  },
+  unlockBtn: {
+    marginHorizontal: T.spacing.lg,
+    marginTop: 8,
+    marginBottom: T.spacing.md,
+    borderRadius: 14,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: 'rgba(240,216,117,0.25)',
+  },
+  unlockBtnInner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+  },
+  unlockBtnText: {
+    color: C.accent.primary,
+    fontSize: 14,
+    fontWeight: '700',
+    flex: 1,
+    textAlign: 'center',
+  },
+  unlockedBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginHorizontal: T.spacing.lg,
+    marginBottom: T.spacing.md,
+  },
+  unlockedText: { color: C.accent.success, fontSize: 12, fontWeight: '600' },
 });
