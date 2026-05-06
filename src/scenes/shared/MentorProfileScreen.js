@@ -238,7 +238,7 @@ export default function MentorProfileScreen({ navigation, route }) {
       const paymentData = await RazorpayCheckout.open(options);
       await videoApi.recordUnlock({ learnerId: user.id, mentorId, amountPaid: unlockPrice });
       setIsUnlocked(true);
-      Toast.show('Library unlocked!', Toast.SHORT);
+      Toast.show('Subscribed! Watch all videos this month.', Toast.SHORT);
     } catch (e) {
       if (e?.code !== 'PAYMENT_CANCELLED') {
         Toast.show(e?.message || 'Payment failed', Toast.LONG);
@@ -491,7 +491,7 @@ export default function MentorProfileScreen({ navigation, route }) {
                       <>
                         <MaterialIcons name="lock-open" size={18} color={C.accent.primary} />
                         <Text style={styles.unlockBtnText}>
-                          Unlock full library · ₹{unlockPrice}
+                          Subscribe to videos · ₹{unlockPrice}/mo
                         </Text>
                         <MaterialIcons name="chevron-right" size={18} color={C.accent.primary} />
                       </>
@@ -503,7 +503,7 @@ export default function MentorProfileScreen({ navigation, route }) {
               {isUnlocked && (
                 <View style={styles.unlockedBadge}>
                   <MaterialIcons name="check-circle" size={14} color={C.accent.success} />
-                  <Text style={styles.unlockedText}>Library unlocked — watch all videos</Text>
+                  <Text style={styles.unlockedText}>Subscribed — watch all videos this month</Text>
                 </View>
               )}
             </>

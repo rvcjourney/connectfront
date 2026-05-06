@@ -4,6 +4,7 @@ import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import { SCREEN_NAMES } from './screenNames';
 import { CapsuleTabBar } from '../components/CapsuleTabBar';
 import LearnerHomeScreen from '../scenes/learner/HomeScreen';
+import LearnerVideosScreen from '../scenes/learner/VideosScreen';
 import LearnerBookingsScreen from '../scenes/learner/BookingsScreen';
 
 const TopTab = createMaterialTopTabNavigator();
@@ -36,6 +37,14 @@ export const LearnerSectionNavigator = () => {
         options={{
           tabBarLabel: 'Discover',
           tabBarIcon: tabIcon('explore'),
+        }}
+      />
+      <TopTab.Screen
+        name={SCREEN_NAMES.LearnerVideos}
+        component={LearnerVideosScreen}
+        options={{
+          tabBarLabel: 'Videos',
+          tabBarIcon: tabIcon('play-circle-filled'),
         }}
       />
       <TopTab.Screen

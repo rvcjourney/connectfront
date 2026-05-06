@@ -63,6 +63,60 @@ export const videoApi = {
     }
   },
 
+  // ─── Get all public videos across all mentors (for learner feed) ────────────
+  getAllPublicVideos: async ({ page = 0, pageSize = 20 } = {}) => {
+    try {
+      const from = page * pageSize;
+      const to = from + pageSize - 1;
+
+      // Step 1: fetch videos + profile (direct FK exists: mentor_videos.mentor_id → profiles.id)
+      const { data: videos, error } = await supabase
+        .from('mentor_videos')
+        .select(`
+          id, mentor_id, title, description, video_url, is_free, position, created_at,
+          profiles:mentor_id ( id, name, avatar_url )
+        `)
+        .order('created_at', { ascending: false })
+        .range(from, to);
+
+      if (error) throw error;
+      if (!videos?.length) return [];
+
+      // Step 2: fetch mentor_profiles for all unique mentor IDs in the result
+      const mentorIds = [...new Set(videos.map(v => v.mentor_id))];
+      const { data: mentorProfiles } = await supabase
+        .from('mentor_profiles')
+        .select('id, specialization, unlock_price')
+        .in('id', mentorIds);
+
+      // Step 3: merge
+      const profileMap = {};
+      (mentorProfiles || []).forEach(mp => { profileMap[mp.id] = mp; });
+
+      return videos.map(v => ({
+        ...v,
+        mentor_profiles: profileMap[v.mentor_id] || { specialization: '', unlock_price: 299 },
+      }));
+    } catch (error) {
+      throw new Error(getSupabaseErrorMessage(error));
+    }
+  },
+
+  // ─── Get all mentor IDs unlocked by a learner ─────────────────────────────
+  getLearnerUnlocks: async (learnerId) => {
+    try {
+      const { data, error } = await supabase
+        .from('learner_unlocks')
+        .select('mentor_id')
+        .eq('learner_id', learnerId);
+
+      if (error) throw error;
+      return new Set((data || []).map(u => u.mentor_id));
+    } catch (error) {
+      throw new Error(getSupabaseErrorMessage(error));
+    }
+  },
+
   // ─── Get all videos for a mentor (ordered by position then created_at) ───────
   getMentorVideos: async (mentorId) => {
     try {

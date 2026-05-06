@@ -131,7 +131,7 @@ const playerStyles = StyleSheet.create({
 });
 
 // ─── Video Card ───────────────────────────────────────────────────────────────
-function VideoCard({ video, onToggleFree, onDelete, onPlay }) {
+function VideoCard({ video, onToggleFree, onDelete, onPlay, onEdit }) {
   const [toggling, setToggling] = useState(false);
 
   const handleToggle = async (value) => {
@@ -152,7 +152,12 @@ function VideoCard({ video, onToggleFree, onDelete, onPlay }) {
       </TouchableOpacity>
 
       <View style={styles.cardInfo}>
-        <Text style={styles.cardTitle} numberOfLines={2}>{video.title}</Text>
+        <View style={styles.cardTitleRow}>
+          <Text style={[styles.cardTitle, { flex: 1 }]} numberOfLines={2}>{video.title}</Text>
+          <TouchableOpacity onPress={() => onEdit(video)} style={styles.editBtn} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+            <MaterialIcons name="edit" size={18} color={T.colors.accent.secondary} />
+          </TouchableOpacity>
+        </View>
         {video.description ? (
           <Text style={styles.cardDesc} numberOfLines={1}>{video.description}</Text>
         ) : null}
@@ -177,6 +182,140 @@ function VideoCard({ video, onToggleFree, onDelete, onPlay }) {
         </View>
       </View>
     </View>
+  );
+}
+
+// ─── Edit Modal ───────────────────────────────────────────────────────────────
+function EditModal({ video, onClose, onSaved }) {
+  const [title, setTitle] = useState('');
+  const [description, setDescription] = useState('');
+  const [isFree, setIsFree] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
+  const [errorMsg, setErrorMsg] = useState('');
+  const scaleAnim = useRef(new Animated.Value(1)).current;
+  const checkAnim = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    if (video) {
+      setTitle(video.title || '');
+      setDescription(video.description || '');
+      setIsFree(video.is_free || false);
+      setSaved(false);
+      setErrorMsg('');
+      scaleAnim.setValue(1);
+      checkAnim.setValue(0);
+    }
+  }, [video]);
+
+  const handleSave = async () => {
+    if (!title.trim()) {
+      setErrorMsg('Title cannot be empty');
+      Animated.sequence([
+        Animated.timing(scaleAnim, { toValue: 1.04, duration: 80, useNativeDriver: true }),
+        Animated.timing(scaleAnim, { toValue: 0.97, duration: 80, useNativeDriver: true }),
+        Animated.timing(scaleAnim, { toValue: 1, duration: 80, useNativeDriver: true }),
+      ]).start();
+      return;
+    }
+    setErrorMsg('');
+    setSaving(true);
+    try {
+      const updated = await videoApi.updateVideo({
+        id: video.id,
+        title: title.trim(),
+        description: description.trim(),
+        isFree,
+      });
+      onSaved(updated);
+      setSaved(true);
+      Animated.spring(checkAnim, { toValue: 1, useNativeDriver: true, tension: 80, friction: 6 }).start();
+      setTimeout(() => { onClose(); setSaved(false); }, 900);
+    } catch (e) {
+      setErrorMsg(e.message || 'Failed to save. Try again.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <Modal visible={!!video} animationType="slide" transparent onRequestClose={onClose}>
+      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
+        <TouchableOpacity style={styles.modalBackdrop} activeOpacity={1} onPress={onClose} />
+        <View style={styles.modalSheet}>
+          <View style={styles.modalHandle} />
+
+          <View style={styles.editModalHeader}>
+            <MaterialIcons name="edit" size={18} color={T.colors.accent.secondary} />
+            <Text style={styles.modalTitle}>Edit Video</Text>
+          </View>
+
+          <Text style={styles.fieldLabel}>Title</Text>
+          <TextInput
+            style={styles.input}
+            value={title}
+            onChangeText={t => { setTitle(t); setErrorMsg(''); }}
+            placeholder="Video title"
+            placeholderTextColor="rgba(255,255,255,0.3)"
+            maxLength={80}
+          />
+
+          <Text style={styles.fieldLabel}>Description</Text>
+          <TextInput
+            style={[styles.input, { height: 80, textAlignVertical: 'top' }]}
+            value={description}
+            onChangeText={setDescription}
+            placeholder="Optional description"
+            placeholderTextColor="rgba(255,255,255,0.3)"
+            multiline
+            maxLength={200}
+          />
+
+          <View style={styles.switchRow}>
+            <Text style={styles.fieldLabel}>Free to watch</Text>
+            <Switch
+              value={isFree}
+              onValueChange={setIsFree}
+              trackColor={{ false: 'rgba(255,255,255,0.15)', true: T.colors.accent.secondary }}
+              thumbColor={isFree ? T.colors.accent.primary : 'rgba(255,255,255,0.6)'}
+            />
+          </View>
+
+          {/* Error message */}
+          {errorMsg ? (
+            <View style={styles.errorBanner}>
+              <MaterialIcons name="error-outline" size={14} color={T.colors.accent.error} />
+              <Text style={styles.errorBannerText}>{errorMsg}</Text>
+            </View>
+          ) : null}
+
+          {/* Save button */}
+          <Animated.View style={{ transform: [{ scale: scaleAnim }] }}>
+            <TouchableOpacity
+              style={[
+                styles.uploadBtn,
+                saved && styles.savedBtn,
+                (saving || saved) && { opacity: 0.9 },
+              ]}
+              onPress={handleSave}
+              disabled={saving || saved}
+              activeOpacity={0.85}
+            >
+              {saving ? (
+                <ActivityIndicator color="#000" size="small" />
+              ) : saved ? (
+                <Animated.View style={[styles.savedRow, { transform: [{ scale: checkAnim }] }]}>
+                  <MaterialIcons name="check-circle" size={18} color="#000" />
+                  <Text style={styles.uploadBtnText}>Saved!</Text>
+                </Animated.View>
+              ) : (
+                <Text style={styles.uploadBtnText}>Save Changes</Text>
+              )}
+            </TouchableOpacity>
+          </Animated.View>
+        </View>
+      </KeyboardAvoidingView>
+    </Modal>
   );
 }
 
@@ -386,6 +525,7 @@ export default function MentorVideosScreen() {
   const [loading, setLoading] = useState(true);
   const [showUpload, setShowUpload] = useState(false);
   const [playingVideo, setPlayingVideo] = useState(null);
+  const [editingVideo, setEditingVideo] = useState(null);
   const [unlockPrice, setUnlockPrice] = useState(299);
   const [editingPrice, setEditingPrice] = useState(false);
   const [priceInput, setPriceInput] = useState('299');
@@ -517,6 +657,7 @@ export default function MentorVideosScreen() {
               onToggleFree={handleToggleFree}
               onDelete={handleDelete}
               onPlay={setPlayingVideo}
+              onEdit={setEditingVideo}
             />
           )}
           contentContainerStyle={styles.list}
@@ -533,6 +674,14 @@ export default function MentorVideosScreen() {
       <VideoPlayerModal
         video={playingVideo}
         onClose={() => setPlayingVideo(null)}
+      />
+
+      <EditModal
+        video={editingVideo}
+        onClose={() => setEditingVideo(null)}
+        onSaved={(updated) =>
+          setVideos(prev => prev.map(v => v.id === updated.id ? updated : v))
+        }
       />
     </SafeScreen>
   );
@@ -720,6 +869,63 @@ const styles = StyleSheet.create({
     textAlign: 'right',
   },
 
+  cardTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 6,
+    marginBottom: 4,
+  },
+  editBtn: {
+    paddingTop: 2,
+  },
+  switchRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 8,
+  },
+  editModalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 16,
+  },
+  errorBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: 'rgba(248,113,113,0.1)',
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(248,113,113,0.25)',
+    marginBottom: 10,
+  },
+  errorBannerText: {
+    color: T.colors.accent.error,
+    fontSize: 12,
+    fontWeight: '600',
+    flex: 1,
+  },
+  savedBtn: {
+    backgroundColor: T.colors.accent.success,
+  },
+  savedRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  modalBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.6)',
+  },
+  fieldLabel: {
+    color: T.colors.text.secondary,
+    fontSize: 13,
+    marginBottom: 6,
+    marginTop: 14,
+  },
   uploadBtn: {
     marginTop: 16,
     backgroundColor: T.colors.accent.primary,

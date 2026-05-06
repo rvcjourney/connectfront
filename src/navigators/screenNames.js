@@ -28,6 +28,7 @@ export const SCREEN_NAMES = {
 
   // Learner top tabs
   LearnerSearch: "LearnerSearch_Tab",
+  LearnerVideos: "LearnerVideos_Tab",
   LearnerBookings: "LearnerBookings_Tab",
 
   // Modal overlays (shared)
