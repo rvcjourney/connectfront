@@ -17,7 +17,9 @@ import { SafeScreen } from '../../components/SafeScreen';
 import { LoadingOverlay } from '../../components/LoadingOverlay';
 import { UNIFIED_THEME } from '../../unifiedTheme';
 import { paymentApi } from '../../api/paymentApi';
+import { payoutApi } from '../../api/payoutApi';
 import { useAuth } from '../../hooks/useAuth';
+import { SCREEN_NAMES } from '../../navigators/screenNames';
 
 const T = UNIFIED_THEME;
 const MIN_WITHDRAWAL = 5000;
@@ -41,10 +43,11 @@ export default function WalletScreen({ navigation }) {
   const { profile } = useAuth();
   const [wallet, setWallet] = useState({ balance: 0, total_earned: 0, total_withdrawn: 0 });
   const [pendingAmount, setPendingAmount] = useState(0);
+  const [storedUpi, setStoredUpi] = useState('');
+  const [payoutReady, setPayoutReady] = useState(false);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [showWithdraw, setShowWithdraw] = useState(false);
-  const [upiId, setUpiId] = useState('');
   const [withdrawAmount, setWithdrawAmount] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
@@ -58,12 +61,15 @@ export default function WalletScreen({ navigation }) {
   const loadData = async () => {
     try {
       setLoading(true);
-      const [w, pending] = await Promise.all([
+      const [w, pending, payoutStatus] = await Promise.all([
         paymentApi.getWallet(profile.id),
         paymentApi.getPendingEarnings(profile.id),
+        payoutApi.getAccountStatus(profile.id),
       ]);
       setWallet(w);
       setPendingAmount(pending);
+      setStoredUpi(payoutStatus?.upiId || '');
+      setPayoutReady(payoutStatus?.status === 'active');
     } catch {
       Toast.show('Failed to load wallet');
     } finally {
@@ -79,14 +85,13 @@ export default function WalletScreen({ navigation }) {
 
   const handleWithdraw = async () => {
     const amount = parseFloat(withdrawAmount);
-    if (!upiId.trim()) { Toast.show('Enter UPI ID'); return; }
     if (!amount || isNaN(amount) || amount <= 0) { Toast.show('Enter a valid amount'); return; }
     if (amount > wallet.balance) { Toast.show('Amount exceeds available balance'); return; }
     if (amount < MIN_WITHDRAWAL) { Toast.show(`Minimum withdrawal is ₹${MIN_WITHDRAWAL.toLocaleString('en-IN')}`); return; }
 
     Alert.alert(
       'Confirm Withdrawal',
-      `Withdraw ${fmt(amount)} to\n${upiId}?`,
+      `Send ${fmt(amount)} to\n${storedUpi}\n\nProcessed within 1–2 business days.`,
       [
         { text: 'Cancel', style: 'cancel' },
         {
@@ -94,14 +99,13 @@ export default function WalletScreen({ navigation }) {
           onPress: async () => {
             try {
               setSubmitting(true);
-              await paymentApi.requestWithdrawal({ mentorId: profile.id, amount, upiId: upiId.trim() });
-              Toast.show('Withdrawal request submitted');
+              const result = await paymentApi.requestWithdrawal({ mentorId: profile.id, amount });
+              Toast.show('Withdrawal requested · We\'ll send to your UPI within 1–2 days', Toast.LONG);
               setShowWithdraw(false);
-              setUpiId('');
               setWithdrawAmount('');
               await loadData();
-            } catch {
-              Toast.show('Failed to submit withdrawal');
+            } catch (e) {
+              Toast.show(e.message || 'Withdrawal failed', Toast.LONG);
             } finally {
               setSubmitting(false);
             }
@@ -111,7 +115,7 @@ export default function WalletScreen({ navigation }) {
     );
   };
 
-  const canWithdraw = wallet.balance >= MIN_WITHDRAWAL;
+  const canWithdraw = wallet.balance >= MIN_WITHDRAWAL && !!storedUpi;
   const progressPct = Math.min((wallet.balance / MIN_WITHDRAWAL) * 100, 100);
 
   return (
@@ -258,23 +262,31 @@ export default function WalletScreen({ navigation }) {
           </TouchableOpacity>
         </View>
 
+        {/* Payout not set up nudge */}
+        {!storedUpi && !loading && (
+          <TouchableOpacity
+            style={styles.setupNudge}
+            onPress={() => navigation.navigate(SCREEN_NAMES.PayoutSetup)}
+            activeOpacity={0.8}
+          >
+            <MaterialIcons name="info-outline" size={18} color={T.colors.accent.warning} />
+            <Text style={styles.setupNudgeText}>
+              Complete payout setup to enable withdrawals
+            </Text>
+            <MaterialIcons name="chevron-right" size={18} color={T.colors.accent.warning} />
+          </TouchableOpacity>
+        )}
+
         {/* Withdrawal Form */}
         {showWithdraw && (
           <View style={styles.formCard}>
             <Text style={styles.formHeading}>Withdrawal Details</Text>
 
-            <Text style={styles.fieldLabel}>UPI ID</Text>
-            <View style={styles.inputWrap}>
-              <MaterialIcons name="phone-android" size={18} color={T.colors.text.muted} style={styles.inputIcon} />
-              <TextInput
-                style={styles.fieldInput}
-                value={upiId}
-                onChangeText={setUpiId}
-                placeholder="yourname@upi"
-                placeholderTextColor={T.colors.text.muted}
-                autoCapitalize="none"
-                keyboardType="email-address"
-              />
+            {/* UPI ID — read-only, from payout setup */}
+            <Text style={styles.fieldLabel}>Sending to</Text>
+            <View style={[styles.inputWrap, styles.inputWrapReadOnly]}>
+              <MaterialIcons name="phone-android" size={18} color={T.colors.accent.secondary} style={styles.inputIcon} />
+              <Text style={styles.upiReadOnly}>{storedUpi}</Text>
             </View>
 
             <Text style={styles.fieldLabel}>Amount (₹)</Text>
@@ -311,7 +323,7 @@ export default function WalletScreen({ navigation }) {
                 style={styles.confirmBtnGrad}
               >
                 <Text style={styles.confirmBtnTxt}>
-                  {submitting ? 'Submitting…' : 'Submit Request'}
+                  {submitting ? 'Processing…' : 'Withdraw'}
                 </Text>
               </LinearGradient>
             </TouchableOpacity>
@@ -587,6 +599,25 @@ const styles = StyleSheet.create({
   confirmBtnGrad: {
     paddingVertical: T.spacing.md,
     alignItems: 'center',
+  },
+  setupNudge: {
+    flexDirection: 'row', alignItems: 'center', gap: T.spacing.sm,
+    backgroundColor: 'rgba(251,191,36,0.08)',
+    borderWidth: 1, borderColor: 'rgba(251,191,36,0.22)',
+    borderRadius: T.borderRadius.md,
+    padding: T.spacing.md,
+    marginBottom: T.spacing.lg,
+  },
+  setupNudgeText: {
+    ...T.typography.bodySm, color: T.colors.accent.warning, flex: 1,
+  },
+  inputWrapReadOnly: {
+    backgroundColor: 'rgba(94,234,212,0.06)',
+    borderColor: 'rgba(94,234,212,0.2)',
+  },
+  upiReadOnly: {
+    flex: 1, paddingVertical: T.spacing.sm + 2,
+    color: T.colors.accent.secondary, ...T.typography.bodyMd, fontWeight: '600',
   },
   confirmBtnTxt: {
     ...T.typography.labelLg,

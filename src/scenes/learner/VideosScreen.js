@@ -19,7 +19,6 @@ import Toast from 'react-native-simple-toast';
 import { SafeScreen } from '../../components/SafeScreen';
 import { UNIFIED_THEME } from '../../unifiedTheme';
 import { videoApi } from '../../api/videoApi';
-import { paymentApi } from '../../api/paymentApi';
 import { useAuth } from '../../hooks/useAuth';
 
 const T = UNIFIED_THEME;
@@ -111,28 +110,36 @@ function UnlockSheet({ video, onClose, onUnlocked }) {
     if (!user) { Toast.show('Please log in'); return; }
     setLoading(true);
     try {
-      const order = await paymentApi.createOrder({
-        mentorId: video.mentor_id,
-        learnerId: user.id,
-        slotId: null,
+      // Step 1: create order server-side (no slotId — video subscription)
+      const order = await videoApi.createVideoOrder({
+        mentorId:    video.mentor_id,
+        learnerId:   user.id,
         amountPaise: price * 100,
-        mentorAmountPaise: Math.round(price * 80),
-        platformFeePaise: Math.round(price * 20),
       });
 
-      const options = {
-        key: order.keyId,
-        amount: order.amount,
-        currency: order.currency || 'INR',
-        name: 'Connect',
+      // Step 2: open Razorpay checkout
+      const paymentData = await RazorpayCheckout.open({
+        key:         order.keyId,
+        amount:      order.amount,
+        currency:    order.currency || 'INR',
+        name:        'Connect',
         description: `Subscribe to ${mentorName}'s video library`,
-        order_id: order.orderId,
-        prefill: { email: user.email || '' },
-        theme: { color: '#5eead4' },
-      };
+        order_id:    order.orderId,
+        prefill:     { email: user.email || '' },
+        theme:       { color: '#5eead4' },
+      });
 
-      await RazorpayCheckout.open(options);
-      await videoApi.recordUnlock({ learnerId: user.id, mentorId: video.mentor_id, amountPaid: price });
+      // Step 3: verify payment + record subscription + credit mentor wallet
+      await videoApi.verifyVideoSubscription({
+        razorpayOrderId:   order.orderId,
+        razorpayPaymentId: paymentData.razorpay_payment_id,
+        razorpaySignature: paymentData.razorpay_signature,
+        mentorId:          video.mentor_id,
+        learnerId:         user.id,
+        amountPaid:        price,
+        mentorAmount:      Math.round(price * 0.8),
+      });
+
       onUnlocked(video.mentor_id);
       onClose();
       Toast.show('Subscribed! Watch all videos this month.', Toast.SHORT);

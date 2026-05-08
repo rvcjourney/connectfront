@@ -102,18 +102,59 @@ export const videoApi = {
     }
   },
 
-  // ─── Get all mentor IDs unlocked by a learner ─────────────────────────────
+  // ─── Get all mentor IDs unlocked by a learner (active, non-expired) ─────────
   getLearnerUnlocks: async (learnerId) => {
     try {
       const { data, error } = await supabase
         .from('learner_unlocks')
-        .select('mentor_id')
-        .eq('learner_id', learnerId);
+        .select('mentor_id, expires_at')
+        .eq('learner_id', learnerId)
+        .or(`expires_at.is.null,expires_at.gt.${new Date().toISOString()}`);
 
       if (error) throw error;
       return new Set((data || []).map(u => u.mentor_id));
     } catch (error) {
       throw new Error(getSupabaseErrorMessage(error));
+    }
+  },
+
+  // ─── Create Razorpay order for video subscription ─────────────────────────
+  createVideoOrder: async ({ mentorId, learnerId, amountPaise }) => {
+    try {
+      const res = await fetch(`${SUPABASE_URL}/functions/v1/create-video-order`, {
+        method: 'POST',
+        headers: {
+          'Content-Type':  'application/json',
+          'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+          'apikey':        SUPABASE_ANON_KEY,
+        },
+        body: JSON.stringify({ mentorId, learnerId, amountPaise }),
+      });
+      const text = await res.text();
+      if (!res.ok) throw new Error(JSON.parse(text)?.error || 'Order creation failed');
+      return JSON.parse(text);
+    } catch (error) {
+      throw new Error(error.message || 'Failed to create order');
+    }
+  },
+
+  // ─── Verify payment + record subscription server-side ────────────────────
+  verifyVideoSubscription: async ({ razorpayOrderId, razorpayPaymentId, razorpaySignature, mentorId, learnerId, amountPaid, mentorAmount }) => {
+    try {
+      const res = await fetch(`${SUPABASE_URL}/functions/v1/verify-video-subscription`, {
+        method: 'POST',
+        headers: {
+          'Content-Type':  'application/json',
+          'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+          'apikey':        SUPABASE_ANON_KEY,
+        },
+        body: JSON.stringify({ razorpayOrderId, razorpayPaymentId, razorpaySignature, mentorId, learnerId, amountPaid, mentorAmount }),
+      });
+      const text = await res.text();
+      if (!res.ok) throw new Error(JSON.parse(text)?.error || 'Verification failed');
+      return JSON.parse(text);
+    } catch (error) {
+      throw new Error(error.message || 'Payment verification failed');
     }
   },
 

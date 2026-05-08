@@ -47,6 +47,9 @@ export const SCREEN_NAMES = {
   // Mentor video library
   MentorVideos: "MentorVideos_Screen",
 
+  // Payout / KYC setup
+  PayoutSetup: "PayoutSetup_Screen",
+
   // Learner video player
   VideoPlayer: "VideoPlayer_Screen",
 };

@@ -242,7 +242,9 @@ export default function MentorEarningsScreen() {
                 <View style={styles.txnInfo}>
                   <Text style={styles.txnDate}>{item.created_at ? formatDate(item.created_at) : '—'}</Text>
                   <Text style={styles.txnSub} numberOfLines={1}>
-                    {item.bookings?.profiles?.name || `Booking #${item.booking_id?.slice(0, 8) || '—'}`}
+                    {item.source === 'video_subscription'
+                      ? 'Video subscription'
+                      : item.bookings?.profiles?.name || `Session #${item.booking_id?.slice(0, 8) || '—'}`}
                   </Text>
                 </View>
                 <Text style={styles.txnAmt}>+{formatCurrency(item.amount)}</Text>

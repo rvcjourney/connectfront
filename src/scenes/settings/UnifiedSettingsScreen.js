@@ -139,6 +139,17 @@ export default function UnifiedSettingsScreen({ navigation }) {
 
           <TouchableOpacity
             style={styles.menuItem}
+            onPress={() => navigation.navigate(SCREEN_NAMES.PayoutSetup)}
+          >
+            <View style={styles.menuLeft}>
+              <MaterialIcons name="account-balance" size={20} color={UNIFIED_THEME.colors.accent.secondary} />
+              <Text style={styles.menuLabel}>Payout Setup</Text>
+            </View>
+            <MaterialIcons name="chevron-right" size={22} color={UNIFIED_THEME.colors.text.secondary} />
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.menuItem}
             onPress={() => navigation.navigate(SCREEN_NAMES.TransactionHistory)}
           >
             <View style={styles.menuLeft}>

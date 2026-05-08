@@ -149,20 +149,26 @@ export const paymentApi = {
   },
 
   /**
-   * Submit a withdrawal request (mentor requesting payout).
+   * Trigger a RazorpayX UPI payout via Edge Function.
+   * Deducts balance and inserts withdrawal_request atomically server-side.
    */
-  requestWithdrawal: async ({ mentorId, amount, upiId }) => {
+  requestWithdrawal: async ({ mentorId, amount }) => {
     try {
-      const { data, error } = await supabase
-        .from('withdrawal_requests')
-        .insert({ mentor_id: mentorId, amount, upi_id: upiId })
-        .select()
-        .single();
-
-      if (error) throw error;
-      return data;
+      const url = `${SUPABASE_URL}/functions/v1/process-withdrawal`;
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+          'apikey': SUPABASE_ANON_KEY,
+        },
+        body: JSON.stringify({ mentorId, amount }),
+      });
+      const text = await res.text();
+      if (!res.ok) throw new Error(JSON.parse(text)?.error || `Payout failed (${res.status})`);
+      return JSON.parse(text);
     } catch (error) {
-      throw new Error(getSupabaseErrorMessage(error));
+      throw new Error(error.message || 'Withdrawal failed');
     }
   },
 

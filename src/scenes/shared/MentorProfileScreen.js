@@ -25,7 +25,6 @@ import { StarRating } from '../../components/StarRating';
 import { mentorApi } from '../../api/mentorApi';
 import { reviewsApi } from '../../api/reviewsApi';
 import { videoApi } from '../../api/videoApi';
-import { paymentApi } from '../../api/paymentApi';
 import { formatPrice } from '../../utils/formatCurrency';
 import { SCREEN_NAMES } from '../../navigators/screenNames';
 import { useAuth } from '../../hooks/useAuth';
@@ -215,28 +214,36 @@ export default function MentorProfileScreen({ navigation, route }) {
     if (!user) { Toast.show('Please log in to unlock'); return; }
     setUnlocking(true);
     try {
-      const order = await paymentApi.createOrder({
+      // Step 1: create order
+      const order = await videoApi.createVideoOrder({
         mentorId,
-        learnerId: user.id,
-        slotId: null,
+        learnerId:   user.id,
         amountPaise: unlockPrice * 100,
-        mentorAmountPaise: Math.round(unlockPrice * 80),
-        platformFeePaise: Math.round(unlockPrice * 20),
       });
 
-      const options = {
-        key: order.keyId,
-        amount: order.amount,
-        currency: order.currency || 'INR',
-        name: 'Connect',
-        description: 'Unlock mentor video library',
-        order_id: order.orderId,
-        prefill: { email: user.email || '' },
-        theme: { color: '#5eead4' },
-      };
+      // Step 2: Razorpay checkout
+      const paymentData = await RazorpayCheckout.open({
+        key:         order.keyId,
+        amount:      order.amount,
+        currency:    order.currency || 'INR',
+        name:        'Connect',
+        description: 'Subscribe to mentor video library',
+        order_id:    order.orderId,
+        prefill:     { email: user.email || '' },
+        theme:       { color: '#5eead4' },
+      });
 
-      const paymentData = await RazorpayCheckout.open(options);
-      await videoApi.recordUnlock({ learnerId: user.id, mentorId, amountPaid: unlockPrice });
+      // Step 3: verify + record subscription + credit mentor wallet
+      await videoApi.verifyVideoSubscription({
+        razorpayOrderId:   order.orderId,
+        razorpayPaymentId: paymentData.razorpay_payment_id,
+        razorpaySignature: paymentData.razorpay_signature,
+        mentorId,
+        learnerId:    user.id,
+        amountPaid:   unlockPrice,
+        mentorAmount: Math.round(unlockPrice * 0.8),
+      });
+
       setIsUnlocked(true);
       Toast.show('Subscribed! Watch all videos this month.', Toast.SHORT);
     } catch (e) {
