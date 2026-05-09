@@ -61,7 +61,7 @@ serve(async (req: Request) => {
         razorpay_payment_id: razorpayPaymentId,
         unlocked_at:         now.toISOString(),
         expires_at:          expiresAt.toISOString(),
-      });
+      }, { onConflict: 'learner_id,mentor_id' });
 
     if (unlockError) throw unlockError;
 

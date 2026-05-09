@@ -108,7 +108,7 @@ export const videoApi = {
     }
   },
 
-  // ─── Get all mentor IDs unlocked by a learner (active, non-expired) ─────────
+  // ─── Get unlocked mentor IDs for a learner (active, non-expired) → Map<mentorId, {expiresAt}>
   getLearnerUnlocks: async (learnerId) => {
     try {
       const { data, error } = await supabase
@@ -118,7 +118,41 @@ export const videoApi = {
         .or(`expires_at.is.null,expires_at.gt.${new Date().toISOString()}`);
 
       if (error) throw error;
-      return new Set((data || []).map(u => u.mentor_id));
+      const map = new Map();
+      (data || []).forEach(u => map.set(u.mentor_id, { expiresAt: u.expires_at }));
+      return map;
+    } catch (error) {
+      throw new Error(getSupabaseErrorMessage(error));
+    }
+  },
+
+  // ─── Get full subscription list for a learner (for transaction history) ──────
+  getLearnerSubscriptions: async (learnerId) => {
+    try {
+      // Step 1: fetch unlock records
+      const { data: unlocks, error } = await supabase
+        .from('learner_unlocks')
+        .select('id, mentor_id, amount_paid, unlocked_at, expires_at')
+        .eq('learner_id', learnerId)
+        .order('unlocked_at', { ascending: false });
+
+      if (error) throw error;
+      if (!unlocks?.length) return [];
+
+      // Step 2: fetch mentor profiles for all unique mentor IDs
+      const mentorIds = [...new Set(unlocks.map(u => u.mentor_id))];
+      const { data: profiles } = await supabase
+        .from('profiles')
+        .select('id, name, avatar_url')
+        .in('id', mentorIds);
+
+      const profileMap = {};
+      (profiles || []).forEach(p => { profileMap[p.id] = p; });
+
+      return unlocks.map(u => ({
+        ...u,
+        profiles: profileMap[u.mentor_id] || null,
+      }));
     } catch (error) {
       throw new Error(getSupabaseErrorMessage(error));
     }
@@ -244,7 +278,7 @@ export const videoApi = {
     try {
       const { data, error } = await supabase
         .from('learner_unlocks')
-        .upsert({ learner_id: learnerId, mentor_id: mentorId, amount_paid: amountPaid })
+        .upsert({ learner_id: learnerId, mentor_id: mentorId, amount_paid: amountPaid }, { onConflict: 'learner_id,mentor_id' })
         .select()
         .single();
 

@@ -252,7 +252,7 @@ const uStyles = StyleSheet.create({
 });
 
 // ─── Video feed card ──────────────────────────────────────────────────────────
-function VideoCard({ item, isUnlocked, onPlay, onLockPress }) {
+function VideoCard({ item, isUnlocked, expiresAt, onPlay, onLockPress }) {
   const canPlay = item.is_free || isUnlocked;
   const avatarUrl = item.profiles?.avatar_url;
   const mentorName = item.profiles?.name || 'Mentor';
@@ -329,6 +329,11 @@ function VideoCard({ item, isUnlocked, onPlay, onLockPress }) {
             Unlocks all of {firstName}'s videos for 1 month
           </Text>
         )}
+        {isUnlocked && expiresAt && (
+          <Text style={cStyles.expiryHint}>
+            Expires {new Date(expiresAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
+          </Text>
+        )}
       </View>
     </View>
   );
@@ -372,6 +377,7 @@ const cStyles = StyleSheet.create({
   actionBtnLocked: { backgroundColor: 'rgba(240,216,117,0.08)', borderColor: 'rgba(240,216,117,0.25)' },
   actionText: { color: C.accent.secondary, fontSize: 12, fontWeight: '700' },
   unlockHint: { color: C.text.muted, fontSize: 10, marginTop: 5 },
+  expiryHint: { color: '#5eead4', fontSize: 10, marginTop: 3, opacity: 0.8 },
 });
 
 // ─── Filter chips ─────────────────────────────────────────────────────────────
@@ -379,13 +385,14 @@ const FILTERS = [
   { key: 'all', label: 'All', icon: 'apps' },
   { key: 'free', label: 'Free', icon: 'play-circle-filled' },
   { key: 'locked', label: 'Locked', icon: 'lock' },
+  { key: 'subscribed', label: 'Subscribed', icon: 'check-circle' },
 ];
 
 // ─── Main screen ──────────────────────────────────────────────────────────────
 export default function VideosScreen() {
   const { user } = useAuth();
   const [videos, setVideos] = useState([]);
-  const [unlockedSet, setUnlockedSet] = useState(new Set());
+  const [unlocksMap, setUnlocksMap] = useState(new Map());
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [filter, setFilter] = useState('all');
@@ -405,7 +412,7 @@ export default function VideosScreen() {
         userId ? videoApi.getLearnerUnlocks(userId) : Promise.resolve(new Set()),
       ]);
       setVideos(vids);
-      setUnlockedSet(unlocks);
+      setUnlocksMap(unlocks);
     } catch {
       Toast.show('Failed to load videos');
     } finally {
@@ -415,12 +422,17 @@ export default function VideosScreen() {
   };
 
   const handleUnlocked = useCallback((mentorId) => {
-    setUnlockedSet(prev => new Set([...prev, mentorId]));
+    setUnlocksMap(prev => {
+      const next = new Map(prev);
+      next.set(mentorId, { expiresAt: null });
+      return next;
+    });
   }, []);
 
   const filtered = videos.filter(v => {
     if (filter === 'free') return v.is_free;
-    if (filter === 'locked') return !v.is_free && !unlockedSet.has(v.mentor_id);
+    if (filter === 'locked') return !v.is_free && !unlocksMap.has(v.mentor_id);
+    if (filter === 'subscribed') return unlocksMap.has(v.mentor_id);
     return true;
   });
 
@@ -453,8 +465,14 @@ export default function VideosScreen() {
         </View>
       ) : filtered.length === 0 ? (
         <View style={s.center}>
-          <MaterialIcons name="videocam-off" size={40} color={C.text.muted} />
-          <Text style={s.emptyText}>No videos yet</Text>
+          <MaterialIcons
+            name={filter === 'subscribed' ? 'subscriptions' : 'videocam-off'}
+            size={40}
+            color={C.text.muted}
+          />
+          <Text style={s.emptyText}>
+            {filter === 'subscribed' ? 'No subscriptions yet' : 'No videos yet'}
+          </Text>
         </View>
       ) : (
         <FlatList
@@ -463,7 +481,8 @@ export default function VideosScreen() {
           renderItem={({ item }) => (
             <VideoCard
               item={item}
-              isUnlocked={unlockedSet.has(item.mentor_id)}
+              isUnlocked={unlocksMap.has(item.mentor_id)}
+              expiresAt={unlocksMap.get(item.mentor_id)?.expiresAt}
               onPlay={setPlayingVideo}
               onLockPress={setLockSheetVideo}
             />

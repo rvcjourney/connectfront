@@ -33,3 +33,9 @@ ALTER TABLE earnings
 
 -- Allow earnings without a booking_id (video subscriptions have no booking)
 ALTER TABLE earnings ALTER COLUMN booking_id DROP NOT NULL;
+
+-- Allow learners to read their own unlock records (needed for subscription history)
+CREATE POLICY IF NOT EXISTS "learners_read_own_unlocks"
+ON learner_unlocks
+FOR SELECT
+USING (auth.uid() = learner_id);

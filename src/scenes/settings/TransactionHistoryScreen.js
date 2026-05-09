@@ -18,6 +18,7 @@ import { UNIFIED_THEME } from '../../unifiedTheme';
 import { LoadingOverlay } from '../../components/LoadingOverlay';
 import { useAuth } from '../../hooks/useAuth';
 import { bookingApi } from '../../api/bookingApi';
+import { videoApi } from '../../api/videoApi';
 
 const T = UNIFIED_THEME;
 const TopTab = createMaterialTopTabNavigator();
@@ -61,6 +62,59 @@ function statusConfig(status) {
   return STATUS_CONFIG[status] || { label: status, color: T.colors.text.muted, bg: T.colors.component.input };
 }
 
+// ─── Subscription Card ───────────────────────────────────────────────────────
+
+function SubscriptionCard({ sub }) {
+  const mentor = sub.profiles;
+  const isExpired = sub.expires_at && new Date(sub.expires_at) < new Date();
+
+  return (
+    <View style={[styles.card, subStyles.videoCard]}>
+      <View style={styles.cardAvatar}>
+        {mentor?.avatar_url ? (
+          <Image source={{ uri: mentor.avatar_url }} style={styles.avatarImg} />
+        ) : (
+          <View style={[styles.avatarFallback, subStyles.videoFallback]}>
+            <MaterialIcons name="videocam" size={22} color={T.colors.accent.secondary} />
+          </View>
+        )}
+      </View>
+
+      <View style={styles.cardInfo}>
+        <View style={subStyles.nameRow}>
+          <Text style={[styles.personName, { flex: 1 }]} numberOfLines={1}>
+            {mentor?.name || 'Mentor'}
+          </Text>
+          <View style={subStyles.videoTag}>
+            <Text style={subStyles.videoTagText}>VIDEO</Text>
+          </View>
+        </View>
+        <Text style={styles.slotDate}>
+          {sub.unlocked_at ? formatDate(sub.unlocked_at) : '—'}  ·  Video library
+        </Text>
+        <View style={[styles.statusBadge, {
+          backgroundColor: isExpired ? 'rgba(248,113,113,0.12)' : 'rgba(94,234,212,0.1)',
+        }]}>
+          <Text style={[styles.statusText, { color: isExpired ? '#F87171' : '#5eead4' }]}>
+            {isExpired
+              ? 'Expired'
+              : sub.expires_at
+                ? `Expires ${formatDate(sub.expires_at)}`
+                : 'Active'}
+          </Text>
+        </View>
+      </View>
+
+      <View style={styles.cardAmount}>
+        <Text style={[styles.amountText, { color: T.colors.accent.primary }]}>
+          −₹{sub.amount_paid ?? '—'}
+        </Text>
+        <Text style={styles.amountSub}>Subscribed</Text>
+      </View>
+    </View>
+  );
+}
+
 // ─── Transaction Card ────────────────────────────────────────────────────────
 
 function TransactionCard({ booking, isMentor }) {
@@ -102,9 +156,14 @@ function TransactionCard({ booking, isMentor }) {
 
       {/* Middle: info */}
       <View style={styles.cardInfo}>
-        <Text style={styles.personName} numberOfLines={1}>
-          {person?.name || 'Unknown'}
-        </Text>
+        <View style={subStyles.nameRow}>
+          <Text style={[styles.personName, { flex: 1 }]} numberOfLines={1}>
+            {person?.name || 'Unknown'}
+          </Text>
+          <View style={subStyles.sessionTag}>
+            <Text style={subStyles.sessionTagText}>SESSION</Text>
+          </View>
+        </View>
         <Text style={styles.slotDate}>
           {slot?.date ? formatDate(slot.date) : formatDate(booking?.created_at)}
           {slot?.start_time ? `  ·  ${formatTime(slot.start_time)}` : ''}
@@ -176,13 +235,25 @@ function MentorTransactionsTab() {
 }
 
 function LearnerTransactionsTab() {
-  const { learnerTx, refreshing, onRefresh } = useTransactionContext();
+  const { learnerTx, videoSubs, refreshing, onRefresh } = useTransactionContext();
+
+  const combined = useMemo(() => {
+    const sessions = learnerTx.map(b => ({ ...b, _type: 'session' }));
+    const subs = videoSubs.map(s => ({ ...s, _type: 'subscription' }));
+    return [...sessions, ...subs].sort((a, b) => {
+      const dateA = new Date(a._type === 'session' ? (a.availability_slots?.date || a.created_at) : (a.unlocked_at || 0));
+      const dateB = new Date(b._type === 'session' ? (b.availability_slots?.date || b.created_at) : (b.unlocked_at || 0));
+      return dateB - dateA;
+    });
+  }, [learnerTx, videoSubs]);
 
   const total = useMemo(() => {
-    return learnerTx
+    const sessionTotal = learnerTx
       .filter(b => b.status === 'completed' || b.status === 'confirmed')
       .reduce((sum, b) => sum + (b?.mentor_profiles?.price_per_hour || 0), 0);
-  }, [learnerTx]);
+    const subsTotal = videoSubs.reduce((sum, s) => sum + (s.amount_paid || 0), 0);
+    return sessionTotal + subsTotal;
+  }, [learnerTx, videoSubs]);
 
   return (
     <ScrollView
@@ -193,24 +264,25 @@ function LearnerTransactionsTab() {
         <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={T.colors.accent.primary} />
       }
     >
-      {/* Summary strip */}
       {total > 0 && (
         <View style={[styles.summaryStrip, { borderLeftColor: T.colors.accent.primary }]}>
           <MaterialIcons name="payments" size={18} color={T.colors.accent.primary} />
           <Text style={styles.summaryText}>
-            Total spent on sessions:{' '}
+            Total spent:{' '}
             <Text style={[styles.summaryAmount, { color: T.colors.accent.primary }]}>₹{total}</Text>
           </Text>
         </View>
       )}
 
-      <Text style={styles.tabHint}>All sessions you attended as a learner.</Text>
+      <Text style={styles.tabHint}>All sessions and subscriptions as a learner.</Text>
 
-      {learnerTx.length > 0 ? (
+      {combined.length > 0 ? (
         <View style={styles.list}>
-          {learnerTx.map(item => (
-            <TransactionCard key={item.id} booking={item} isMentor={false} />
-          ))}
+          {combined.map(item =>
+            item._type === 'subscription'
+              ? <SubscriptionCard key={`sub_${item.id}`} sub={item} />
+              : <TransactionCard key={item.id} booking={item} isMentor={false} />
+          )}
         </View>
       ) : (
         <View style={styles.empty}>
@@ -234,17 +306,26 @@ export default function TransactionHistoryScreen({ navigation }) {
   const { profile } = useAuth();
   const [mentorTx, setMentorTx]   = useState([]);
   const [learnerTx, setLearnerTx] = useState([]);
+  const [videoSubs, setVideoSubs] = useState([]);
   const [loading, setLoading]     = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
   const load = useCallback(async () => {
     if (!profile?.id) return;
-    const [mentor, learner] = await Promise.all([
+    const [mentorRes, learnerRes, subsRes] = await Promise.allSettled([
       bookingApi.getTransactionsAsMentor(profile.id),
       bookingApi.getTransactionsAsLearner(profile.id),
+      videoApi.getLearnerSubscriptions(profile.id),
     ]);
-    setMentorTx(mentor);
-    setLearnerTx(learner);
+
+    if (mentorRes.status === 'fulfilled') setMentorTx(mentorRes.value);
+    else console.error('[TransactionHistory] mentor fetch failed:', mentorRes.reason?.message);
+
+    if (learnerRes.status === 'fulfilled') setLearnerTx(learnerRes.value);
+    else console.error('[TransactionHistory] learner fetch failed:', learnerRes.reason?.message);
+
+    if (subsRes.status === 'fulfilled') setVideoSubs(subsRes.value);
+    else console.error('[TransactionHistory] subs fetch failed:', subsRes.reason?.message);
   }, [profile?.id]);
 
   useFocusEffect(
@@ -279,8 +360,8 @@ export default function TransactionHistoryScreen({ navigation }) {
   }, [load]);
 
   const contextValue = useMemo(
-    () => ({ mentorTx, learnerTx, refreshing, onRefresh }),
-    [mentorTx, learnerTx, refreshing, onRefresh],
+    () => ({ mentorTx, learnerTx, videoSubs, refreshing, onRefresh }),
+    [mentorTx, learnerTx, videoSubs, refreshing, onRefresh],
   );
 
   return (
@@ -486,5 +567,36 @@ const styles = StyleSheet.create({
     ...T.typography.bodySm,
     color: T.colors.text.muted,
     textAlign: 'center',
+  },
+});
+
+const subStyles = StyleSheet.create({
+  nameRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  sessionTag: {
+    backgroundColor: 'rgba(96,165,250,0.1)',
+    borderRadius: 4,
+    borderWidth: 1,
+    borderColor: 'rgba(96,165,250,0.3)',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+  },
+  sessionTagText: { color: '#60A5FA', fontSize: 9, fontWeight: '800', letterSpacing: 0.5 },
+  videoTag: {
+    backgroundColor: 'rgba(94,234,212,0.1)',
+    borderRadius: 4,
+    borderWidth: 1,
+    borderColor: 'rgba(94,234,212,0.3)',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+  },
+  videoTagText: { color: '#5eead4', fontSize: 9, fontWeight: '800', letterSpacing: 0.5 },
+  videoCard: {
+    borderLeftWidth: 2,
+    borderLeftColor: 'rgba(94,234,212,0.35)',
+  },
+  videoFallback: {
+    backgroundColor: 'rgba(94,234,212,0.1)',
+    borderWidth: 1,
+    borderColor: 'rgba(94,234,212,0.2)',
   },
 });
