@@ -159,8 +159,8 @@ export default function EditProfileScreen({ navigation }) {
   const [adminCategoryNames, setAdminCategoryNames] = useState([]);
 
   const mentorCategoryOptions = useMemo(() => {
-    const merged = new Set([...(adminCategoryNames || []), ...MENTOR_CATEGORIES]);
-    return Array.from(merged);
+    if (adminCategoryNames?.length) return adminCategoryNames;
+    return MENTOR_CATEGORIES;
   }, [adminCategoryNames]);
 
   useEffect(() => {

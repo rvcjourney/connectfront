@@ -32,7 +32,7 @@ export function calculateFees(pricePerHour, config = {}) {
   const gstPercent =
     Number(config.gstPercent ?? DEFAULT_GST_PERCENT) || DEFAULT_GST_PERCENT;
 
-  const mentorAmount    = Math.round(pricePerHour);
+  const mentorAmount    = pricePerHour;
   const platformBaseFee = Math.round(mentorAmount * platformFeePercent / 100);
   const gstOnFee        = Math.round(platformBaseFee * gstPercent / 100);
   const convenienceFee  = platformBaseFee + gstOnFee;
@@ -46,8 +46,8 @@ export function calculateFees(pricePerHour, config = {}) {
     gstOnFee,
     convenienceFee,
     totalAmount,
-    totalAmountPaise:  totalAmount     * 100,
-    mentorAmountPaise: mentorAmount    * 100,
-    platformFeePaise:  convenienceFee  * 100,
+    totalAmountPaise:  totalAmount  * 100,
+    mentorAmountPaise: mentorAmount * 100,
+    platformFeePaise:  convenienceFee * 100,
   };
 }

@@ -16,17 +16,10 @@ serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
 
   try {
-    const {
-      mentorId,
-      learnerId,
-      slotId,
-      amountPaise,       // total charged to learner, in paise
-      mentorAmountPaise, // what mentor earns, in paise
-      platformFeePaise,  // platform cut incl. GST, in paise
-    } = await req.json();
+    const { mentorId, learnerId, slotId, message } = await req.json();
 
-    if (!mentorId || !learnerId || !slotId || !amountPaise) {
-      throw new Error('Missing required fields');
+    if (!mentorId || !learnerId || !slotId) {
+      throw new Error('Missing required fields: mentorId, learnerId, slotId');
     }
 
     const keyId     = Deno.env.get('RAZORPAY_KEY_ID')!;
@@ -38,41 +31,62 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
     );
 
-    // ── 1. Check if mentor has an active Razorpay linked account ─────────────
-    const { data: mentorProfile } = await supabase
+    // ── 1. Fetch mentor price server-side ─────────────────────────────────────
+    const { data: mentorProfile, error: mpErr } = await supabase
       .from('mentor_profiles')
-      .select('razorpay_account_id, kyc_status')
+      .select('price_per_hour, razorpay_account_id, kyc_status')
       .eq('id', mentorId)
       .single();
 
-    const linkedAccountId = mentorProfile?.razorpay_account_id;
-    const kycActive       = mentorProfile?.kyc_status === 'active';
+    if (mpErr || !mentorProfile) throw new Error('Mentor profile not found');
+    if (!mentorProfile.price_per_hour) throw new Error('Mentor has not set a price');
+
+    // ── 2. Fetch fee rules server-side ────────────────────────────────────────
+    const { data: feeRule } = await supabase
+      .from('platform_fee_rules')
+      .select('platform_fee_percent, gst_percent')
+      .eq('is_active', true)
+      .single();
+
+    const platformFeePercent = Number(feeRule?.platform_fee_percent ?? 5);
+    const gstPercent         = Number(feeRule?.gst_percent ?? 18);
+
+    // ── 3. Calculate amounts server-side ─────────────────────────────────────
+    const mentorAmount    = mentorProfile.price_per_hour;
+    const platformBaseFee = mentorAmount * platformFeePercent / 100;
+    const gstOnFee        = platformBaseFee * gstPercent / 100;
+    const convenienceFee  = platformBaseFee + gstOnFee;
+    const totalAmount     = mentorAmount + convenienceFee;
+
+    const amountPaise       = Math.round(totalAmount) * 100;
+    const mentorAmountPaise = Math.round(mentorAmount) * 100;
+    const platformFeePaise  = amountPaise - mentorAmountPaise;
+
+    // ── 4. Check if mentor has an active Razorpay linked account ─────────────
+    const linkedAccountId = mentorProfile.razorpay_account_id;
+    const kycActive       = mentorProfile.kyc_status === 'active';
     const routeEnabled    = !!(linkedAccountId && kycActive);
 
-    // ── 2. Build Razorpay order body ──────────────────────────────────────────
+    // ── 5. Build Razorpay order body ──────────────────────────────────────────
     const orderBody: Record<string, unknown> = {
       amount:   amountPaise,
       currency: 'INR',
       receipt:  `rcpt_${Date.now()}`,
     };
 
-    // Add Route split only when mentor KYC is active
     if (routeEnabled) {
       orderBody.transfers = [
         {
           account:  linkedAccountId,
           amount:   mentorAmountPaise,
           currency: 'INR',
-          on_hold:  0,          // transfer immediately on payment capture
-          notes: {
-            mentor_id: mentorId,
-            slot_id:   slotId,
-          },
+          on_hold:  0,
+          notes: { mentor_id: mentorId, slot_id: slotId },
         },
       ];
     }
 
-    // ── 3. Create Razorpay order ──────────────────────────────────────────────
+    // ── 6. Create Razorpay order ──────────────────────────────────────────────
     const rzpRes = await fetch('https://api.razorpay.com/v1/orders', {
       method: 'POST',
       headers: {
@@ -87,7 +101,7 @@ serve(async (req) => {
       throw new Error(order?.error?.description || 'Razorpay order creation failed');
     }
 
-    // ── 4. Save pending transaction ───────────────────────────────────────────
+    // ── 7. Save pending transaction ───────────────────────────────────────────
     const { error: txError } = await supabase.from('transactions').insert({
       mentor_id:            mentorId,
       learner_id:           learnerId,
@@ -108,14 +122,24 @@ serve(async (req) => {
         amount:       order.amount,
         currency:     order.currency,
         keyId,
-        routeEnabled, // let app know if split is active
+        routeEnabled,
+        // Return calculated amounts so app can display breakdown
+        mentorAmount,
+        convenienceFee,
+        totalAmount,
+        platformFeePercent,
+        gstPercent,
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
     );
   } catch (err) {
     console.error('create-razorpay-order error:', err);
+    const msg = err instanceof Error ? err.message
+      : (typeof err === 'object' && err !== null && 'message' in (err as object))
+        ? (err as Record<string, unknown>).message as string
+        : JSON.stringify(err);
     return new Response(
-      JSON.stringify({ error: err.message }),
+      JSON.stringify({ error: msg }),
       { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
     );
   }

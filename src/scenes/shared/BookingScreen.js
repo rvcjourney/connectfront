@@ -101,10 +101,7 @@ export default function BookingScreen({ navigation, route }) {
       setPricePerHour(mentorProfile?.price_per_hour || 0);
 
       if (profile?.id) {
-        const rule = await paymentApi.getFeeRule({
-          learnerId: profile.id,
-          mentorId,
-        });
+        const rule = await paymentApi.getFeeRule();
         setFeeConfig(
           rule
             ? {
@@ -177,13 +174,12 @@ export default function BookingScreen({ navigation, route }) {
       setPaying(true);
 
       // 1. Create Razorpay order (server-side via Edge Function)
+      // Amounts are calculated server-side — do not send from client
       const order = await paymentApi.createOrder({
         mentorId,
-        learnerId:         profile.id,
-        slotId:            selectedTime.id,
-        amountPaise:       fees.totalAmountPaise,
-        mentorAmountPaise: fees.mentorAmountPaise,
-        platformFeePaise:  fees.platformFeePaise,
+        learnerId: profile.id,
+        slotId:    selectedTime.id,
+        message:   message.trim(),
       });
 
       // 2. Open Razorpay checkout
@@ -205,16 +201,15 @@ export default function BookingScreen({ navigation, route }) {
       const paymentData = await RazorpayCheckout.open(razorpayOptions);
 
       // 3. Verify + create booking atomically (server-side)
+      // Amounts are read from the stored transaction — not sent from client
       await paymentApi.verifyAndBook({
-        razorpayOrderId:    order.orderId,
-        razorpayPaymentId:  paymentData.razorpay_payment_id,
-        razorpaySignature:  paymentData.razorpay_signature,
+        razorpayOrderId:   order.orderId,
+        razorpayPaymentId: paymentData.razorpay_payment_id,
+        razorpaySignature: paymentData.razorpay_signature,
         mentorId,
-        learnerId:   profile.id,
-        slotId:      selectedTime.id,
-        message:     message.trim(),
-        mentorAmount: fees.mentorAmount,
-        platformFee:  fees.convenienceFee,
+        learnerId: profile.id,
+        slotId:    selectedTime.id,
+        message:   message.trim(),
       });
 
       // 4. Schedule 15-min reminder for learner
@@ -425,8 +420,8 @@ export default function BookingScreen({ navigation, route }) {
           <View style={styles.feeDivider} />
 
           <FeeRow label="Session fee (1 hr)"   amount={fees.mentorAmount}   />
-          <FeeRow label={`Platform fee (${fees.platformFeePercent}%)`} amount={fees.platformBaseFee} />
-          <FeeRow label={`GST (${fees.gstPercent}% on fee)`}   amount={fees.gstOnFee}       />
+          <FeeRow label={`Convenience fee (${fees.platformFeePercent}%)`} amount={fees.platformBaseFee} />
+          <FeeRow label={`GST (${fees.gstPercent}%)`}   amount={fees.gstOnFee}       />
 
           <View style={styles.feeDivider} />
 
@@ -437,9 +432,9 @@ export default function BookingScreen({ navigation, route }) {
             accent
           />
 
-          <Text style={styles.feeNote}>
+          {/* <Text style={styles.feeNote}>
             ₹{fees.mentorAmount} goes directly to your mentor · ₹{fees.convenienceFee} convenience charge
-          </Text>
+          </Text> */}
         </View>
       )}
 

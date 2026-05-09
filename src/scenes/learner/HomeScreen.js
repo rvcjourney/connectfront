@@ -18,15 +18,17 @@ import { SearchBar } from '../../components/SearchBar';
 import { MentorImageCard } from '../../components/MentorImageCard';
 import { MentorDetailSheet } from '../../components/MentorDetailSheet';
 import { mentorApi } from '../../api/mentorApi';
+import { fetchActiveCategories } from '../../api/contentApi';
 import { useAuth } from '../../hooks/useAuth';
 import { SCREEN_NAMES } from '../../navigators/screenNames';
 
 const T = UNIFIED_THEME;
 const TB = T.colors.tabBar;
 
-const CATEGORY_ICONS = {
+const CATEGORY_ICONS_FALLBACK = {
   technology:   'computer',
   programming:  'code',
+  software:     'code',
   design:       'palette',
   business:     'business-center',
   marketing:    'campaign',
@@ -40,17 +42,22 @@ const CATEGORY_ICONS = {
   fitness:      'fitness-center',
   health:       'favorite',
   law:          'gavel',
+  legal:        'gavel',
   education:    'school',
   leadership:   'groups',
   writing:      'edit-note',
   career:       'work',
+  cloud:        'cloud',
+  security:     'security',
+  sales:        'point-of-sale',
   others:       'auto-awesome',
 };
 
-function getCategoryIcon(category = '') {
-  const key = category.toLowerCase().trim();
-  for (const [k, v] of Object.entries(CATEGORY_ICONS)) {
-    if (key.includes(k)) return v;
+function getCategoryIcon(category = '', dbIconMap = {}) {
+  const name = category.toLowerCase().trim();
+  if (dbIconMap[name]) return dbIconMap[name];
+  for (const [k, v] of Object.entries(CATEGORY_ICONS_FALLBACK)) {
+    if (name.includes(k)) return v;
   }
   return 'auto-awesome';
 }
@@ -120,6 +127,7 @@ const sk = StyleSheet.create({
 export default function LearnerHomeScreen({ navigation }) {
   const { profile } = useAuth();
   const [mentorsByCategory, setMentorsByCategory] = useState({});
+  const [categoryIconMap, setCategoryIconMap] = useState({});
   const [searchResults, setSearchResults] = useState(null); // null = not searching
   const [loading, setLoading] = useState(true);
   const [searchLoading, setSearchLoading] = useState(false);
@@ -135,7 +143,15 @@ export default function LearnerHomeScreen({ navigation }) {
   const loadMentors = async () => {
     try {
       setLoading(true);
-      const grouped = await mentorApi.getMentorsByCategory();
+      const [grouped, dbCategories] = await Promise.all([
+        mentorApi.getMentorsByCategory(),
+        fetchActiveCategories(),
+      ]);
+      const iconMap = {};
+      (dbCategories || []).forEach(c => {
+        if (c.name && c.icon) iconMap[c.name.toLowerCase().trim()] = c.icon;
+      });
+      setCategoryIconMap(iconMap);
       const filtered = {};
       Object.entries(grouped).forEach(([category, mentors]) => {
         const withoutSelf = mentors.filter(m => m.id !== profile?.id);
@@ -209,7 +225,7 @@ export default function LearnerHomeScreen({ navigation }) {
         <View style={styles.categoryLabel}>
           <View style={styles.categoryIconBox}>
             <MaterialIcons
-              name={getCategoryIcon(category)}
+              name={getCategoryIcon(category, categoryIconMap)}
               size={14}
               color={T.colors.accent.secondary}
             />

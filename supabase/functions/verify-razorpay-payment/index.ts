@@ -48,14 +48,12 @@ serve(async (req) => {
       learnerId,
       slotId,
       message,
-      mentorAmount,    // ₹ (rupees)
-      platformFee,     // ₹
     } = await req.json();
 
     // ── 1. Verify signature ───────────────────────────────────────────────────
-    const keySecret      = Deno.env.get('RAZORPAY_KEY_SECRET')!;
-    const body           = `${razorpayOrderId}|${razorpayPaymentId}`;
-    const expectedSig    = await hmacSha256Hex(keySecret, body);
+    const keySecret   = Deno.env.get('RAZORPAY_KEY_SECRET')!;
+    const body        = `${razorpayOrderId}|${razorpayPaymentId}`;
+    const expectedSig = await hmacSha256Hex(keySecret, body);
 
     if (expectedSig !== razorpaySignature) {
       throw new Error('Payment signature verification failed — possible tampering');
@@ -66,7 +64,19 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
     );
 
-    // ── 2. Check slot is still available (race-condition guard) ───────────────
+    // ── 2. Fetch stored transaction to get server-calculated amounts ──────────
+    // mentor_earning_paise was set by create-razorpay-order — never trust client
+    const { data: tx, error: txFetchErr } = await supabase
+      .from('transactions')
+      .select('mentor_earning_paise')
+      .eq('razorpay_order_id', razorpayOrderId)
+      .single();
+
+    if (txFetchErr || !tx) throw new Error('Transaction not found for this order');
+
+    const mentorAmount = tx.mentor_earning_paise / 100;
+
+    // ── 3. Check slot is still available (race-condition guard) ───────────────
     const { data: slot, error: slotErr } = await supabase
       .from('availability_slots')
       .select('is_booked')
@@ -78,7 +88,7 @@ serve(async (req) => {
       throw new Error('This slot was just booked by someone else. Please select another slot.');
     }
 
-    // ── 3. Create booking with status = confirmed ─────────────────────────────
+    // ── 4. Create booking with status = confirmed ─────────────────────────────
     const { data: booking, error: bookingErr } = await supabase
       .from('bookings')
       .insert({
@@ -93,13 +103,13 @@ serve(async (req) => {
 
     if (bookingErr) throw bookingErr;
 
-    // ── 4. Mark slot as booked ────────────────────────────────────────────────
+    // ── 5. Mark slot as booked ────────────────────────────────────────────────
     await supabase
       .from('availability_slots')
       .update({ is_booked: true })
       .eq('id', slotId);
 
-    // ── 5. Update transaction: paid + link booking ────────────────────────────
+    // ── 6. Update transaction: paid + link booking ────────────────────────────
     await supabase
       .from('transactions')
       .update({
@@ -111,8 +121,7 @@ serve(async (req) => {
       })
       .eq('razorpay_order_id', razorpayOrderId);
 
-    // ── 6. Save earnings as PENDING (not available until session completes) ───
-    // Wallet is credited only when mentor marks session as completed.
+    // ── 7. Save earnings as PENDING (server-calculated amount only) ───────────
     await supabase.from('earnings').insert({
       mentor_id:  mentorId,
       booking_id: booking.id,
@@ -126,8 +135,12 @@ serve(async (req) => {
     );
   } catch (err) {
     console.error('verify-razorpay-payment error:', err);
+    const msg = err instanceof Error ? err.message
+      : (typeof err === 'object' && err !== null && 'message' in (err as object))
+        ? (err as Record<string, unknown>).message as string
+        : JSON.stringify(err);
     return new Response(
-      JSON.stringify({ error: err.message }),
+      JSON.stringify({ error: msg }),
       { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
     );
   }

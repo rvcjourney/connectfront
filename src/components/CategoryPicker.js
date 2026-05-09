@@ -3,30 +3,7 @@ import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Modal } from 'rea
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import { UNIFIED_THEME } from '../unifiedTheme';
 import { fetchActiveCategoryNames } from '../api/contentApi';
-
-const CATEGORIES = [
-  'Technology (IT & Software)',
-  'Artificial Intelligence & Data Science',
-  'Healthcare & Medical Services',
-  'Finance & Economic Services',
-  'Business Management & Strategy',
-  'Marketing & Communications',
-  'Education & Training',
-  'Renewable Energy & Sustainability',
-  'Transportation & Logistics',
-  'Legal & Compliance',
-  'Creator Economy & Social Influencing',
-  'Astrology & Occult Sciences',
-  'Gaming & Esports',
-  'Health, Wellness & Sports Performance',
-  'UI/UX & No-Code Development',
-  'Human-Machine Interaction & AI Ethics',
-  'Advanced Manufacturing & Robotics',
-  'Fractional & Gig Leadership',
-  'Mental Health & Specialized Therapy',
-  'ESG & Carbon Management',
-  'Others',
-];
+import { MENTOR_CATEGORIES } from '../constants/mentorCategories';
 
 export const CategoryPicker = ({ visible, selectedCategory, onSelect, onClose }) => {
   const [adminCategories, setAdminCategories] = useState([]);
@@ -43,8 +20,8 @@ export const CategoryPicker = ({ visible, selectedCategory, onSelect, onClose })
   }, [visible]);
 
   const allCategories = useMemo(() => {
-    const set = new Set([...(adminCategories || []), ...CATEGORIES]);
-    return Array.from(set);
+    if (adminCategories?.length) return adminCategories;
+    return MENTOR_CATEGORIES;
   }, [adminCategories]);
 
   return (

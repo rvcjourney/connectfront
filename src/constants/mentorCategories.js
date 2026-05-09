@@ -1,5 +1,6 @@
 /**
- * Mentor profile categories — single source for onboarding, search filters, and home UI.
+ * Static fallback — used when DB is unavailable or for offline onboarding.
+ * Source of truth is the `mentor_categories` table in Supabase.
  */
 export const MENTOR_CATEGORIES = [
   'Technology',

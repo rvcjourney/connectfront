@@ -214,11 +214,10 @@ export default function MentorProfileScreen({ navigation, route }) {
     if (!user) { Toast.show('Please log in to unlock'); return; }
     setUnlocking(true);
     try {
-      // Step 1: create order
+      // Step 1: create order (amount calculated server-side)
       const order = await videoApi.createVideoOrder({
         mentorId,
-        learnerId:   user.id,
-        amountPaise: unlockPrice * 100,
+        learnerId: user.id,
       });
 
       // Step 2: Razorpay checkout
@@ -226,22 +225,20 @@ export default function MentorProfileScreen({ navigation, route }) {
         key:         order.keyId,
         amount:      order.amount,
         currency:    order.currency || 'INR',
-        name:        'Connect',
+        name:        'Connectiqo',
         description: 'Subscribe to mentor video library',
         order_id:    order.orderId,
         prefill:     { email: user.email || '' },
         theme:       { color: '#5eead4' },
       });
 
-      // Step 3: verify + record subscription + credit mentor wallet
+      // Step 3: verify + record subscription + credit mentor wallet (amounts server-side)
       await videoApi.verifyVideoSubscription({
         razorpayOrderId:   order.orderId,
         razorpayPaymentId: paymentData.razorpay_payment_id,
         razorpaySignature: paymentData.razorpay_signature,
         mentorId,
-        learnerId:    user.id,
-        amountPaid:   unlockPrice,
-        mentorAmount: Math.round(unlockPrice * 0.8),
+        learnerId: user.id,
       });
 
       setIsUnlocked(true);

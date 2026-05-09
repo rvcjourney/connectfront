@@ -24,8 +24,6 @@ serve(async (req: Request) => {
       razorpaySignature,
       mentorId,
       learnerId,
-      amountPaid,        // full amount in ₹ (not paise)
-      mentorAmount,      // 80% in ₹
     } = await req.json();
 
     if (!razorpayOrderId || !razorpayPaymentId || !razorpaySignature || !mentorId || !learnerId) {
@@ -35,8 +33,8 @@ serve(async (req: Request) => {
     const keySecret = Deno.env.get('RAZORPAY_KEY_SECRET')!;
 
     // ── 1. Verify HMAC signature ──────────────────────────────────────────────
-    const payload   = `${razorpayOrderId}|${razorpayPaymentId}`;
-    const expected  = createHmac('sha256', keySecret).update(payload).digest('hex');
+    const payload  = `${razorpayOrderId}|${razorpayPaymentId}`;
+    const expected = createHmac('sha256', keySecret).update(payload).digest('hex');
 
     if (expected !== razorpaySignature) {
       throw new Error('Payment verification failed: invalid signature');
@@ -47,10 +45,37 @@ serve(async (req: Request) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
     );
 
+    // ── 2. Fetch mentor unlock price server-side ──────────────────────────────
+    const { data: mp, error: mpErr } = await supabase
+      .from('mentor_profiles')
+      .select('unlock_price')
+      .eq('id', mentorId)
+      .single();
+
+    if (mpErr || !mp) throw new Error('Mentor profile not found');
+    if (!mp.unlock_price) throw new Error('Mentor has no subscription price set');
+
+    // ── 3. Fetch fee rules server-side ────────────────────────────────────────
+    const { data: feeRule } = await supabase
+      .from('platform_fee_rules')
+      .select('platform_fee_percent, gst_percent')
+      .eq('is_active', true)
+      .single();
+
+    const platformFeePercent = Number(feeRule?.platform_fee_percent ?? 5);
+    const gstPercent         = Number(feeRule?.gst_percent ?? 18);
+
+    // ── 4. Recalculate amounts server-side ────────────────────────────────────
+    const mentorAmount    = Number(mp.unlock_price);
+    const platformBaseFee = mentorAmount * platformFeePercent / 100;
+    const gstOnFee        = platformBaseFee * gstPercent / 100;
+    const convenienceFee  = platformBaseFee + gstOnFee;
+    const amountPaid      = Math.round(mentorAmount + convenienceFee);
+
     const now      = new Date();
     const expiresAt = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000); // +30 days
 
-    // ── 2. Record subscription with expiry ────────────────────────────────────
+    // ── 5. Record subscription with expiry ────────────────────────────────────
     const { error: unlockError } = await supabase
       .from('learner_unlocks')
       .upsert({
@@ -65,7 +90,7 @@ serve(async (req: Request) => {
 
     if (unlockError) throw unlockError;
 
-    // ── 3. Record mentor earnings ─────────────────────────────────────────────
+    // ── 6. Record mentor earnings (server-calculated) ─────────────────────────
     const { error: earningsError } = await supabase
       .from('earnings')
       .insert({
@@ -78,7 +103,7 @@ serve(async (req: Request) => {
 
     if (earningsError) throw earningsError;
 
-    // ── 4. Credit mentor wallet ───────────────────────────────────────────────
+    // ── 7. Credit mentor wallet ───────────────────────────────────────────────
     const { data: wallet } = await supabase
       .from('mentor_wallets')
       .select('balance, total_earned')
@@ -88,9 +113,9 @@ serve(async (req: Request) => {
     await supabase
       .from('mentor_wallets')
       .upsert({
-        id:            mentorId,
-        balance:       (wallet?.balance || 0) + mentorAmount,
-        total_earned:  (wallet?.total_earned || 0) + mentorAmount,
+        id:           mentorId,
+        balance:      (wallet?.balance || 0) + mentorAmount,
+        total_earned: (wallet?.total_earned || 0) + mentorAmount,
       });
 
     return new Response(
@@ -98,8 +123,18 @@ serve(async (req: Request) => {
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
     );
   } catch (err: unknown) {
-    const msg = err instanceof Error ? err.message : String(err);
-    console.error('verify-video-subscription error:', msg);
+    console.error('verify-video-subscription raw error:', JSON.stringify(err));
+    let msg = 'Internal server error';
+    if (err instanceof Error) {
+      msg = err.message;
+    } else if (typeof err === 'object' && err !== null) {
+      const e = err as Record<string, unknown>;
+      msg = typeof e.message === 'string' ? e.message
+          : typeof e.error   === 'string' ? e.error
+          : JSON.stringify(err);
+    } else {
+      msg = String(err);
+    }
     return new Response(
       JSON.stringify({ error: msg }),
       { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },

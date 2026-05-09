@@ -31,22 +31,13 @@ export const paymentApi = {
    * Step 1: Create a Razorpay order via Supabase Edge Function.
    * Returns { orderId, amount, currency, keyId }
    */
-  createOrder: async ({
-    mentorId,
-    learnerId,
-    slotId,
-    amountPaise,
-    mentorAmountPaise,
-    platformFeePaise,
-  }) => {
+  createOrder: async ({ mentorId, learnerId, slotId, message }) => {
     try {
       const data = await invokeFunction('create-razorpay-order', {
         mentorId,
         learnerId,
         slotId,
-        amountPaise,
-        mentorAmountPaise,
-        platformFeePaise,
+        message,
       });
 
       return data;
@@ -69,8 +60,6 @@ export const paymentApi = {
     learnerId,
     slotId,
     message,
-    mentorAmount,
-    platformFee,
   }) => {
     try {
       const data = await invokeFunction('verify-razorpay-payment', {
@@ -81,8 +70,6 @@ export const paymentApi = {
         learnerId,
         slotId,
         message,
-        mentorAmount,
-        platformFee,
       });
 
       return data;
@@ -180,36 +167,17 @@ export const paymentApi = {
    * 3) mentor-specific (learner null)
    * 4) global default (both null)
    */
-  getFeeRule: async ({ learnerId, mentorId }) => {
+  getFeeRule: async () => {
     try {
       const { data, error } = await supabase
         .from('platform_fee_rules')
-        .select('learner_id, mentor_id, platform_fee_percent, gst_percent, is_active, updated_at')
+        .select('platform_fee_percent, gst_percent')
         .eq('is_active', true)
-        .or(
-          `and(learner_id.eq.${learnerId},mentor_id.eq.${mentorId}),and(learner_id.eq.${learnerId},mentor_id.is.null),and(learner_id.is.null,mentor_id.eq.${mentorId}),and(learner_id.is.null,mentor_id.is.null)`
-        )
-        .order('updated_at', { ascending: false });
+        .single();
 
       if (error) throw error;
-
-      const rows = data || [];
-      if (!rows.length) return null;
-
-      const pick = (predicate) => rows.find(predicate) || null;
-
-      const exact = pick((r) => r.learner_id === learnerId && r.mentor_id === mentorId);
-      if (exact) return exact;
-
-      const learnerOnly = pick((r) => r.learner_id === learnerId && !r.mentor_id);
-      if (learnerOnly) return learnerOnly;
-
-      const mentorOnly = pick((r) => !r.learner_id && r.mentor_id === mentorId);
-      if (mentorOnly) return mentorOnly;
-
-      return pick((r) => !r.learner_id && !r.mentor_id);
+      return data || null;
     } catch (error) {
-      // Keep booking flow resilient if rules table is absent or unavailable.
       console.warn('⚠️ Fee rule lookup failed, using defaults:', error?.message);
       return null;
     }

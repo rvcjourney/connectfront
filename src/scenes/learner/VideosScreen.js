@@ -110,11 +110,10 @@ function UnlockSheet({ video, onClose, onUnlocked }) {
     if (!user) { Toast.show('Please log in'); return; }
     setLoading(true);
     try {
-      // Step 1: create order server-side (no slotId — video subscription)
+      // Step 1: create order server-side (amount calculated server-side)
       const order = await videoApi.createVideoOrder({
-        mentorId:    video.mentor_id,
-        learnerId:   user.id,
-        amountPaise: price * 100,
+        mentorId:  video.mentor_id,
+        learnerId: user.id,
       });
 
       // Step 2: open Razorpay checkout
@@ -122,22 +121,20 @@ function UnlockSheet({ video, onClose, onUnlocked }) {
         key:         order.keyId,
         amount:      order.amount,
         currency:    order.currency || 'INR',
-        name:        'Connect',
+        name:        'Connectiqo',
         description: `Subscribe to ${mentorName}'s video library`,
         order_id:    order.orderId,
         prefill:     { email: user.email || '' },
         theme:       { color: '#5eead4' },
       });
 
-      // Step 3: verify payment + record subscription + credit mentor wallet
+      // Step 3: verify payment + record subscription + credit mentor wallet (amounts server-side)
       await videoApi.verifyVideoSubscription({
         razorpayOrderId:   order.orderId,
         razorpayPaymentId: paymentData.razorpay_payment_id,
         razorpaySignature: paymentData.razorpay_signature,
         mentorId:          video.mentor_id,
         learnerId:         user.id,
-        amountPaid:        price,
-        mentorAmount:      Math.round(price * 0.8),
       });
 
       onUnlocked(video.mentor_id);

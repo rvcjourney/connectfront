@@ -14,7 +14,6 @@ import {
 } from 'react-native';
 import YoutubePlayer from 'react-native-youtube-iframe';
 import Video from 'react-native-video';
-import { fetchHomeMarketingClips } from '../../api/contentApi';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { SafeScreen } from '../../components/SafeScreen';
 import { UNIFIED_THEME } from '../../unifiedTheme';
@@ -168,7 +167,6 @@ export default function HomeScreen() {
   const [playerVisible, setPlayerVisible] = useState(false);
   const [playerError, setPlayerError] = useState(false);
   const [currentVideoId, setCurrentVideoId] = useState(APP_DEMO_VIDEO.id);
-  const [marketingClips, setMarketingClips] = useState([]);
   /** When set, modal plays this URL with react-native-video instead of YouTube. */
   const [urlPlayback, setUrlPlayback] = useState(null);
 
@@ -194,9 +192,6 @@ export default function HomeScreen() {
 
   useEffect(() => {
     let cancelled = false;
-    fetchHomeMarketingClips().then((rows) => {
-      if (!cancelled) setMarketingClips(Array.isArray(rows) ? rows : []);
-    });
     return () => {
       cancelled = true;
     };
@@ -352,72 +347,6 @@ export default function HomeScreen() {
           </ScrollView>
         </Animated.View>
 
-        {marketingClips.length > 0 ? (
-          <View style={[styles.catSection, { marginTop: T.spacing.md }]}>
-            <View style={styles.catHeader}>
-              <View style={styles.catHeaderLeft}>
-                <View style={[styles.sectionDot, { backgroundColor: C.accent.secondary }]} />
-                <Text style={styles.sectionLabel}>Featured</Text>
-              </View>
-            </View>
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.tileRow}
-            >
-              {marketingClips.map((clip) => (
-                <TouchableOpacity
-                  key={clip.id}
-                  style={styles.tile}
-                  activeOpacity={0.85}
-                  onPress={() => {
-                    setPlayerError(false);
-                    if (clip.clip_type === 'url' && clip.media_url) {
-                      setUrlPlayback(clip.media_url);
-                      setPlayerVisible(true);
-                    } else if (clip.youtube_video_id) {
-                      setUrlPlayback(null);
-                      setCurrentVideoId(clip.youtube_video_id);
-                      setPlayerVisible(true);
-                    }
-                  }}
-                >
-                  {clip.clip_type === 'youtube' && clip.youtube_video_id ? (
-                    <Image
-                      source={{ uri: `https://img.youtube.com/vi/${clip.youtube_video_id}/hqdefault.jpg` }}
-                      style={StyleSheet.absoluteFill}
-                      resizeMode="cover"
-                    />
-                  ) : (
-                    <LinearGradient
-                      colors={[C.primary.dark, '#1a1030']}
-                      style={StyleSheet.absoluteFill}
-                    />
-                  )}
-                  <LinearGradient
-                    colors={['rgba(2,0,20,0.12)', 'rgba(2,0,20,0.82)']}
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 0, y: 1 }}
-                    style={StyleSheet.absoluteFill}
-                  />
-                  <View style={styles.tilePlayWrap}>
-                    <View style={styles.tilePlayBtn}>
-                      <MaterialIcons name="play-arrow" size={26} color="#fff" style={{ marginLeft: 3 }} />
-                    </View>
-                  </View>
-                  <View style={styles.tileBottom}>
-                    <Text style={styles.tileTitle} numberOfLines={2}>
-                      {clip.title}
-                    </Text>
-                    <Text style={styles.tileSub} numberOfLines={1}>
-                      {clip.subtitle || 'Promo'}
-                    </Text>
-                  </View>
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
-          </View>
-        ) : null}
 
         {/* ── DUAL ROLE CARDS ── */}
         <Animated.View style={[styles.dualRow, s3.style]}>

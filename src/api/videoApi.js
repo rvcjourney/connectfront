@@ -3,6 +3,19 @@ import { getSupabaseErrorMessage } from '../lib/supabaseErrorHandler';
 
 const BUCKET = 'mentor-videos';
 
+function tryParseJson(text) {
+  try { return JSON.parse(text); } catch { return null; }
+}
+
+function extractErrorMsg(parsed) {
+  if (!parsed) return null;
+  const e = parsed.error;
+  if (typeof e === 'string') return e;
+  if (e && typeof e.message === 'string') return e.message;
+  if (typeof parsed.message === 'string') return parsed.message;
+  return null;
+}
+
 // XHR upload — Supabase JS client v2 + React Native FormData is incompatible (body.has error)
 const uploadFileXHR = (storagePath, fileUri, fileName, contentType, token, onProgress) =>
   new Promise((resolve, reject) => {
@@ -159,7 +172,7 @@ export const videoApi = {
   },
 
   // ─── Create Razorpay order for video subscription ─────────────────────────
-  createVideoOrder: async ({ mentorId, learnerId, amountPaise }) => {
+  createVideoOrder: async ({ mentorId, learnerId }) => {
     try {
       const res = await fetch(`${SUPABASE_URL}/functions/v1/create-video-order`, {
         method: 'POST',
@@ -168,18 +181,22 @@ export const videoApi = {
           'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
           'apikey':        SUPABASE_ANON_KEY,
         },
-        body: JSON.stringify({ mentorId, learnerId, amountPaise }),
+        body: JSON.stringify({ mentorId, learnerId }),
       });
       const text = await res.text();
-      if (!res.ok) throw new Error(JSON.parse(text)?.error || 'Order creation failed');
+      if (!res.ok) {
+        console.error('[createVideoOrder] error response:', text);
+        const parsed = tryParseJson(text);
+        throw new Error(extractErrorMsg(parsed) || `Order creation failed (${res.status})`);
+      }
       return JSON.parse(text);
     } catch (error) {
-      throw new Error(error.message || 'Failed to create order');
+      throw new Error(typeof error.message === 'string' ? error.message : 'Failed to create order');
     }
   },
 
   // ─── Verify payment + record subscription server-side ────────────────────
-  verifyVideoSubscription: async ({ razorpayOrderId, razorpayPaymentId, razorpaySignature, mentorId, learnerId, amountPaid, mentorAmount }) => {
+  verifyVideoSubscription: async ({ razorpayOrderId, razorpayPaymentId, razorpaySignature, mentorId, learnerId }) => {
     try {
       const res = await fetch(`${SUPABASE_URL}/functions/v1/verify-video-subscription`, {
         method: 'POST',
@@ -188,13 +205,17 @@ export const videoApi = {
           'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
           'apikey':        SUPABASE_ANON_KEY,
         },
-        body: JSON.stringify({ razorpayOrderId, razorpayPaymentId, razorpaySignature, mentorId, learnerId, amountPaid, mentorAmount }),
+        body: JSON.stringify({ razorpayOrderId, razorpayPaymentId, razorpaySignature, mentorId, learnerId }),
       });
       const text = await res.text();
-      if (!res.ok) throw new Error(JSON.parse(text)?.error || 'Verification failed');
+      if (!res.ok) {
+        console.error('[verifyVideoSubscription] error response:', text);
+        const parsed = tryParseJson(text);
+        throw new Error(extractErrorMsg(parsed) || `Verification failed (${res.status})`);
+      }
       return JSON.parse(text);
     } catch (error) {
-      throw new Error(error.message || 'Payment verification failed');
+      throw new Error(typeof error.message === 'string' ? error.message : 'Payment verification failed');
     }
   },
 
