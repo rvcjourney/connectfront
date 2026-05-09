@@ -393,16 +393,16 @@ export default function VideosScreen() {
   const [lockSheetVideo, setLockSheetVideo] = useState(null);
 
   useEffect(() => {
-    loadFeed();
-  }, []);
+    loadFeed(false, user?.id);
+  }, [user?.id]);
 
-  const loadFeed = async (isRefresh = false) => {
+  const loadFeed = async (isRefresh = false, userId = user?.id) => {
     if (isRefresh) setRefreshing(true);
     else setLoading(true);
     try {
       const [vids, unlocks] = await Promise.all([
-        videoApi.getAllPublicVideos(),
-        user ? videoApi.getLearnerUnlocks(user.id) : Promise.resolve(new Set()),
+        videoApi.getAllPublicVideos({ excludeMentorId: userId }),
+        userId ? videoApi.getLearnerUnlocks(userId) : Promise.resolve(new Set()),
       ]);
       setVideos(vids);
       setUnlockedSet(unlocks);
@@ -473,7 +473,7 @@ export default function VideosScreen() {
           refreshControl={
             <RefreshControl
               refreshing={refreshing}
-              onRefresh={() => loadFeed(true)}
+              onRefresh={() => loadFeed(true, user?.id)}
               tintColor={C.accent.secondary}
             />
           }

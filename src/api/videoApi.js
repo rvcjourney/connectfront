@@ -64,20 +64,26 @@ export const videoApi = {
   },
 
   // ─── Get all public videos across all mentors (for learner feed) ────────────
-  getAllPublicVideos: async ({ page = 0, pageSize = 20 } = {}) => {
+  getAllPublicVideos: async ({ page = 0, pageSize = 20, excludeMentorId = null } = {}) => {
     try {
       const from = page * pageSize;
       const to = from + pageSize - 1;
 
       // Step 1: fetch videos + profile (direct FK exists: mentor_videos.mentor_id → profiles.id)
-      const { data: videos, error } = await supabase
+      let query = supabase
         .from('mentor_videos')
         .select(`
           id, mentor_id, title, description, video_url, is_free, position, created_at,
           profiles:mentor_id ( id, name, avatar_url )
         `)
-        .order('created_at', { ascending: false })
-        .range(from, to);
+        .order('created_at', { ascending: false });
+
+      // filter before paginating
+      if (excludeMentorId) query = query.neq('mentor_id', excludeMentorId);
+
+      query = query.range(from, to);
+
+      const { data: videos, error } = await query;
 
       if (error) throw error;
       if (!videos?.length) return [];
