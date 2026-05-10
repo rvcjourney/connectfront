@@ -178,12 +178,11 @@ const u = StyleSheet.create({
 });
 
 // ─── Single short card (full-screen reel) ─────────────────────────────────────
-function ShortCard({ item, isActive, height, isUnlocked, expiresAt, onLockPress, onViewProfile }) {
+function ShortCard({ item, isActive, height, isUnlocked, expiresAt, onLockPress, onViewProfile, forcePaused }) {
   const [paused, setPaused] = useState(false);
   const canPlay = item.is_free || isUnlocked;
 
-  // pause when scrolled away
-  const effectivePaused = !isActive || paused;
+  const effectivePaused = !isActive || paused || forcePaused;
 
   return (
     <View style={{ height, width: '100%', backgroundColor: '#000' }}>
@@ -446,6 +445,7 @@ export default function VideosScreen({ navigation }) {
                 expiresAt={unlocksMap.get(item.mentor_id)?.expiresAt}
                 onLockPress={setLockSheetVideo}
                 onViewProfile={handleViewProfile}
+                forcePaused={lockSheetVideo !== null}
               />
             )}
             viewabilityConfigCallbackPairs={viewabilityConfigCallbackPairs.current}
@@ -610,8 +610,6 @@ const s = StyleSheet.create({
   cardDesc: { color: 'rgba(255,255,255,0.65)', fontSize: 12, lineHeight: 17, marginBottom: 8 },
 
   badgeRow: { flexDirection: 'row', alignItems: 'center', gap: 8, flexWrap: 'wrap' },
-  freeBadge: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: C.accent.success, borderRadius: 6, paddingHorizontal: 8, paddingVertical: 4 },
-  freeBadgeText: { color: '#000', fontSize: 9, fontWeight: '800', letterSpacing: 0.6 },
   unlockedBadge: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: 'rgba(10,6,30,0.75)', borderRadius: 6, paddingHorizontal: 8, paddingVertical: 4, borderWidth: 1, borderColor: 'rgba(74,222,128,0.35)' },
   unlockedBadgeText: { color: C.accent.success, fontSize: 9, fontWeight: '800', letterSpacing: 0.6 },
   unlockBadge: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: 'rgba(10,6,30,0.75)', borderRadius: 6, paddingHorizontal: 8, paddingVertical: 4, borderWidth: 1, borderColor: 'rgba(240,216,117,0.4)' },

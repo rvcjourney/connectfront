@@ -1,9 +1,10 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   ScrollView,
+  FlatList,
   Animated,
   Easing,
   Platform,
@@ -11,9 +12,12 @@ import {
   Modal,
   useWindowDimensions,
   Image,
+  StatusBar,
 } from 'react-native';
-import YoutubePlayer from 'react-native-youtube-iframe';
 import Video from 'react-native-video';
+import { useFocusEffect } from '@react-navigation/native';
+import { homeApi } from '../../api/homeApi';
+import { videoApi } from '../../api/videoApi';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { SafeScreen } from '../../components/SafeScreen';
 import { UNIFIED_THEME } from '../../unifiedTheme';
@@ -51,41 +55,10 @@ const STEPS = [
   },
 ];
 
-const APP_DEMO_VIDEO = {
-  id: 'qp0HIF3SfI4',
-  title: 'Book, connect, and learn in real time with Connectiqo.',
-  duration: '18:01',
-};
+// Accent colours cycle across session tiles (DB has no accent column)
+const TILE_ACCENTS = ['#a78bfa', '#5eead4', '#f0d875', '#f9a8d4'];
 
-const VIDEO_CATEGORIES = [
-  {
-    label: 'Instagram\nInfluencers',
-    icon: 'photo-camera',
-    accent: '#a78bfa',
-    videoId: 'zEgOI1rNlyc',
-  },
-  {
-    label: 'Yoga\nTeacher',
-    icon: 'self-improvement',
-    accent: '#5eead4',
-    videoId: 'v7AYKMP6rOE',
-  },
-  {
-    label: 'Academic\nTeacher',
-    icon: 'school',
-    accent: '#f0d875',
-    videoId: 'i58Z3QunlyY',
-  },
-  {
-    label: 'Astrologers',
-    icon: 'auto-awesome',
-    accent: '#f9a8d4',
-    videoId: 'W1s23eDKRQs',
-  },
-];
-
-function VideoTileCard({ item, onPress }) {
-  const thumbUri = `https://img.youtube.com/vi/${item.videoId}/hqdefault.jpg`;
+function VideoTileCard({ item, accent, onPress }) {
   return (
     <TouchableOpacity
       style={styles.tile}
@@ -94,14 +67,22 @@ function VideoTileCard({ item, onPress }) {
       accessibilityRole="button"
       accessibilityLabel={`Browse ${item.label}`}
     >
-      {/* Actual YouTube thumbnail */}
-      <Image
-        source={{ uri: thumbUri }}
-        style={StyleSheet.absoluteFill}
-        resizeMode="cover"
-      />
+      {item.thumbnail_url ? (
+        <Image
+          source={{ uri: item.thumbnail_url }}
+          style={StyleSheet.absoluteFill}
+          resizeMode="cover"
+        />
+      ) : (
+        <LinearGradient
+          colors={[`${accent}33`, C.primary.dark]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 0, y: 1 }}
+          style={StyleSheet.absoluteFill}
+        />
+      )}
 
-      {/* Dark scrim — heavier at bottom so text is always readable */}
+      {/* Dark scrim */}
       <LinearGradient
         colors={['rgba(2,0,20,0.18)', 'rgba(2,0,20,0.45)', 'rgba(2,0,20,0.88)']}
         start={{ x: 0, y: 0 }}
@@ -109,17 +90,17 @@ function VideoTileCard({ item, onPress }) {
         style={StyleSheet.absoluteFill}
       />
 
-      {/* Accent tint at top-left corner */}
+      {/* Accent tint */}
       <LinearGradient
-        colors={[`${item.accent}30`, 'transparent']}
+        colors={[`${accent}30`, 'transparent']}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 0.6 }}
         style={StyleSheet.absoluteFill}
       />
 
-      {/* Category icon badge — top left */}
-      <View style={[styles.tileBadge, { backgroundColor: `${item.accent}33`, borderColor: `${item.accent}66` }]}>
-        <MaterialIcons name={item.icon} size={13} color={item.accent} />
+      {/* Category icon badge */}
+      <View style={[styles.tileBadge, { backgroundColor: `${accent}33`, borderColor: `${accent}66` }]}>
+        <MaterialIcons name="play-circle-filled" size={13} color={accent} />
       </View>
 
       {/* Centered play button */}
@@ -131,12 +112,80 @@ function VideoTileCard({ item, onPress }) {
 
       {/* Bottom label */}
       <View style={styles.tileBottom}>
-        <Text style={styles.tileTitle}>{item.label}</Text>
-        <Text style={[styles.tileSub, { color: `${item.accent}cc` }]}>Explore mentors</Text>
+        <Text style={styles.tileTitle} numberOfLines={2}>{item.title || item.label}</Text>
+        <Text style={[styles.tileSub, { color: `${accent}cc` }]} numberOfLines={1}>
+          {item.profiles?.name || 'Free video'}
+        </Text>
       </View>
     </TouchableOpacity>
   );
 }
+
+function SessionReel({ item, isActive, reelHeight }) {
+  const [paused, setPaused] = useState(false);
+
+  useEffect(() => {
+    setPaused(!isActive);
+  }, [isActive]);
+
+  return (
+    <View style={{ width: '100%', height: reelHeight, backgroundColor: '#000' }}>
+      <Video
+        source={{ uri: item.video_url }}
+        style={StyleSheet.absoluteFill}
+        resizeMode="contain"
+        paused={!isActive || paused}
+        repeat
+      />
+      {/* tap-to-pause / play */}
+      <TouchableOpacity
+        style={StyleSheet.absoluteFill}
+        activeOpacity={1}
+        onPress={() => isActive && setPaused(p => !p)}
+      />
+      <LinearGradient
+        colors={['transparent', 'rgba(0,0,0,0.88)']}
+        start={{ x: 0, y: 0.45 }}
+        end={{ x: 0, y: 1 }}
+        style={StyleSheet.absoluteFill}
+        pointerEvents="none"
+      />
+      {paused && isActive ? (
+        <View style={rs.pauseIcon} pointerEvents="none">
+          <View style={rs.pauseCircle}>
+            <MaterialIcons name="play-arrow" size={44} color="#fff" style={{ marginLeft: 4 }} />
+          </View>
+        </View>
+      ) : null}
+      <View style={rs.bottom} pointerEvents="none">
+        {(item.profiles?.name || item.label) ? (
+          <Text style={rs.label}>{item.profiles?.name || item.label}</Text>
+        ) : null}
+        {item.title ? <Text style={rs.title}>{item.title}</Text> : null}
+        {item.description ? (
+          <Text style={rs.desc} numberOfLines={2}>{item.description}</Text>
+        ) : null}
+      </View>
+    </View>
+  );
+}
+
+const rs = StyleSheet.create({
+  pauseIcon: { ...StyleSheet.absoluteFillObject, justifyContent: 'center', alignItems: 'center' },
+  pauseCircle: {
+    width: 72, height: 72, borderRadius: 36,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    borderWidth: 2, borderColor: 'rgba(255,255,255,0.5)',
+    justifyContent: 'center', alignItems: 'center',
+  },
+  bottom: { position: 'absolute', bottom: 72, left: 16, right: 16 },
+  label: {
+    color: 'rgba(255,255,255,0.6)', fontSize: 11, fontWeight: '700',
+    letterSpacing: 1.4, textTransform: 'uppercase', marginBottom: 6,
+  },
+  title: { color: '#fff', fontSize: 18, fontWeight: '800', lineHeight: 24 },
+  desc:  { color: 'rgba(255,255,255,0.55)', fontSize: 13, lineHeight: 18, marginTop: 4 },
+});
 
 const TRUST = [
   { icon: 'verified-user', label: 'Verified Mentors' },
@@ -166,9 +215,22 @@ export default function HomeScreen() {
   const { width, height } = useWindowDimensions();
   const [playerVisible, setPlayerVisible] = useState(false);
   const [playerError, setPlayerError] = useState(false);
-  const [currentVideoId, setCurrentVideoId] = useState(APP_DEMO_VIDEO.id);
-  /** When set, modal plays this URL with react-native-video instead of YouTube. */
   const [urlPlayback, setUrlPlayback] = useState(null);
+
+  const [introVideo, setIntroVideo] = useState(null);
+  const [sessionVideos, setSessionVideos] = useState([]);
+
+  const [reelsVisible, setReelsVisible] = useState(false);
+  const [reelsStartIndex, setReelsStartIndex] = useState(0);
+  const [activeReelIndex, setActiveReelIndex] = useState(0);
+
+  const viewabilityConfig = useRef({ itemVisiblePercentThreshold: 60 }).current;
+  const onViewableItemsChanged = useRef(({ viewableItems }) => {
+    if (viewableItems.length > 0) setActiveReelIndex(viewableItems[0].index ?? 0);
+  }).current;
+  const viewabilityConfigCallbackPairs = useRef([
+    { viewabilityConfig, onViewableItemsChanged },
+  ]).current;
 
   const s0 = useEntrance(); // app bar
   const s1 = useEntrance(); // hero
@@ -190,12 +252,23 @@ export default function HomeScreen() {
     ]).start();
   }, []);
 
-  useEffect(() => {
-    let cancelled = false;
-    return () => {
-      cancelled = true;
-    };
-  }, []);
+  useFocusEffect(
+    useCallback(() => {
+      Promise.allSettled([
+        homeApi.getVideos(),
+        videoApi.getFreeVideos(),
+      ]).then(([homeResult, freeResult]) => {
+        const sessions = homeResult.status === 'fulfilled' ? homeResult.value.sessions : [];
+        const freeVideos = freeResult.status === 'fulfilled' ? freeResult.value : [];
+        if (homeResult.status === 'fulfilled' && homeResult.value.intro) {
+          setIntroVideo(homeResult.value.intro);
+        }
+        if (sessions.length || freeVideos.length) {
+          setSessionVideos([...sessions, ...freeVideos]);
+        }
+      });
+    }, [])
+  );
 
   return (
     <SafeScreen scrollable={false} padding={0} hasBottomTabs={false}>
@@ -268,13 +341,13 @@ export default function HomeScreen() {
         </Animated.View>
 
         {/* ── WATCH HOW IT WORKS ── */}
+        {introVideo && (
         <Animated.View style={s2.style}>
           <TouchableOpacity
             style={styles.videoCard}
             activeOpacity={0.88}
             onPress={() => {
-              setUrlPlayback(null);
-              setCurrentVideoId(APP_DEMO_VIDEO.id);
+              setUrlPlayback(introVideo.video_url);
               setPlayerError(false);
               setPlayerVisible(true);
             }}
@@ -306,25 +379,22 @@ export default function HomeScreen() {
               </View>
               <View style={styles.videoCardText}>
                 <Text style={styles.videoCardLabel}>WATCH</Text>
-                <Text style={styles.videoCardTitle}>{APP_DEMO_VIDEO.title}</Text>
-                <View style={styles.videoCardMeta}>
-                  <MaterialIcons name="schedule" size={12} color={C.text.muted} />
-                  <Text style={styles.videoCardDuration}>{APP_DEMO_VIDEO.duration}</Text>
-                </View>
+                <Text style={styles.videoCardTitle}>{introVideo.title}</Text>
               </View>
               <MaterialIcons name="chevron-right" size={22} color={C.text.muted} />
             </View>
           </TouchableOpacity>
         </Animated.View>
+        )}
 
         {/* ── VIDEO CATEGORIES ── */}
+        {sessionVideos.length > 0 && (
         <Animated.View style={[styles.catSection, s2b.style]}>
           <View style={styles.catHeader}>
             <View style={styles.catHeaderLeft}>
               <View style={[styles.sectionDot, { backgroundColor: C.accent.primary }]} />
               <Text style={styles.sectionLabel}>Session</Text>
             </View>
-            {/* <Text style={styles.catSubtitle}>Tap a card to watch</Text> */}
           </View>
 
           <ScrollView
@@ -332,20 +402,23 @@ export default function HomeScreen() {
             showsHorizontalScrollIndicator={false}
             contentContainerStyle={styles.tileRow}
           >
-            {VIDEO_CATEGORIES.map(item => (
+            {sessionVideos.map((item, index) => (
               <VideoTileCard
-                key={item.label}
+                key={item.id}
                 item={item}
+                accent={TILE_ACCENTS[index % TILE_ACCENTS.length]}
                 onPress={cat => {
-                  setUrlPlayback(null);
-                  setCurrentVideoId(cat.videoId);
-                  setPlayerError(false);
-                  setPlayerVisible(true);
+                  const idx = sessionVideos.findIndex(v => v.id === cat.id);
+                  const safeIdx = Math.max(0, idx);
+                  setReelsStartIndex(safeIdx);
+                  setActiveReelIndex(safeIdx);
+                  setReelsVisible(true);
                 }}
               />
             ))}
           </ScrollView>
         </Animated.View>
+        )}
 
 
         {/* ── DUAL ROLE CARDS ── */}
@@ -465,24 +538,6 @@ export default function HomeScreen() {
               onError={() => setPlayerError(true)}
             />
           ) : null}
-          {playerVisible && !urlPlayback ? (
-            <YoutubePlayer
-              key={currentVideoId}
-              height={height}
-              width={width}
-              play
-              videoId={currentVideoId}
-              initialPlayerParams={{ controls: 1, rel: 0, fs: 1 }}
-              webViewProps={{
-                allowsInlineMediaPlayback: false,
-                mediaPlaybackRequiresUserAction: false,
-                allowsFullscreenVideo: true,
-                javaScriptEnabled: true,
-              }}
-              onError={() => setPlayerError(true)}
-            />
-          ) : null}
-
           {/* Close button overlay */}
           <TouchableOpacity
             style={[styles.playerCloseOverlay, { top: insets.top + 10 }]}
@@ -501,6 +556,50 @@ export default function HomeScreen() {
               <Text style={styles.playerErrorText}>Could not load video.</Text>
             </View>
           ) : null}
+        </View>
+      </Modal>
+
+      {/* StatusBar: hidden only while reels modal is open */}
+      <StatusBar hidden={reelsVisible} />
+
+      {/* ── SESSION REELS MODAL ── */}
+      <Modal
+        visible={reelsVisible}
+        transparent={false}
+        animationType="slide"
+        statusBarTranslucent
+        onRequestClose={() => setReelsVisible(false)}
+      >
+        <View style={{ flex: 1, backgroundColor: '#000' }}>
+          {reelsVisible && sessionVideos.length > 0 ? (
+            <FlatList
+              data={sessionVideos}
+              keyExtractor={item => item.id}
+              pagingEnabled
+              showsVerticalScrollIndicator={false}
+              initialScrollIndex={Math.min(reelsStartIndex, Math.max(0, sessionVideos.length - 1))}
+              getItemLayout={(_, index) => ({
+                length: height,
+                offset: height * index,
+                index,
+              })}
+              viewabilityConfigCallbackPairs={viewabilityConfigCallbackPairs}
+              renderItem={({ item, index }) => (
+                <SessionReel
+                  item={item}
+                  isActive={index === activeReelIndex}
+                  reelHeight={height}
+                />
+              )}
+            />
+          ) : null}
+          <TouchableOpacity
+            style={[styles.playerCloseOverlay, { top: insets.top + 10 }]}
+            onPress={() => setReelsVisible(false)}
+            activeOpacity={0.85}
+          >
+            <MaterialIcons name="close" size={20} color="#fff" />
+          </TouchableOpacity>
         </View>
       </Modal>
 
@@ -934,49 +1033,11 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     marginBottom: 5,
   },
-  videoCardMeta: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-  },
-  videoCardDuration: {
-    ...T.typography.labelSm,
-    color: C.text.muted,
-    fontWeight: '600',
-    fontSize: 11,
-  },
-
   // Player modal
   playerScreen: {
     flex: 1,
     backgroundColor: '#000',
     justifyContent: 'center',
-  },
-  playerBackBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: 'rgba(255,255,255,0.08)',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.12)',
-  },
-  playerTitleWrap: {
-    flex: 1,
-    minWidth: 0,
-  },
-  playerOverline: {
-    ...T.typography.bodyXs,
-    color: C.accent.secondary,
-    letterSpacing: 1,
-    textTransform: 'uppercase',
-    marginBottom: 2,
-  },
-  playerTitle: {
-    ...T.typography.bodyMd,
-    color: C.text.primary,
-    fontWeight: '700',
   },
   playerCloseOverlay: {
     position: 'absolute',
@@ -1002,10 +1063,5 @@ const styles = StyleSheet.create({
   playerErrorText: {
     ...T.typography.bodySm,
     color: C.text.primary,
-  },
-  playerDoneBtnText: {
-    ...T.typography.labelLg,
-    color: C.text.primary,
-    fontWeight: '700',
   },
 });

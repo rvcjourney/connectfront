@@ -76,6 +76,29 @@ export const videoApi = {
     }
   },
 
+  // ─── Get free videos only (for HomeScreen session tiles) ────────────────────
+  getFreeVideos: async ({ page = 0, pageSize = 30 } = {}) => {
+    try {
+      const from = page * pageSize;
+      const to   = from + pageSize - 1;
+
+      const { data: videos, error } = await supabase
+        .from('mentor_videos')
+        .select(`
+          id, mentor_id, title, description, video_url, thumbnail_url, is_free, position, created_at,
+          profiles:mentor_id ( id, name, avatar_url )
+        `)
+        .eq('is_free', true)
+        .order('created_at', { ascending: false })
+        .range(from, to);
+
+      if (error) throw error;
+      return videos || [];
+    } catch (error) {
+      throw new Error(getSupabaseErrorMessage(error));
+    }
+  },
+
   // ─── Get all public videos across all mentors (for learner feed) ────────────
   getAllPublicVideos: async ({ page = 0, pageSize = 20, excludeMentorId = null } = {}) => {
     try {
