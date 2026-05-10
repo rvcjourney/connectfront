@@ -86,7 +86,7 @@ export const videoApi = {
       let query = supabase
         .from('mentor_videos')
         .select(`
-          id, mentor_id, title, description, video_url, is_free, position, created_at,
+          id, mentor_id, title, description, video_url, thumbnail_url, is_free, position, created_at,
           profiles:mentor_id ( id, name, avatar_url )
         `)
         .order('created_at', { ascending: false });
