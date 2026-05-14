@@ -15,6 +15,7 @@ import { SectionHeader } from '../../components/SectionHeader';
 import { useAuth } from '../../hooks/useAuth';
 import { bookingApi } from '../../api/bookingApi';
 import { normalizeRecordingUrl } from '../../api/api';
+import { playbackUrlFromBooking } from '../../api/recordingsApi';
 import { scheduleSessionReminder, requestNotificationPermission } from '../../utils/sessionReminder';
 import { SCREEN_NAMES } from '../../navigators/screenNames';
 
@@ -25,7 +26,7 @@ const SESSIONS_POLL_MS = 30_000;
 
 const normalize = b => ({
   ...b,
-  recordingUrl: b?.recording_playback_url || b?.recording_url || null,
+  recordingUrl: playbackUrlFromBooking(b),
 });
 
 const isSessionPast = b => {

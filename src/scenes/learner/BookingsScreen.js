@@ -17,6 +17,12 @@ import { SafeScreen } from '../../components/SafeScreen';
 import { UNIFIED_THEME } from '../../unifiedTheme';
 import { BookingCard } from '../../components/BookingCard';
 import { SectionHeader } from '../../components/SectionHeader';
+import { useAuth } from '../../hooks/useAuth';
+import { bookingApi } from '../../api/bookingApi';
+import { playbackUrlFromBooking } from '../../api/recordingsApi';
+import { reviewsApi } from '../../api/reviewsApi';
+import { normalizeRecordingUrl } from '../../api/api';
+import { SCREEN_NAMES } from '../../navigators/screenNames';
 
 // ─── Skeleton ─────────────────────────────────────────────────────────────────
 function SkeletonBone({ style }) {
@@ -122,11 +128,6 @@ const sk = StyleSheet.create({
   },
   actionBtn: { flex: 1, height: 36, borderRadius: UNIFIED_THEME.borderRadius.md },
 });
-import { useAuth } from '../../hooks/useAuth';
-import { bookingApi } from '../../api/bookingApi';
-import { reviewsApi } from '../../api/reviewsApi';
-import { normalizeRecordingUrl } from '../../api/api';
-import { SCREEN_NAMES } from '../../navigators/screenNames';
 
 const T = UNIFIED_THEME;
 const PAGE_SIZE = 10;
@@ -160,7 +161,7 @@ export default function LearnerBookingsScreen({ navigation }) {
 
       const normalizeBooking = b => ({
         ...b,
-        recordingUrl: b?.recording_playback_url || b?.recording_url || null,
+        recordingUrl: playbackUrlFromBooking(b),
       });
 
       const isSessionPast = b => {
@@ -209,7 +210,7 @@ export default function LearnerBookingsScreen({ navigation }) {
       const data = await bookingApi.getBookingHistoryByLearner(profile.id, historyPage, PAGE_SIZE);
       const newItems = (data || []).map(b => ({
         ...b,
-        recordingUrl: b?.recording_playback_url || b?.recording_url || null,
+        recordingUrl: playbackUrlFromBooking(b),
       }));
 
       setHistory(prev => [...prev, ...newItems]);

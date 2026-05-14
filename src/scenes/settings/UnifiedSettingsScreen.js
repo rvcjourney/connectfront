@@ -1,5 +1,5 @@
 import { SafeScreen } from '../../components/SafeScreen';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -8,8 +8,9 @@ import {
   TouchableOpacity,
   StyleSheet,
   Alert,
+  ActivityIndicator,
 } from 'react-native';
-import LinearGradient from 'react-native-linear-gradient';
+import { useFocusEffect } from '@react-navigation/native';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import Toast from 'react-native-simple-toast';
 import { launchImageLibrary } from 'react-native-image-picker';
@@ -18,16 +19,57 @@ import Button from '../../components/Button';
 import { LoadingOverlay } from '../../components/LoadingOverlay';
 import { useAuth } from '../../hooks/useAuth';
 import { profileApi } from '../../api/profileApi';
+import { videoApi } from '../../api/videoApi';
 import { SCREEN_NAMES } from '../../navigators/screenNames';
+import { formatDate } from '../../utils/dateHelpers';
 
 export default function UnifiedSettingsScreen({ navigation }) {
   const { profile, signOut, refreshProfile } = useAuth();
   const [avatarUrl, setAvatarUrl] = useState(profile?.avatar_url || '');
   const [loading, setLoading] = useState(false);
+  const [subsLoading, setSubsLoading] = useState(false);
+  const [subscriptions, setSubscriptions] = useState([]);
 
   useEffect(() => {
     setAvatarUrl(profile?.avatar_url || '');
   }, [profile?.avatar_url]);
+
+  const loadSubscriptions = useCallback(async () => {
+    if (!profile?.id) {
+      setSubscriptions([]);
+      return;
+    }
+    setSubsLoading(true);
+    try {
+      const rows = await videoApi.getLearnerActiveSubscriptionsDetail(profile.id);
+      setSubscriptions(Array.isArray(rows) ? rows : []);
+    } catch (e) {
+      console.warn('UnifiedSettings: subscriptions load failed', e?.message || e);
+      setSubscriptions([]);
+      Toast.show('Could not load subscriptions');
+    } finally {
+      setSubsLoading(false);
+    }
+  }, [profile?.id]);
+
+  useFocusEffect(
+    useCallback(() => {
+      loadSubscriptions();
+    }, [loadSubscriptions])
+  );
+
+  const goToVideos = useCallback(() => {
+    navigation.navigate(SCREEN_NAMES.LearnerSection, {
+      screen: SCREEN_NAMES.LearnerVideos,
+    });
+  }, [navigation]);
+
+  const openMentor = useCallback(
+    mentorId => {
+      navigation.navigate(SCREEN_NAMES.MentorProfile, { mentorId });
+    },
+    [navigation]
+  );
 
   const handlePickImage = () => {
     launchImageLibrary(
@@ -102,6 +144,58 @@ export default function UnifiedSettingsScreen({ navigation }) {
               </View>
             </View>
           </View>
+        </View>
+
+        <Text style={styles.sectionTitle}>Video subscriptions</Text>
+        <View style={styles.subsCard}>
+          {subsLoading ? (
+            <View style={styles.subsLoading}>
+              <ActivityIndicator size="small" color={UNIFIED_THEME.colors.accent.primary} />
+              <Text style={styles.subsLoadingText}>Checking subscriptions…</Text>
+            </View>
+          ) : subscriptions.length === 0 ? (
+            <Text style={styles.subsEmpty}>
+              No active video library subscriptions. Subscribe from a mentor’s profile or open{' '}
+              <Text style={styles.subsEmptyEm}>Learner → Videos</Text>.
+            </Text>
+          ) : (
+            subscriptions.map(row => {
+              const m = row.profiles;
+              const name = m?.name || 'Mentor';
+              const expLabel = row.expires_at
+                ? `Access until ${formatDate(row.expires_at)}`
+                : 'Full access active';
+              return (
+                <TouchableOpacity
+                  key={`${row.mentor_id}`}
+                  style={styles.subsRow}
+                  onPress={() => openMentor(row.mentor_id)}
+                  activeOpacity={0.75}
+                >
+                  <View style={styles.subsAvatarWrap}>
+                    {m?.avatar_url ? (
+                      <Image source={{ uri: m.avatar_url }} style={styles.subsAvatar} />
+                    ) : (
+                      <View style={[styles.subsAvatar, styles.subsAvatarPh]}>
+                        <MaterialIcons name="person" size={22} color={UNIFIED_THEME.colors.accent.secondary} />
+                      </View>
+                    )}
+                  </View>
+                  <View style={styles.subsMeta}>
+                    <Text style={styles.subsName} numberOfLines={1}>{name}</Text>
+                    <Text style={styles.subsExpiry} numberOfLines={1}>{expLabel}</Text>
+                  </View>
+                  <MaterialIcons name="chevron-right" size={22} color={UNIFIED_THEME.colors.text.secondary} />
+                </TouchableOpacity>
+              );
+            })
+          )}
+          {!subsLoading && (
+            <TouchableOpacity style={styles.subsExplore} onPress={goToVideos} activeOpacity={0.8}>
+              <MaterialIcons name="play-circle-outline" size={18} color={UNIFIED_THEME.colors.accent.secondary} />
+              <Text style={styles.subsExploreText}>Open Videos tab</Text>
+            </TouchableOpacity>
+          )}
         </View>
 
         {/* Menu Items */}
@@ -338,4 +432,74 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   signOutBtn: { marginBottom: UNIFIED_THEME.spacing.xxxl },
+  subsCard: {
+    backgroundColor: UNIFIED_THEME.colors.component.input,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: UNIFIED_THEME.colors.border.light,
+    padding: UNIFIED_THEME.spacing.lg,
+    marginBottom: UNIFIED_THEME.spacing.lg,
+  },
+  subsLoading: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: UNIFIED_THEME.spacing.sm,
+    paddingVertical: UNIFIED_THEME.spacing.sm,
+  },
+  subsLoadingText: {
+    ...UNIFIED_THEME.typography.bodySm,
+    color: UNIFIED_THEME.colors.text.secondary,
+  },
+  subsEmpty: {
+    ...UNIFIED_THEME.typography.bodySm,
+    color: UNIFIED_THEME.colors.text.secondary,
+    lineHeight: 20,
+  },
+  subsEmptyEm: {
+    color: UNIFIED_THEME.colors.accent.secondary,
+    fontWeight: '600',
+  },
+  subsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: UNIFIED_THEME.spacing.md,
+    borderBottomWidth: 1,
+    borderBottomColor: UNIFIED_THEME.colors.border.light,
+    gap: UNIFIED_THEME.spacing.md,
+  },
+  subsAvatarWrap: {},
+  subsAvatar: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: UNIFIED_THEME.colors.primary.light,
+  },
+  subsAvatarPh: {
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  subsMeta: { flex: 1, minWidth: 0 },
+  subsName: {
+    ...UNIFIED_THEME.typography.bodyMd,
+    color: UNIFIED_THEME.colors.text.primary,
+    fontWeight: '600',
+  },
+  subsExpiry: {
+    ...UNIFIED_THEME.typography.bodySm,
+    color: UNIFIED_THEME.colors.text.muted,
+    marginTop: 2,
+  },
+  subsExplore: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    marginTop: UNIFIED_THEME.spacing.md,
+    paddingVertical: UNIFIED_THEME.spacing.sm,
+  },
+  subsExploreText: {
+    ...UNIFIED_THEME.typography.bodySm,
+    color: UNIFIED_THEME.colors.accent.secondary,
+    fontWeight: '600',
+  },
 });

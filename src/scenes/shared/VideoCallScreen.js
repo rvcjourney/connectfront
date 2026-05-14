@@ -15,6 +15,7 @@ import { UNIFIED_THEME } from '../../unifiedTheme';
 import { LoadingOverlay } from '../../components/LoadingOverlay';
 import { getToken, createMeeting, validateMeeting, fetchRecordingUrl } from '../../api/api';
 import { bookingApi } from '../../api/bookingApi';
+import { recordingsApi, meetingIdFromBooking } from '../../api/recordingsApi';
 import { earningsApi } from '../../api/earningsApi';
 import { useAuth } from '../../hooks/useAuth';
 import MeetingContainer from '../meeting/MeetingContainer';
@@ -90,10 +91,11 @@ export default function VideoCallScreen({ navigation, route }) {
       } else {
         // Guest: get meeting ID from booking
         booking = await bookingApi.getBooking(bookingId);
-        if (!booking.meeting_id) {
+        const mid = meetingIdFromBooking(booking);
+        if (!mid) {
           throw new Error('Host has not started the meeting yet');
         }
-        meetingId = booking.meeting_id;
+        meetingId = mid;
         // Validate meeting exists
         await validateMeeting({ meetingId, token });
       }
@@ -152,7 +154,7 @@ export default function VideoCallScreen({ navigation, route }) {
           }
 
           if (recordingUrl) {
-            await bookingApi.setRecordingLinks({
+            await recordingsApi.updateRecordingUrls({
               bookingId,
               recordingUrl,
               recordingPlaybackUrl: recordingUrl,

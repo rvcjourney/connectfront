@@ -1,6 +1,10 @@
 import { supabase } from '../lib/supabase';
 import { getSupabaseErrorMessage } from '../lib/supabaseErrorHandler';
 import { cancelSessionReminder } from '../utils/sessionReminder';
+import { recordingsApi } from './recordingsApi';
+
+/** Session room + recording URLs live on `recordings`, not on `bookings`. */
+const RECORDINGS_EMBED = `recordings ( meeting_id, recording_url, recording_playback_url )`;
 
 export const bookingApi = {
   createBooking: async ({ learnerId, mentorId, slotId, message }) => {
@@ -62,7 +66,9 @@ export const bookingApi = {
             date,
             start_time,
             end_time
-          )
+          ),
+          ${RECORDINGS_EMBED},
+          mentor_profiles ( price_per_hour )
         `)
         .eq('id', bookingId)
         .single();
@@ -89,7 +95,8 @@ export const bookingApi = {
             date,
             start_time,
             end_time
-          )
+          ),
+          ${RECORDINGS_EMBED}
         `)
         .eq('learner_id', learnerId)
         .order('created_at', { ascending: false });
@@ -108,7 +115,8 @@ export const bookingApi = {
         .select(`
           *,
           profiles:mentor_id (id, name, avatar_url),
-          availability_slots (date, start_time, end_time)
+          availability_slots (date, start_time, end_time),
+          ${RECORDINGS_EMBED}
         `)
         .eq('learner_id', learnerId)
         .in('status', ['pending', 'confirmed'])
@@ -130,7 +138,8 @@ export const bookingApi = {
         .select(`
           *,
           profiles:mentor_id (id, name, avatar_url),
-          availability_slots (date, start_time, end_time)
+          availability_slots (date, start_time, end_time),
+          ${RECORDINGS_EMBED}
         `)
         .eq('learner_id', learnerId)
         .in('status', ['completed', 'cancelled', 'rejected'])
@@ -159,7 +168,8 @@ export const bookingApi = {
             date,
             start_time,
             end_time
-          )
+          ),
+          ${RECORDINGS_EMBED}
         `)
         .eq('mentor_id', mentorId)
         .order('created_at', { ascending: false });
@@ -178,7 +188,8 @@ export const bookingApi = {
         .select(`
           *,
           profiles:learner_id (id, name, avatar_url),
-          availability_slots (date, start_time, end_time)
+          availability_slots (date, start_time, end_time),
+          ${RECORDINGS_EMBED}
         `)
         .eq('mentor_id', mentorId)
         .in('status', ['pending', 'confirmed'])
@@ -200,12 +211,73 @@ export const bookingApi = {
         .select(`
           *,
           profiles:learner_id (id, name, avatar_url),
-          availability_slots (date, start_time, end_time)
+          availability_slots (date, start_time, end_time),
+          ${RECORDINGS_EMBED}
         `)
         .eq('mentor_id', mentorId)
         .in('status', ['completed', 'cancelled', 'rejected'])
         .order('created_at', { ascending: false })
         .range(from, to);
+
+      if (error) throw error;
+      return data || [];
+    } catch (error) {
+      throw new Error(getSupabaseErrorMessage(error));
+    }
+  },
+
+  /**
+   * Completed 1-on-1s for a mentor (for public mentor profile).
+   * May return [] if RLS blocks the viewer — depends on your Supabase policies.
+   */
+  getCompletedSessionsForMentorProfile: async (mentorId, { limit = 12 } = {}) => {
+    try {
+      const { data, error } = await supabase
+        .from('bookings')
+        .select(`
+          id,
+          message,
+          status,
+          created_at,
+          profiles:learner_id (id, name, avatar_url),
+          availability_slots (date, start_time, end_time),
+          ${RECORDINGS_EMBED},
+          reviews ( rating )
+        `)
+        .eq('mentor_id', mentorId)
+        .eq('status', 'completed')
+        .order('created_at', { ascending: false })
+        .limit(limit);
+
+      if (error) throw error;
+      return data || [];
+    } catch (error) {
+      throw new Error(getSupabaseErrorMessage(error));
+    }
+  },
+
+  /** Learner-facing: completed sessions with this mentor (for profile recap list). */
+  getCompletedSessionsWithMentor: async ({ learnerId, mentorId, limit = 15 }) => {
+    try {
+      const { data, error } = await supabase
+        .from('bookings')
+        .select(`
+          id,
+          message,
+          status,
+          created_at,
+          availability_slots (
+            date,
+            start_time,
+            end_time
+          ),
+          ${RECORDINGS_EMBED}
+        `)
+        .eq('learner_id', learnerId)
+        .eq('mentor_id', mentorId)
+        .eq('status', 'completed')
+        .order('created_at', { ascending: false })
+        .limit(limit);
 
       if (error) throw error;
       return data || [];
@@ -271,44 +343,27 @@ export const bookingApi = {
 
   setMeetingId: async ({ bookingId, meetingId }) => {
     try {
-      const { error } = await supabase
+      const { data: row, error } = await supabase
         .from('bookings')
-        .update({ meeting_id: meetingId })
-        .eq('id', bookingId);
-
+        .select('mentor_id, learner_id')
+        .eq('id', bookingId)
+        .single();
       if (error) throw error;
+      await recordingsApi.upsertSessionForBooking({
+        bookingId,
+        mentorId: row.mentor_id,
+        learnerId: row.learner_id,
+        meetingId,
+      });
     } catch (error) {
       throw new Error(getSupabaseErrorMessage(error));
     }
   },
 
-  clearMeetingId: async (bookingId) => {
+  clearMeetingId: async bookingId => {
     try {
-      const { error } = await supabase
-        .from('bookings')
-        .update({ meeting_id: null })
-        .eq('id', bookingId);
-
-      if (error) throw error;
-      console.log('✅ Meeting ID cleared - meeting abandoned');
-    } catch (error) {
-      throw new Error(getSupabaseErrorMessage(error));
-    }
-  },
-
-  setRecordingLinks: async ({ bookingId, recordingUrl, recordingPlaybackUrl }) => {
-    try {
-      const payload = {
-        recording_url: recordingUrl || null,
-        recording_playback_url: recordingPlaybackUrl || recordingUrl || null,
-      };
-
-      const { error } = await supabase
-        .from('bookings')
-        .update(payload)
-        .eq('id', bookingId);
-
-      if (error) throw error;
+      await recordingsApi.clearMeetingForBooking(bookingId);
+      console.log('✅ Meeting ID cleared on recording row — meeting abandoned');
     } catch (error) {
       throw new Error(getSupabaseErrorMessage(error));
     }
@@ -322,7 +377,8 @@ export const bookingApi = {
           .select(`
             *,
             profiles:learner_id (id, name, avatar_url),
-            availability_slots (date, start_time, end_time)
+            availability_slots (date, start_time, end_time),
+            ${RECORDINGS_EMBED}
           `)
           .eq('mentor_id', mentorId)
           .order('created_at', { ascending: false }),
@@ -348,7 +404,8 @@ export const bookingApi = {
         .select(`
           *,
           profiles:mentor_id (id, name, avatar_url),
-          availability_slots (date, start_time, end_time)
+          availability_slots (date, start_time, end_time),
+          ${RECORDINGS_EMBED}
         `)
         .eq('learner_id', learnerId)
         .order('created_at', { ascending: false });
