@@ -12,10 +12,10 @@ import {
   Modal,
   useWindowDimensions,
   Image,
-  StatusBar,
 } from 'react-native';
 import Video from 'react-native-video';
-import { useFocusEffect } from '@react-navigation/native';
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
+import { SCREEN_NAMES } from '../../navigators/screenNames';
 import { homeApi } from '../../api/homeApi';
 import { videoApi } from '../../api/videoApi';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -121,71 +121,109 @@ function VideoTileCard({ item, accent, onPress }) {
   );
 }
 
-function SessionReel({ item, isActive, reelHeight }) {
-  const [paused, setPaused] = useState(false);
+// ─── Hero slider ─────────────────────────────────────────────────────────────
+const SLIDE_H = 275;
 
+const FALLBACK_SLIDES = [];
+
+// ─── Skeleton ─────────────────────────────────────────────────────────────────
+function useShimmer() {
+  const anim = useRef(new Animated.Value(0.3)).current;
   useEffect(() => {
-    setPaused(!isActive);
-  }, [isActive]);
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(anim, { toValue: 0.7, duration: 800, useNativeDriver: true }),
+        Animated.timing(anim, { toValue: 0.3, duration: 800, useNativeDriver: true }),
+      ])
+    ).start();
+  }, []);
+  return anim;
+}
 
+function SkeletonBox({ style }) {
+  const opacity = useShimmer();
   return (
-    <View style={{ width: '100%', height: reelHeight, backgroundColor: '#000' }}>
-      <Video
-        source={{ uri: item.video_url }}
-        style={StyleSheet.absoluteFill}
-        resizeMode="contain"
-        paused={!isActive || paused}
-        repeat
-      />
-      {/* tap-to-pause / play */}
-      <TouchableOpacity
-        style={StyleSheet.absoluteFill}
-        activeOpacity={1}
-        onPress={() => isActive && setPaused(p => !p)}
-      />
-      <LinearGradient
-        colors={['transparent', 'rgba(0,0,0,0.88)']}
-        start={{ x: 0, y: 0.45 }}
-        end={{ x: 0, y: 1 }}
-        style={StyleSheet.absoluteFill}
-        pointerEvents="none"
-      />
-      {paused && isActive ? (
-        <View style={rs.pauseIcon} pointerEvents="none">
-          <View style={rs.pauseCircle}>
-            <MaterialIcons name="play-arrow" size={44} color="#fff" style={{ marginLeft: 4 }} />
-          </View>
+    <Animated.View
+      style={[{ backgroundColor: 'rgba(255,255,255,0.1)', borderRadius: 8 }, style, { opacity }]}
+    />
+  );
+}
+
+function HomeSkeleton({ screenWidth }) {
+  return (
+    <>
+      <SkeletonBox style={{ width: screenWidth, height: SLIDE_H, borderRadius: 0 }} />
+      <View style={{ paddingHorizontal: T.spacing.lg }}>
+        <SkeletonBox style={{ height: 70, borderRadius: 14, marginTop: T.spacing.lg, marginBottom: T.spacing.lg }} />
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: T.spacing.md }}>
+          <SkeletonBox style={{ width: 130, height: 14, borderRadius: 6 }} />
+          <SkeletonBox style={{ width: 44, height: 12, borderRadius: 6 }} />
         </View>
-      ) : null}
-      <View style={rs.bottom} pointerEvents="none">
-        {(item.profiles?.name || item.label) ? (
-          <Text style={rs.label}>{item.profiles?.name || item.label}</Text>
-        ) : null}
-        {item.title ? <Text style={rs.title}>{item.title}</Text> : null}
-        {item.description ? (
-          <Text style={rs.desc} numberOfLines={2}>{item.description}</Text>
-        ) : null}
+        <View style={{ flexDirection: 'row', gap: T.spacing.md }}>
+          {[0, 1, 2].map(i => (
+            <SkeletonBox key={i} style={{ width: 148, height: 186, borderRadius: T.borderRadius.lg }} />
+          ))}
+        </View>
       </View>
+    </>
+  );
+}
+
+function HeroSlide({ slide, slideWidth }) {
+  const source = slide.image_url
+    ? { uri: slide.image_url }
+    : slide.image;
+  return (
+    <View style={{ width: slideWidth, height: SLIDE_H, overflow: 'hidden' }}>
+      <Image
+        source={source}
+        style={{ width: slideWidth, height: SLIDE_H }}
+        resizeMode="contain"
+      />
     </View>
   );
 }
 
-const rs = StyleSheet.create({
-  pauseIcon: { ...StyleSheet.absoluteFillObject, justifyContent: 'center', alignItems: 'center' },
-  pauseCircle: {
-    width: 72, height: 72, borderRadius: 36,
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    borderWidth: 2, borderColor: 'rgba(255,255,255,0.5)',
-    justifyContent: 'center', alignItems: 'center',
-  },
-  bottom: { position: 'absolute', bottom: 72, left: 16, right: 16 },
-  label: {
-    color: 'rgba(255,255,255,0.6)', fontSize: 11, fontWeight: '700',
-    letterSpacing: 1.4, textTransform: 'uppercase', marginBottom: 6,
-  },
-  title: { color: '#fff', fontSize: 18, fontWeight: '800', lineHeight: 24 },
-  desc:  { color: 'rgba(255,255,255,0.55)', fontSize: 13, lineHeight: 18, marginTop: 4 },
-});
+function HeroSlider({ slideWidth, slides }) {
+  const [slideIndex, setSlideIndex] = useState(0);
+  const listRef = useRef(null);
+
+  useEffect(() => {
+    if (!slides.length) return;
+    const timer = setInterval(() => {
+      setSlideIndex(prev => {
+        const next = (prev + 1) % slides.length;
+        listRef.current?.scrollToIndex({ index: next, animated: true });
+        return next;
+      });
+    }, 4500);
+    return () => clearInterval(timer);
+  }, [slides.length]);
+
+  return (
+    <View>
+      <FlatList
+        ref={listRef}
+        data={slides}
+        keyExtractor={s => s.id}
+        horizontal
+        pagingEnabled
+        showsHorizontalScrollIndicator={false}
+        scrollEventThrottle={16}
+        getItemLayout={(_, i) => ({ length: slideWidth, offset: slideWidth * i, index: i })}
+        onMomentumScrollEnd={e => {
+          const i = Math.round(e.nativeEvent.contentOffset.x / slideWidth);
+          setSlideIndex(i);
+        }}
+        renderItem={({ item }) => (
+          <HeroSlide slide={item} slideWidth={slideWidth} />
+        )}
+      />
+    </View>
+  );
+}
+
+
 
 const TRUST = [
   { icon: 'verified-user', label: 'Verified Mentors' },
@@ -211,26 +249,17 @@ function useEntrance() {
 }
 
 export default function HomeScreen() {
+  const navigation = useNavigation();
   const insets = useSafeAreaInsets();
-  const { width, height } = useWindowDimensions();
+  const { width } = useWindowDimensions();
   const [playerVisible, setPlayerVisible] = useState(false);
   const [playerError, setPlayerError] = useState(false);
   const [urlPlayback, setUrlPlayback] = useState(null);
 
+  const [dataLoaded, setDataLoaded] = useState(false);
+  const [heroSlides, setHeroSlides] = useState(FALLBACK_SLIDES);
   const [introVideo, setIntroVideo] = useState(null);
   const [sessionVideos, setSessionVideos] = useState([]);
-
-  const [reelsVisible, setReelsVisible] = useState(false);
-  const [reelsStartIndex, setReelsStartIndex] = useState(0);
-  const [activeReelIndex, setActiveReelIndex] = useState(0);
-
-  const viewabilityConfig = useRef({ itemVisiblePercentThreshold: 60 }).current;
-  const onViewableItemsChanged = useRef(({ viewableItems }) => {
-    if (viewableItems.length > 0) setActiveReelIndex(viewableItems[0].index ?? 0);
-  }).current;
-  const viewabilityConfigCallbackPairs = useRef([
-    { viewabilityConfig, onViewableItemsChanged },
-  ]).current;
 
   const s0 = useEntrance(); // app bar
   const s1 = useEntrance(); // hero
@@ -257,15 +286,26 @@ export default function HomeScreen() {
       Promise.allSettled([
         homeApi.getVideos(),
         videoApi.getFreeVideos(),
-      ]).then(([homeResult, freeResult]) => {
+        homeApi.getHeroSlides(),
+      ]).then(([homeResult, freeResult, slidesResult]) => {
         const sessions = homeResult.status === 'fulfilled' ? homeResult.value.sessions : [];
         const freeVideos = freeResult.status === 'fulfilled' ? freeResult.value : [];
         if (homeResult.status === 'fulfilled' && homeResult.value.intro) {
           setIntroVideo(homeResult.value.intro);
         }
         if (sessions.length || freeVideos.length) {
-          setSessionVideos([...sessions, ...freeVideos]);
+          const seen = new Set();
+          const merged = [...sessions, ...freeVideos].filter(v => {
+            if (seen.has(v.id)) return false;
+            seen.add(v.id);
+            return true;
+          });
+          setSessionVideos(merged);
         }
+        if (slidesResult.status === 'fulfilled' && slidesResult.value.length > 0) {
+          setHeroSlides(slidesResult.value);
+        }
+        setDataLoaded(true);
       });
     }, [])
   );
@@ -278,68 +318,34 @@ export default function HomeScreen() {
       >
 
         {/* ── APP BAR ── */}
-        <Animated.View style={[styles.appBar, s0.style]}>
+        <Animated.View style={[styles.appBar, s0.style, { paddingHorizontal: T.spacing.lg }]}>
           <Image
             source={require('../../assets/images/logo.png')}
             style={styles.logoMark}
             resizeMode="contain"
           />
-          <View>
+          <View style={{ flex: 1 }}>
             <Text style={styles.appName}>Connectiqo</Text>
             <Text style={styles.appTagline}>Connect · Learn · Grow</Text>
           </View>
+          <TouchableOpacity
+            style={styles.appBarBtn}
+            onPress={() => navigation.navigate(SCREEN_NAMES.UnifiedSettings)}
+            activeOpacity={0.75}
+          >
+            <MaterialIcons name="notifications-none" size={22} color={C.text.secondary} />
+          </TouchableOpacity>
         </Animated.View>
 
-        {/* ── HERO ── */}
-        <Animated.View style={s1.style}>
-          <View style={styles.hero}>
-            <LinearGradient
-              colors={['rgba(167,139,250,0.16)', 'rgba(94,234,212,0.08)', 'rgba(2,0,20,0.65)']}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={StyleSheet.absoluteFill}
-            />
-            <LinearGradient
-              colors={TB.flatBarEdge}
-              locations={[0, 0.35, 0.65, 1]}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 0 }}
-              style={styles.heroBeam}
-              pointerEvents="none"
-            />
-
-            <View style={styles.heroBadge}>
-              <MaterialIcons name="bolt" size={13} color={C.accent.secondary} />
-              <Text style={styles.heroBadgeText}>1-on-1 Live Mentorship</Text>
-            </View>
-
-            <Text style={styles.heroHeading}>
-              Teach what you know.{'\n'}
-              <Text style={styles.heroHeadingAccent}>Learn what you don't.</Text>
-            </Text>
-            <Text style={styles.heroBody}>
-              Every user on Connectiqo is both a mentor and a learner. Share your expertise, book sessions with experts, and grow — all in one place.
-            </Text>
-
-            <View style={styles.heroStats}>
-              <View style={styles.heroStat}>
-                <MaterialIcons name="verified-user" size={18} color={C.accent.primary} />
-                <Text style={styles.heroStatLbl}>Expert Mentors</Text>
-              </View>
-              <View style={styles.heroStatDivider} />
-              <View style={styles.heroStat}>
-                <MaterialIcons name="videocam" size={18} color={C.accent.secondary} />
-                <Text style={styles.heroStatLbl}>Live 1-on-1</Text>
-              </View>
-              <View style={styles.heroStatDivider} />
-              <View style={styles.heroStat}>
-                <MaterialIcons name="lock" size={18} color={C.accent.primary} />
-                <Text style={styles.heroStatLbl}>Secure Payments</Text>
-              </View>
-            </View>
-          </View>
+        {!dataLoaded ? <HomeSkeleton screenWidth={width} /> : (
+        <>
+        {/* ── HERO SLIDER — no horizontal padding, true full width ── */}
+        <Animated.View style={[s1.style]}>
+          <HeroSlider slideWidth={width} slides={heroSlides} />
         </Animated.View>
 
+        {/* ── padded wrapper for all content below the slider ── */}
+        <View style={{ paddingHorizontal: T.spacing.lg }}>
         {/* ── WATCH HOW IT WORKS ── */}
         {introVideo && (
         <Animated.View style={s2.style}>
@@ -393,8 +399,11 @@ export default function HomeScreen() {
           <View style={styles.catHeader}>
             <View style={styles.catHeaderLeft}>
               <View style={[styles.sectionDot, { backgroundColor: C.accent.primary }]} />
-              <Text style={styles.sectionLabel}>Session</Text>
+              <Text style={styles.sectionLabel}>Recent Sessions</Text>
             </View>
+            <TouchableOpacity onPress={() => navigation.navigate(SCREEN_NAMES.LearnerSection, { screen: SCREEN_NAMES.LearnerVideos })} activeOpacity={0.7}>
+              <Text style={styles.seeAll}>See all</Text>
+            </TouchableOpacity>
           </View>
 
           <ScrollView
@@ -408,11 +417,10 @@ export default function HomeScreen() {
                 item={item}
                 accent={TILE_ACCENTS[index % TILE_ACCENTS.length]}
                 onPress={cat => {
-                  const idx = sessionVideos.findIndex(v => v.id === cat.id);
-                  const safeIdx = Math.max(0, idx);
-                  setReelsStartIndex(safeIdx);
-                  setActiveReelIndex(safeIdx);
-                  setReelsVisible(true);
+                  navigation.navigate(SCREEN_NAMES.LearnerSection, {
+                    screen: SCREEN_NAMES.LearnerVideos,
+                    params: { startVideoId: cat.id },
+                  });
                 }}
               />
             ))}
@@ -424,7 +432,7 @@ export default function HomeScreen() {
         {/* ── DUAL ROLE CARDS ── */}
         <Animated.View style={[styles.dualRow, s3.style]}>
           {/* Learner card */}
-          <View style={[styles.roleCard, styles.roleCardLeft]}>
+          <TouchableOpacity style={[styles.roleCard, styles.roleCardLeft]} onPress={() => navigation.navigate(SCREEN_NAMES.LearnerSection)} activeOpacity={0.82}>
             <LinearGradient
               colors={['rgba(94,234,212,0.14)', 'rgba(94,234,212,0.04)']}
               start={{ x: 0, y: 0 }}
@@ -444,10 +452,10 @@ export default function HomeScreen() {
                 </View>
               ))}
             </View>
-          </View>
+          </TouchableOpacity>
 
           {/* Mentor card */}
-          <View style={[styles.roleCard, styles.roleCardRight]}>
+          <TouchableOpacity style={[styles.roleCard, styles.roleCardRight]} onPress={() => navigation.navigate(SCREEN_NAMES.MentorSection)} activeOpacity={0.82}>
             <LinearGradient
               colors={['rgba(240,216,117,0.14)', 'rgba(240,216,117,0.04)']}
               start={{ x: 0, y: 0 }}
@@ -467,7 +475,7 @@ export default function HomeScreen() {
                 </View>
               ))}
             </View>
-          </View>
+          </TouchableOpacity>
         </Animated.View>
 
         {/* ── HOW IT WORKS ── */}
@@ -516,6 +524,10 @@ export default function HomeScreen() {
           ))}
         </Animated.View>
 
+        </View>{/* end padded wrapper */}
+        </>
+        )}{/* end dataLoaded conditional */}
+
       </ScrollView>
 
       {/* ── VIDEO PLAYER MODAL ── */}
@@ -559,49 +571,6 @@ export default function HomeScreen() {
         </View>
       </Modal>
 
-      {/* StatusBar: hidden only while reels modal is open */}
-      <StatusBar hidden={reelsVisible} />
-
-      {/* ── SESSION REELS MODAL ── */}
-      <Modal
-        visible={reelsVisible}
-        transparent={false}
-        animationType="slide"
-        statusBarTranslucent
-        onRequestClose={() => setReelsVisible(false)}
-      >
-        <View style={{ flex: 1, backgroundColor: '#000' }}>
-          {reelsVisible && sessionVideos.length > 0 ? (
-            <FlatList
-              data={sessionVideos}
-              keyExtractor={item => item.id}
-              pagingEnabled
-              showsVerticalScrollIndicator={false}
-              initialScrollIndex={Math.min(reelsStartIndex, Math.max(0, sessionVideos.length - 1))}
-              getItemLayout={(_, index) => ({
-                length: height,
-                offset: height * index,
-                index,
-              })}
-              viewabilityConfigCallbackPairs={viewabilityConfigCallbackPairs}
-              renderItem={({ item, index }) => (
-                <SessionReel
-                  item={item}
-                  isActive={index === activeReelIndex}
-                  reelHeight={height}
-                />
-              )}
-            />
-          ) : null}
-          <TouchableOpacity
-            style={[styles.playerCloseOverlay, { top: insets.top + 10 }]}
-            onPress={() => setReelsVisible(false)}
-            activeOpacity={0.85}
-          >
-            <MaterialIcons name="close" size={20} color="#fff" />
-          </TouchableOpacity>
-        </View>
-      </Modal>
 
     </SafeScreen>
   );
@@ -611,7 +580,6 @@ const styles = StyleSheet.create({
   page: {
     flexGrow: 1,
     paddingBottom: T.spacing.xxxl + 16,
-    paddingHorizontal: T.spacing.lg,
   },
 
   // App bar
@@ -642,80 +610,16 @@ const styles = StyleSheet.create({
     marginTop: 1,
   },
 
-  // Hero
-  hero: {
-    borderRadius: T.borderRadius.md,
-    overflow: 'hidden',
-    borderWidth: 1,
-    borderColor: C.border.light,
-    borderLeftWidth: 3,
-    borderLeftColor: C.accent.primary,
-    backgroundColor: C.primary.dark,
-    padding: T.spacing.lg,
-    marginBottom: T.spacing.lg,
-    ...Platform.select({ ios: T.shadows.medium, android: { elevation: 5 } }),
+  appBarBtn: {
+    width: 38, height: 38, borderRadius: 19,
+    justifyContent: 'center', alignItems: 'center',
+    backgroundColor: C.component.card,
+    borderWidth: 1, borderColor: C.border.light,
   },
-  heroBeam: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    top: 0,
-    height: 2,
-    opacity: 0.85,
-  },
-  heroBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    alignSelf: 'flex-start',
-    gap: 5,
-    paddingHorizontal: T.spacing.md,
-    paddingVertical: 5,
-    borderRadius: T.borderRadius.sm,
-    backgroundColor: C.component.input,
-    borderWidth: 1,
-    borderColor: C.border.light,
-    marginBottom: T.spacing.md,
-  },
-  heroBadgeText: {
-    ...T.typography.labelSm,
-    color: C.text.secondary,
-    fontWeight: '700',
-  },
-  heroHeading: {
-    fontSize: 24,
-    fontWeight: '800',
-    color: C.text.primary,
-    letterSpacing: -0.4,
-    lineHeight: 32,
-    marginBottom: T.spacing.sm,
-  },
-  heroHeadingAccent: {
-    color: C.accent.primary,
-  },
-  heroBody: {
-    ...T.typography.bodyMd,
-    color: C.text.muted,
-    lineHeight: 22,
-    marginBottom: T.spacing.lg,
-  },
-  heroStats: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderTopWidth: 1,
-    borderTopColor: C.border.light,
-    paddingTop: T.spacing.md,
-  },
-  heroStat: { flex: 1, alignItems: 'center' },
-  heroStatDivider: {
-    width: StyleSheet.hairlineWidth,
-    height: 30,
-    backgroundColor: C.border.light,
-    opacity: 0.7,
-  },
-  heroStatLbl: {
-    ...T.typography.labelSm,
-    color: C.text.muted,
-    marginTop: 2,
+  seeAll: {
+    fontSize: 12, fontWeight: '700',
+    color: C.accent.secondary,
+    letterSpacing: 0.2,
   },
 
   // Video categories
@@ -771,13 +675,14 @@ const styles = StyleSheet.create({
   },
   tilePlayWrap: {
     flex: 1,
-    justifyContent: 'center',
+    justifyContent: 'flex-end',
     alignItems: 'center',
+    paddingBottom: 5,
   },
   tilePlayBtn: {
-    width: 52,
-    height: 52,
-    borderRadius: 26,
+    width: 42,
+    height: 42,
+    borderRadius: 24,
     backgroundColor: 'rgba(255,255,255,0.18)',
     borderWidth: 2,
     borderColor: 'rgba(255,255,255,0.6)',

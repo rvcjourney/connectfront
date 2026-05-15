@@ -2,6 +2,21 @@ import { supabase } from '../lib/supabase';
 import { getSupabaseErrorMessage } from '../lib/supabaseErrorHandler';
 
 export const homeApi = {
+  getHeroSlides: async () => {
+    try {
+      const { data, error } = await supabase
+        .from('hero_slides')
+        .select('id, image_url, position')
+        .eq('is_active', true)
+        .order('position', { ascending: true });
+
+      if (error) throw error;
+      return data || [];
+    } catch (error) {
+      throw new Error(getSupabaseErrorMessage(error));
+    }
+  },
+
   getVideos: async () => {
     try {
       const { data, error } = await supabase

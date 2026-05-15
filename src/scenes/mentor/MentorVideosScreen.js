@@ -326,6 +326,7 @@ function UploadModal({ visible, onClose, onUploaded }) {
   const [description, setDescription] = useState('');
   const [isFree, setIsFree] = useState(false);
   const [pickedFile, setPickedFile] = useState(null);
+  const [pickedThumbnail, setPickedThumbnail] = useState(null);
   const [uploading, setUploading] = useState(false);
   const [progress, setProgress] = useState(0);
   const progressAnim = React.useRef(new Animated.Value(0)).current;
@@ -343,6 +344,7 @@ function UploadModal({ visible, onClose, onUploaded }) {
     setDescription('');
     setIsFree(false);
     setPickedFile(null);
+    setPickedThumbnail(null);
     setUploading(false);
     setProgress(0);
     progressAnim.setValue(0);
@@ -371,6 +373,18 @@ function UploadModal({ visible, onClose, onUploaded }) {
     );
   };
 
+  const pickThumbnail = () => {
+    launchImageLibrary(
+      { mediaType: 'photo', quality: 0.8 },
+      (response) => {
+        if (response.didCancel || response.errorCode) return;
+        const asset = response.assets?.[0];
+        if (!asset) return;
+        setPickedThumbnail(asset);
+      },
+    );
+  };
+
   const handleUpload = async () => {
     if (!title.trim()) { Toast.show('Add a title first', Toast.SHORT); return; }
     if (!pickedFile) { Toast.show('Pick a video first', Toast.SHORT); return; }
@@ -390,6 +404,8 @@ function UploadModal({ visible, onClose, onUploaded }) {
           setProgress(pct);
           animateProgress(pct);
         },
+        thumbnailUri: pickedThumbnail?.uri,
+        thumbnailFileName: pickedThumbnail?.fileName || (pickedThumbnail ? `thumb_${Date.now()}.jpg` : undefined),
       });
       Toast.show('Video uploaded!', Toast.SHORT);
       onUploaded(uploaded);
@@ -474,6 +490,18 @@ function UploadModal({ visible, onClose, onUploaded }) {
                 {((pickedFile.fileSize || 0) / (1024 * 1024)).toFixed(1)} MB
               </Text>
             ) : null}
+
+            {/* Pick thumbnail */}
+            <TouchableOpacity style={[styles.pickBtn, { marginTop: 10, borderColor: 'rgba(167,139,250,0.2)', backgroundColor: 'rgba(167,139,250,0.06)' }]} onPress={pickThumbnail}>
+              <MaterialIcons
+                name={pickedThumbnail ? 'check-circle' : 'image'}
+                size={20}
+                color={pickedThumbnail ? T.colors.accent.success : 'rgba(167,139,250,1)'}
+              />
+              <Text style={[styles.pickBtnText, { color: pickedThumbnail ? T.colors.accent.success : 'rgba(167,139,250,1)' }]}>
+                {pickedThumbnail ? pickedThumbnail.fileName || 'Thumbnail selected' : 'Pick thumbnail (optional)'}
+              </Text>
+            </TouchableOpacity>
 
             {/* Progress bar */}
             {uploading && (

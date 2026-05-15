@@ -2,6 +2,7 @@ import { supabase, SUPABASE_URL, SUPABASE_ANON_KEY } from '../lib/supabase';
 import { getSupabaseErrorMessage } from '../lib/supabaseErrorHandler';
 
 const BUCKET = 'mentor-videos';
+const THUMB_BUCKET = 'mentor-videos-thumbnail';
 
 function tryParseJson(text) {
   try { return JSON.parse(text); } catch { return null; }
@@ -41,7 +42,7 @@ const uploadFileXHR = (storagePath, fileUri, fileName, contentType, token, onPro
 
 export const videoApi = {
   // ─── Mentor: upload video file to storage + insert record ───────────────────
-  uploadVideo: async ({ mentorId, title, description = '', fileUri, fileName, isFree = false, onProgress }) => {
+  uploadVideo: async ({ mentorId, title, description = '', fileUri, fileName, isFree = false, onProgress, thumbnailUri, thumbnailFileName }) => {
     try {
       const ext = (fileName.split('.').pop() || 'mp4').toLowerCase();
       const contentType = ext === 'mov' ? 'video/quicktime' : `video/${ext}`;
@@ -56,6 +57,19 @@ export const videoApi = {
         .from(BUCKET)
         .getPublicUrl(storagePath);
 
+      // Upload thumbnail if provided
+      let thumbnailUrl = null;
+      if (thumbnailUri && thumbnailFileName) {
+        const thumbExt = (thumbnailFileName.split('.').pop() || 'jpg').toLowerCase();
+        const thumbContentType = `image/${thumbExt === 'jpg' ? 'jpeg' : thumbExt}`;
+        const thumbPath = `${mentorId}/${Date.now()}_thumb.${thumbExt}`;
+        await uploadFileXHR(thumbPath, thumbnailUri, thumbnailFileName, thumbContentType, session.access_token);
+        const { data: { publicUrl: thumbPublicUrl } } = supabase.storage
+          .from(THUMB_BUCKET)
+          .getPublicUrl(thumbPath);
+        thumbnailUrl = thumbPublicUrl;
+      }
+
       const { data, error } = await supabase
         .from('mentor_videos')
         .insert({
@@ -65,6 +79,7 @@ export const videoApi = {
           video_url: publicUrl,
           storage_path: storagePath,
           is_free: isFree,
+          thumbnail_url: thumbnailUrl,
         })
         .select()
         .single();

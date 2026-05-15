@@ -21,6 +21,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { UNIFIED_THEME } from '../../unifiedTheme';
 import { videoApi } from '../../api/videoApi';
 import { useAuth } from '../../hooks/useAuth';
+import { useFocusEffect } from '@react-navigation/native';
 import { SCREEN_NAMES } from '../../navigators/screenNames';
 
 const T = UNIFIED_THEME;
@@ -317,7 +318,7 @@ const FILTER_BAR_H = 50;
 const BOTTOM_TAB_H = 88;
 
 // ─── Main screen ──────────────────────────────────────────────────────────────
-export default function VideosScreen({ navigation }) {
+export default function VideosScreen({ navigation, route }) {
   const { user } = useAuth();
   const insets = useSafeAreaInsets();
   const { height: windowHeight } = useWindowDimensions();
@@ -333,6 +334,17 @@ export default function VideosScreen({ navigation }) {
   const [activeIndex, setActiveIndex] = useState(0);
   const [lockSheetVideo, setLockSheetVideo] = useState(null);
 
+  const flatListRef = useRef(null);
+  const startVideoId = route?.params?.startVideoId;
+  const [screenFocused, setScreenFocused] = useState(true);
+
+  useFocusEffect(
+    useCallback(() => {
+      setScreenFocused(true);
+      return () => setScreenFocused(false);
+    }, [])
+  );
+
   const onViewableItemsChanged = useCallback(({ viewableItems }) => {
     if (viewableItems[0] != null) setActiveIndex(viewableItems[0].index ?? 0);
   }, []);
@@ -345,6 +357,19 @@ export default function VideosScreen({ navigation }) {
   useEffect(() => {
     loadFeed(false, user?.id);
   }, [user?.id]);
+
+  // Scroll to startVideoId when navigated from HomeScreen
+  useEffect(() => {
+    if (!startVideoId || loading || videos.length === 0) return;
+    const idx = videos.findIndex(v => v.id === startVideoId);
+    if (idx >= 0) {
+      setTimeout(() => {
+        flatListRef.current?.scrollToIndex({ index: idx, animated: false });
+        setActiveIndex(idx);
+      }, 150);
+    }
+    navigation?.setParams({ startVideoId: undefined });
+  }, [startVideoId, loading, videos]);
 
   const loadFeed = async (isRefresh = false, userId = user?.id) => {
     if (isRefresh) setRefreshing(true);
@@ -429,6 +454,7 @@ export default function VideosScreen({ navigation }) {
       ) : (
         <View style={{ height: reelHeight }}>
           <FlatList
+            ref={flatListRef}
             key={filter}
             style={{ flex: 1 }}
             data={filtered}
@@ -445,7 +471,7 @@ export default function VideosScreen({ navigation }) {
                 expiresAt={unlocksMap.get(item.mentor_id)?.expiresAt}
                 onLockPress={setLockSheetVideo}
                 onViewProfile={handleViewProfile}
-                forcePaused={lockSheetVideo !== null}
+                forcePaused={lockSheetVideo !== null || !screenFocused}
               />
             )}
             viewabilityConfigCallbackPairs={viewabilityConfigCallbackPairs.current}
