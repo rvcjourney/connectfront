@@ -202,7 +202,7 @@ export default function BookingScreen({ navigation, route }) {
 
       // 3. Verify + create booking atomically (server-side)
       // Amounts are read from the stored transaction — not sent from client
-      await paymentApi.verifyAndBook({
+      const verifyResult = await paymentApi.verifyAndBook({
         razorpayOrderId:   order.orderId,
         razorpayPaymentId: paymentData.razorpay_payment_id,
         razorpaySignature: paymentData.razorpay_signature,
@@ -212,15 +212,22 @@ export default function BookingScreen({ navigation, route }) {
         message:   message.trim(),
       });
 
-      // 4. Schedule 15-min reminder for learner
+      const newBookingId = verifyResult?.bookingId;
+      if (!newBookingId) {
+        console.warn('verifyAndBook returned no bookingId; reminder not scheduled');
+      }
+
+      // 4. Schedule 15-min reminder for learner (use real booking id, not slot id)
       await requestNotificationPermission();
-      await scheduleSessionReminder({
-        bookingId:   selectedTime.id,
-        sessionDate: selectedDate,
-        sessionTime: selectedTime.start_time,
-        mentorName,
-        isMentor:    false,
-      });
+      if (newBookingId) {
+        await scheduleSessionReminder({
+          bookingId:   newBookingId,
+          sessionDate: selectedDate,
+          sessionTime: selectedTime.start_time,
+          mentorName,
+          isMentor:    false,
+        });
+      }
 
       Toast.show('Booking confirmed! Payment successful.');
       navigation.goBack();

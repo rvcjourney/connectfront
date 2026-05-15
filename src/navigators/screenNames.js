@@ -50,6 +50,9 @@ export const SCREEN_NAMES = {
   // Payout / KYC setup
   PayoutSetup: "PayoutSetup_Screen",
 
+  /** Network / connectivity (UI shell; wire NetInfo later) */
+  Connectivity: "Connectivity_Screen",
+
   // Learner video player
   VideoPlayer: "VideoPlayer_Screen",
 };

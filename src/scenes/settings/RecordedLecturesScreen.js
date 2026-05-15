@@ -24,6 +24,7 @@ import {
   normalizeRecordingUrl,
   isTokenEndpointConfigured,
 } from '../../api/api';
+import { playbackUrlFromBooking, pickRecordingRow } from '../../api/recordingsApi';
 import { SCREEN_NAMES } from '../../navigators/screenNames';
 
 const T = UNIFIED_THEME;
@@ -45,18 +46,19 @@ function useRecordingsContext() {
 async function enrichBookingsWithRecordings(bookings, token) {
   const enrichedGroups = await Promise.all(
     (bookings || []).map(async booking => {
-      const existing =
-        booking?.recording_playback_url || booking?.recording_url || null;
+      const existing = playbackUrlFromBooking(booking);
       if (existing) {
         return [{ ...booking, recordingUrl: existing, recordingIndex: 0 }];
       }
 
-      if (!token || !booking?.meeting_id || booking?.status !== 'completed') {
+      const rec = pickRecordingRow(booking);
+      const meetingId = rec?.meeting_id;
+      if (!token || !meetingId || booking?.status !== 'completed') {
         return [];
       }
 
       const urls = await fetchRecordingUrls({
-        meetingId: booking.meeting_id,
+        meetingId,
         token,
       });
 
@@ -188,10 +190,10 @@ export default function RecordedLecturesScreen({ navigation }) {
     ]);
 
     const quickMentor = (mentorRows || [])
-      .map(b => ({ ...b, recordingUrl: b.recording_playback_url || b.recording_url || null }))
+      .map(b => ({ ...b, recordingUrl: playbackUrlFromBooking(b) }))
       .filter(b => b.recordingUrl);
     const quickLearner = (learnerRows || [])
-      .map(b => ({ ...b, recordingUrl: b.recording_playback_url || b.recording_url || null }))
+      .map(b => ({ ...b, recordingUrl: playbackUrlFromBooking(b) }))
       .filter(b => b.recordingUrl);
 
     setMentorWithRecordings(quickMentor);

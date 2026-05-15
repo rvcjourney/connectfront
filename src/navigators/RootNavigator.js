@@ -23,6 +23,7 @@ import ReviewScreen from '../scenes/shared/ReviewScreen';
 import CategoryMentorsScreen from '../scenes/learner/CategoryMentorsScreen';
 import MentorVideosScreen from '../scenes/mentor/MentorVideosScreen';
 import PayoutSetupScreen from '../scenes/settings/PayoutSetupScreen';
+import ConnectivityScreen from '../scenes/settings/ConnectivityScreen';
 
 const RootStack = createStackNavigator();
 
@@ -154,6 +155,10 @@ export const RootNavigator = () => {
             <RootStack.Screen
               name={SCREEN_NAMES.PayoutSetup}
               component={PayoutSetupScreen}
+            />
+            <RootStack.Screen
+              name={SCREEN_NAMES.Connectivity}
+              component={ConnectivityScreen}
             />
           </RootStack.Group>
           <RootStack.Screen

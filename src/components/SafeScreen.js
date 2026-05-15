@@ -46,6 +46,8 @@ export const SafeScreen = ({
         <ScrollView
           showsVerticalScrollIndicator={false}
           contentContainerStyle={{ flexGrow: 1 }}
+          keyboardShouldPersistTaps="handled"
+          nestedScrollEnabled
           refreshControl={refreshControl}
         >
           {content}

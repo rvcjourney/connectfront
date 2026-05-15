@@ -177,6 +177,29 @@ export const videoApi = {
     }
   },
 
+  // ─── Active video-library subscriptions with mentor names (Settings / profile) ─
+  getLearnerActiveSubscriptionsDetail: async (learnerId) => {
+    try {
+      const iso = new Date().toISOString();
+      const { data, error } = await supabase
+        .from('learner_unlocks')
+        .select(`
+          mentor_id,
+          expires_at,
+          unlocked_at,
+          profiles:mentor_id ( id, name, avatar_url )
+        `)
+        .eq('learner_id', learnerId)
+        .or(`expires_at.is.null,expires_at.gt.${iso}`)
+        .order('expires_at', { ascending: true, nullsFirst: false });
+
+      if (error) throw error;
+      return data || [];
+    } catch (error) {
+      throw new Error(getSupabaseErrorMessage(error));
+    }
+  },
+
   // ─── Get full subscription list for a learner (for transaction history) ──────
   getLearnerSubscriptions: async (learnerId) => {
     try {
@@ -274,6 +297,19 @@ export const videoApi = {
     }
   },
 
+  /** Active (non-expired) video-library subscribers for a mentor — uses RPC (see migration 007). */
+  getMentorActiveSubscriberCount: async (mentorId) => {
+    try {
+      const { data, error } = await supabase.rpc('mentor_active_subscriber_count', { p_mentor_id: mentorId });
+      if (error) throw error;
+      const n = Number(data);
+      return Number.isFinite(n) ? Math.max(0, Math.floor(n)) : 0;
+    } catch (error) {
+      console.warn('[getMentorActiveSubscriberCount]', error?.message || error);
+      return 0;
+    }
+  },
+
   // ─── Update video metadata ────────────────────────────────────────────────────
   updateVideo: async ({ id, title, description, isFree, position }) => {
     try {
@@ -318,11 +354,13 @@ export const videoApi = {
   // ─── Check if learner has unlocked a mentor's library ────────────────────────
   checkUnlocked: async ({ learnerId, mentorId }) => {
     try {
+      const iso = new Date().toISOString();
       const { data, error } = await supabase
         .from('learner_unlocks')
         .select('id, unlocked_at')
         .eq('learner_id', learnerId)
         .eq('mentor_id', mentorId)
+        .or(`expires_at.is.null,expires_at.gt.${iso}`)
         .maybeSingle();
 
       if (error) throw error;

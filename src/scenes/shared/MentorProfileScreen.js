@@ -1,8 +1,9 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
   Image,
+  ImageBackground,
   ScrollView,
   TouchableOpacity,
   StyleSheet,
@@ -10,31 +11,111 @@ import {
   Modal,
   ActivityIndicator,
   StatusBar,
+  Dimensions,
+  useWindowDimensions,
+  RefreshControl,
 } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
+import RazorpayCheckout from 'react-native-razorpay';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Toast from 'react-native-simple-toast';
-import RazorpayCheckout from 'react-native-razorpay';
 import Video from 'react-native-video';
 import { SafeScreen } from '../../components/SafeScreen';
 import { UNIFIED_THEME } from '../../unifiedTheme';
-import { LoadingOverlay } from '../../components/LoadingOverlay';
-import Button from '../../components/Button';
-import { StarRating } from '../../components/StarRating';
-import { mentorApi } from '../../api/mentorApi';
-import { reviewsApi } from '../../api/reviewsApi';
+import { profileApi } from '../../api/profileApi';
 import { videoApi } from '../../api/videoApi';
-import { formatPrice } from '../../utils/formatCurrency';
-import { SCREEN_NAMES } from '../../navigators/screenNames';
+import { bookingApi } from '../../api/bookingApi';
 import { useAuth } from '../../hooks/useAuth';
+import { SCREEN_NAMES } from '../../navigators/screenNames';
 
 const T = UNIFIED_THEME;
 const C = T.colors;
-const TB = C.tabBar;
-const FREE_LIMIT = 2; // first N videos are always free regardless of is_free flag
 
-// ─── Video Player Modal ───────────────────────────────────────────────────────
+/** Design reference: deep navy canvas */
+const SCREEN_BG = '#050510';
+const PURPLE_LINK = '#a78bfa';
+const GOLD = '#f0d875';
+const TEAL = '#2dd4bf';
+const TEAL_DEEP = '#0c2a28';
+const VERIFIED_BLUE = '#38bdf8';
+
+const FREE_LIMIT = 2;
+const TAG_VISIBLE = 3;
+
+const SCREEN_W = Dimensions.get('window').width;
+const RAIL_CARD_W = Math.min(138, Math.round(SCREEN_W * 0.36));
+
+const COVER_IMAGE_URI =
+  'https://images.unsplash.com/photo-1523240795612-9a054b0db644?auto=format&fit=crop&w=1400&q=80';
+
+function formatSlotDateLabel(dateStr) {
+  if (!dateStr || typeof dateStr !== 'string') return '';
+  const parts = dateStr.split('-').map(Number);
+  if (parts.length < 3 || parts.some(Number.isNaN)) return dateStr;
+  const [y, m, d] = parts;
+  return new Date(y, m - 1, d).toLocaleDateString('en-IN', { month: 'short', day: 'numeric', year: 'numeric' });
+}
+
+function firstRow(obj) {
+  if (obj == null) return null;
+  return Array.isArray(obj) ? obj[0] : obj;
+}
+
+function mapBookingToPastSession(b) {
+  const learner = firstRow(b.profiles);
+  const slot = firstRow(b.availability_slots);
+  const rec = firstRow(b.recordings);
+  const rev = firstRow(b.reviews);
+  const recapUrl = rec?.recording_playback_url || rec?.recording_url || null;
+  return {
+    id: b.id,
+    student_name: learner?.name || 'Learner',
+    topic: (b.message && String(b.message).trim()) || '1-on-1 session',
+    date_label: slot?.date ? formatSlotDateLabel(slot.date) : '',
+    rating: rev?.rating != null ? Number(rev.rating) : null,
+    student_avatar_url: learner?.avatar_url || null,
+    recap_url: recapUrl,
+  };
+}
+
+function formatDurationSec(sec) {
+  if (sec == null || Number.isNaN(sec)) return '';
+  const m = Math.floor(sec / 60);
+  const s = Math.floor(sec % 60);
+  return `${m}:${String(s).padStart(2, '0')}`;
+}
+
+/** Compact counts for the stats bar (fits four columns on narrow screens). */
+function formatStatCount(n) {
+  if (n == null || Number.isNaN(Number(n))) return '0';
+  const num = Math.max(0, Math.floor(Number(n)));
+  if (num >= 1_000_000) return `${(num / 1_000_000).toFixed(1)}M`;
+  if (num >= 10_000) return `${Math.round(num / 1000)}k`;
+  if (num >= 1000) return `${(num / 1000).toFixed(1)}k`;
+  return String(num);
+}
+
+function isPreviewSlot(video, index) {
+  return video.is_free || index < FREE_LIMIT;
+}
+
+function GoldStarsRow({ rating, size = 11 }) {
+  const filled = Math.min(5, Math.max(0, Math.round(Number(rating) || 0)));
+  return (
+    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 1 }}>
+      {[0, 1, 2, 3, 4].map((i) => (
+        <MaterialIcons
+          key={i}
+          name={i < filled ? 'star' : 'star-border'}
+          size={size}
+          color={GOLD}
+        />
+      ))}
+    </View>
+  );
+}
+
 function VideoPlayerModal({ video, onClose }) {
   const [paused, setPaused] = useState(false);
   const [buffering, setBuffering] = useState(true);
@@ -102,139 +183,525 @@ const vStyles = StyleSheet.create({
   playBtn: { width: 72, height: 72, borderRadius: 36, backgroundColor: 'rgba(0,0,0,0.55)', alignItems: 'center', justifyContent: 'center' },
 });
 
-// ─── Single Video Tile ────────────────────────────────────────────────────────
-function VideoTile({ video, index, isUnlocked, onPlay, onLockPress }) {
-  const isFree = video.is_free || index < FREE_LIMIT;
-  const canPlay = isFree || isUnlocked;
+function MetricsStatRow({ subscriberCount, rating, videoCount, totalSessions }) {
+  const ratingNum = Number(rating) || 0;
+  const hasRating = ratingNum > 0;
+
+  const CountSeg = ({ icon, iconColor, valueText, label }) => (
+    <View style={statsBar.segment}>
+      <View style={statsBar.valueRowSlot}>
+        <Text
+          style={statsBar.valueBig}
+          numberOfLines={1}
+          adjustsFontSizeToFit
+          minimumFontScale={0.72}
+        >
+          {valueText}
+        </Text>
+      </View>
+      <View style={statsBar.starsSlot}>
+        <View style={statsBar.starsSlotInner} />
+      </View>
+      <View style={statsBar.labelRow}>
+        <MaterialIcons name={icon} size={12} color={iconColor} />
+        <Text style={statsBar.labelMuted} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.78}>
+          {label}
+        </Text>
+      </View>
+    </View>
+  );
+
+  return (
+    <View style={statsBar.wrap}>
+      <CountSeg
+        icon="groups"
+        iconColor="#e879f9"
+        valueText={formatStatCount(subscriberCount)}
+        label="Subscribers"
+      />
+      <View style={statsBar.divider} />
+      <CountSeg
+        icon="video-library"
+        iconColor={PURPLE_LINK}
+        valueText={formatStatCount(videoCount)}
+        label="Videos"
+      />
+      <View style={statsBar.divider} />
+      <CountSeg
+        icon="event"
+        iconColor={TEAL}
+        valueText={formatStatCount(totalSessions)}
+        label="Sessions"
+      />
+      <View style={statsBar.divider} />
+      <View style={statsBar.segment}>
+        <View style={statsBar.valueRowSlot}>
+          <Text style={statsBar.valueBig} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.72}>
+            {hasRating ? ratingNum.toFixed(1) : '—'}
+          </Text>
+        </View>
+        <View style={statsBar.starsSlot}>
+          <View style={statsBar.starsSlotInner}>
+            {hasRating ? <GoldStarsRow rating={ratingNum} size={9} /> : null}
+          </View>
+        </View>
+        <View style={statsBar.labelRow}>
+          <MaterialIcons name="star" size={12} color={GOLD} />
+          <Text style={statsBar.labelMuted} numberOfLines={1}>
+            Rating
+          </Text>
+        </View>
+      </View>
+    </View>
+  );
+}
+
+const statsBar = StyleSheet.create({
+  wrap: {
+    flexDirection: 'row',
+    alignItems: 'stretch',
+    marginHorizontal: T.spacing.md,
+    marginBottom: T.spacing.md,
+    paddingVertical: 11,
+    paddingHorizontal: 4,
+    borderRadius: 14,
+    backgroundColor: 'rgba(255,255,255,0.07)',
+    borderWidth: 1,
+    borderColor: 'rgba(167,139,250,0.22)',
+  },
+  segment: {
+    flex: 1,
+    minWidth: 0,
+    alignItems: 'center',
+    justifyContent: 'flex-start',
+    paddingHorizontal: 2,
+  },
+  valueRowSlot: {
+    minHeight: 22,
+    width: '100%',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  valueBig: {
+    fontSize: 17,
+    fontWeight: '800',
+    color: C.text.primary,
+    letterSpacing: -0.4,
+    textAlign: 'center',
+    width: '100%',
+    ...Platform.select({ android: { includeFontPadding: false } }),
+  },
+  starsSlot: {
+    height: 14,
+    width: '100%',
+    marginTop: 2,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  starsSlotInner: {
+    height: 14,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  labelRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 4,
+    marginTop: 5,
+    maxWidth: '100%',
+  },
+  labelMuted: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: C.text.muted,
+    letterSpacing: 0.2,
+  },
+  divider: {
+    width: 1,
+    backgroundColor: 'rgba(255,255,255,0.14)',
+    marginVertical: 6,
+    alignSelf: 'stretch',
+  },
+});
+
+function SectionHeaderRow({ title, onSeeAll }) {
+  return (
+    <View style={secHdr.row}>
+      <Text style={secHdr.title}>{title}</Text>
+      <TouchableOpacity onPress={onSeeAll} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+        <Text style={secHdr.link}>See all &gt;</Text>
+      </TouchableOpacity>
+    </View>
+  );
+}
+
+const secHdr = StyleSheet.create({
+  row: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: T.spacing.lg,
+    marginTop: T.spacing.xs,
+    marginBottom: 2,
+  },
+  title: { fontSize: 15, fontWeight: '800', color: C.text.primary },
+  link: { fontSize: 13, fontWeight: '700', color: PURPLE_LINK },
+});
+
+function PortraitVideoCard({
+  video,
+  index,
+  isUnlocked,
+  onPlay,
+  locked,
+  cardWidth = RAIL_CARD_W,
+  thumbAspect = 1.38,
+}) {
+  const isPrev = isPreviewSlot(video, index);
+  const canPlay = isPrev || isUnlocked;
+  const durationLabel = formatDurationSec(video.duration_sec);
+  const thumbH = Math.round(cardWidth * thumbAspect);
+  const iconSize = Math.round(Math.min(34, cardWidth * 0.26));
+  const playIconSize = Math.round(Math.min(26, cardWidth * 0.22));
+  const railMargin = cardWidth >= SCREEN_W * 0.85 ? 0 : 10;
 
   return (
     <TouchableOpacity
-      style={vTile.card}
-      activeOpacity={0.85}
-      onPress={() => canPlay ? onPlay(video) : onLockPress()}
+      style={[railCard.card, { width: cardWidth, marginRight: railMargin }]}
+      activeOpacity={0.88}
+      onPress={() => (canPlay ? onPlay(video) : Toast.show('Subscribe to unlock this video', Toast.SHORT))}
     >
-      <LinearGradient
-        colors={canPlay
-          ? ['rgba(94,234,212,0.18)', 'rgba(124,58,237,0.22)']
-          : ['rgba(30,20,60,0.9)', 'rgba(10,6,30,0.95)']}
-        style={vTile.thumb}
-      >
-        {canPlay ? (
-          <MaterialIcons name="play-circle-filled" size={38} color="rgba(255,255,255,0.8)" />
+      <View style={[railCard.thumbWrap, { height: thumbH }]}>
+        {video.thumbnail_url ? (
+          <Image
+            source={{ uri: video.thumbnail_url }}
+            style={[railCard.thumbImg, locked ? { opacity: Platform.OS === 'ios' ? 0.5 : 0.42 } : null]}
+            resizeMode="cover"
+            blurRadius={locked && Platform.OS === 'ios' ? 14 : 0}
+          />
         ) : (
-          <MaterialIcons name="lock" size={30} color="rgba(255,255,255,0.35)" />
+          <LinearGradient
+            colors={['#3d3666', '#16122c']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={railCard.thumbPlaceholder}
+          >
+            <MaterialIcons name="videocam" size={Math.round(Math.min(36, cardWidth * 0.32))} color="rgba(255,255,255,0.38)" />
+          </LinearGradient>
         )}
-        {isFree && (
-          <View style={vTile.freeBadge}>
-            <Text style={vTile.freeBadgeText}>FREE</Text>
-          </View>
+        {locked ? (
+          <>
+            <LinearGradient
+              colors={['rgba(8,6,24,0.55)', 'rgba(3,2,12,0.92)']}
+              style={railCard.thumbDim}
+            />
+            <View style={railCard.lockCenter}>
+              <MaterialIcons name="lock" size={iconSize} color="rgba(255,255,255,0.5)" />
+            </View>
+            {durationLabel ? (
+              <View style={railCard.lockedDur}>
+                <Text style={railCard.lockedDurTxt}>{durationLabel}</Text>
+              </View>
+            ) : null}
+          </>
+        ) : (
+          <>
+            <LinearGradient
+              colors={['rgba(0,0,0,0)', 'rgba(5,5,20,0.82)']}
+              style={railCard.thumbBottomFade}
+            />
+            <View style={railCard.thumbBottomRow}>
+              <MaterialIcons name="play-circle-filled" size={playIconSize} color="rgba(255,255,255,0.95)" />
+              {durationLabel ? (
+                <View style={railCard.durPill}>
+                  <Text style={railCard.durTxt}>{durationLabel}</Text>
+                </View>
+              ) : <View />}
+            </View>
+          </>
         )}
-      </LinearGradient>
-      <View style={vTile.info}>
-        <Text style={vTile.title} numberOfLines={2}>{video.title}</Text>
-        {!canPlay && <MaterialIcons name="lock" size={12} color={C.text.muted} style={{ marginTop: 2 }} />}
+      </View>
+      <View style={railCard.info}>
+        <Text style={railCard.titleTxt} numberOfLines={2}>{video.title}</Text>
       </View>
     </TouchableOpacity>
   );
 }
 
-const vTile = StyleSheet.create({
-  card: { width: 130, marginRight: 10, borderRadius: 12, overflow: 'hidden', backgroundColor: 'rgba(255,255,255,0.04)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)' },
-  thumb: { width: 130, height: 110, alignItems: 'center', justifyContent: 'center' },
-  freeBadge: { position: 'absolute', top: 6, right: 6, backgroundColor: C.accent.success, borderRadius: 4, paddingHorizontal: 5, paddingVertical: 2 },
-  freeBadgeText: { color: '#000', fontSize: 9, fontWeight: '800', letterSpacing: 0.5 },
-  info: { padding: 8 },
-  title: { color: C.text.secondary, fontSize: 11, fontWeight: '600', lineHeight: 15 },
+const railCard = StyleSheet.create({
+  card: {
+    borderRadius: 16,
+    overflow: 'hidden',
+    backgroundColor: 'rgba(255,255,255,0.07)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.14)',
+    ...Platform.select({ ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.25, shadowRadius: 6 }, android: { elevation: 4 } }),
+  },
+  thumbWrap: { width: '100%', overflow: 'hidden', position: 'relative' },
+  thumbPlaceholder: {
+    ...StyleSheet.absoluteFillObject,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  thumbImg: { ...StyleSheet.absoluteFillObject },
+  thumbDim: { ...StyleSheet.absoluteFillObject },
+  lockCenter: {
+    ...StyleSheet.absoluteFillObject,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  thumbBottomFade: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    top: '35%',
+  },
+  thumbBottomRow: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    paddingHorizontal: 8,
+    paddingVertical: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  durPill: {
+    backgroundColor: 'rgba(0,0,0,0.55)',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 6,
+  },
+  durTxt: { color: '#fff', fontSize: 11, fontWeight: '700' },
+  lockedDur: {
+    position: 'absolute',
+    right: 8,
+    bottom: 8,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 6,
+  },
+  lockedDurTxt: { color: 'rgba(255,255,255,0.85)', fontSize: 11, fontWeight: '700' },
+  info: { paddingHorizontal: 10, paddingVertical: 8, minHeight: 40, justifyContent: 'center' },
+  titleTxt: { color: C.text.primary, fontSize: 12, fontWeight: '700', lineHeight: 16 },
 });
 
-function StatPill({ icon, label, value, accent }) {
+function PastSessionRow({ session, onWatchRecap }) {
+  const hasRecap = Boolean(session.recap_url);
+  const hasRating = session.rating != null && !Number.isNaN(session.rating);
+
   return (
-    <View style={styles.statPill}>
-      <LinearGradient
-        colors={['rgba(167, 139, 250, 0.18)', 'rgba(94, 234, 212, 0.08)']}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={styles.statPillInner}
-      >
-        <View style={[styles.statIconWrap, { borderColor: accent + '55' }]}>
-          <MaterialIcons name={icon} size={20} color={accent} />
+    <View style={past.card}>
+      {session.student_avatar_url ? (
+        <Image source={{ uri: session.student_avatar_url }} style={past.avatar} />
+      ) : (
+        <View style={[past.avatar, past.avatarPh]}>
+          <MaterialIcons name="person" size={22} color={C.text.muted} />
         </View>
-        <Text style={styles.statPillValue} numberOfLines={1}>
-          {value}
+      )}
+      <View style={past.mid}>
+        <Text style={past.title} numberOfLines={1}>
+          Session with {session.student_name}
         </Text>
-        <Text style={styles.statPillLabel} numberOfLines={2}>
-          {label}
-        </Text>
-      </LinearGradient>
+        <Text style={past.sub} numberOfLines={1}>{session.topic}</Text>
+      </View>
+      <View style={past.right}>
+        <Text style={past.date}>{session.date_label || '—'}</Text>
+        {hasRating ? (
+          <View style={past.starRow}>
+            <MaterialIcons name="star" size={14} color={GOLD} />
+            <Text style={past.rateTxt}>{Number(session.rating).toFixed(1)}</Text>
+          </View>
+        ) : null}
+        <TouchableOpacity
+          style={[past.recapBtn, !hasRecap && past.recapBtnDisabled]}
+          onPress={onWatchRecap}
+          activeOpacity={0.9}
+          disabled={!hasRecap}
+        >
+          <MaterialIcons name="play-arrow" size={16} color={hasRecap ? PURPLE_LINK : C.text.muted} />
+          <Text style={[past.recapTxt, !hasRecap && past.recapTxtDisabled]}>Watch Recap</Text>
+        </TouchableOpacity>
+      </View>
     </View>
   );
 }
 
+const past = StyleSheet.create({
+  card: {
+    marginHorizontal: T.spacing.lg,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 6,
+    paddingHorizontal: T.spacing.sm,
+    borderRadius: 12,
+    backgroundColor: 'rgba(255,255,255,0.06)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.08)',
+    gap: T.spacing.sm,
+  },
+  avatar: { width: 44, height: 44, borderRadius: 22, backgroundColor: C.primary.light },
+  avatarPh: { justifyContent: 'center', alignItems: 'center' },
+  mid: { flex: 1, minWidth: 0 },
+  title: { color: C.text.primary, fontSize: 14, fontWeight: '700' },
+  sub: { color: C.text.muted, fontSize: 12, marginTop: 2 },
+  right: { alignItems: 'flex-end', gap: 6 },
+  date: { color: C.text.secondary, fontSize: 11, fontWeight: '600' },
+  starRow: { flexDirection: 'row', alignItems: 'center', gap: 3 },
+  rateTxt: { color: C.text.primary, fontSize: 12, fontWeight: '800' },
+  recapBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 2,
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+    borderRadius: 10,
+    backgroundColor: 'rgba(167,139,250,0.18)',
+    borderWidth: 1,
+    borderColor: 'rgba(167,139,250,0.35)',
+  },
+  recapTxt: { color: PURPLE_LINK, fontSize: 11, fontWeight: '800' },
+  recapBtnDisabled: { opacity: 0.55 },
+  recapTxtDisabled: { color: C.text.muted },
+});
+
 export default function MentorProfileScreen({ navigation, route }) {
-  const { mentorId } = route.params;
+  const insets = useSafeAreaInsets();
+  const { height: winH, width: winW } = useWindowDimensions();
   const { user } = useAuth();
+  const mentorId = route.params?.mentorId ?? null;
+  const paramMentorName = route.params?.mentorName?.trim?.() || '';
+  const coverFromParams = route.params?.coverImageUrl?.trim?.() || '';
+
   const [mentor, setMentor] = useState(null);
-  const [reviews, setReviews] = useState([]);
-  const [loading, setLoading] = useState(true);
   const [videos, setVideos] = useState([]);
-  const [isUnlocked, setIsUnlocked] = useState(false);
-  const [unlockPrice, setUnlockPrice] = useState(299);
+  const [pastSessions, setPastSessions] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [error, setError] = useState(null);
   const [playingVideo, setPlayingVideo] = useState(null);
   const [unlocking, setUnlocking] = useState(false);
-  const insets = useSafeAreaInsets();
+  const [isUnlocked, setIsUnlocked] = useState(false);
+  const [subscriberCount, setSubscriberCount] = useState(0);
 
-  useEffect(() => {
-    loadMentorProfile();
-  }, [mentorId]);
+  const isOwnProfile = Boolean(user?.id && mentorId && user.id === mentorId);
+  const libraryUnlocked = isUnlocked || isOwnProfile;
 
-  const loadMentorProfile = async () => {
+  const compactHero = useMemo(
+    () => Math.round(Math.min(152, Math.max(108, winH * 0.155))),
+    [winH],
+  );
+  const compactRailW = useMemo(() => {
+    const side = T.spacing.lg * 2;
+    const gap = 10;
+    const w = (winW - side - gap * 2) / 1.88;
+    return Math.round(Math.min(136, Math.max(102, w)));
+  }, [winW]);
+
+  const loadData = useCallback(async (isRefresh = false) => {
+    if (!mentorId) {
+      setError('missing_mentor');
+      setLoading(false);
+      setRefreshing(false);
+      return;
+    }
+    if (isRefresh) setRefreshing(true);
+    else setLoading(true);
+    setError(null);
     try {
-      setLoading(true);
-      const [data, reviewData, vids, price, unlocked] = await Promise.all([
-        mentorApi.getMentorWithProfile(mentorId),
-        reviewsApi.getReviewsForMentor(mentorId),
+      const [mpRow, profRow, vids, bookingRows, subCount] = await Promise.all([
+        profileApi.getMentorProfile(mentorId),
+        profileApi.getProfile(mentorId).catch(() => null),
         videoApi.getMentorVideos(mentorId),
-        videoApi.getUnlockPrice(mentorId),
-        user ? videoApi.checkUnlocked({ learnerId: user.id, mentorId }) : Promise.resolve(false),
+        bookingApi.getCompletedSessionsForMentorProfile(mentorId).catch(() => []),
+        videoApi.getMentorActiveSubscriberCount(mentorId),
       ]);
-      setMentor(data);
-      setReviews(reviewData);
-      setVideos(vids);
-      setUnlockPrice(price);
+
+      const merged = {
+        ...mpRow,
+        profiles: profRow || { name: paramMentorName || 'Mentor', avatar_url: null },
+      };
+      setMentor(merged);
+      setVideos(Array.isArray(vids) ? vids : []);
+      setPastSessions((Array.isArray(bookingRows) ? bookingRows : []).map(mapBookingToPastSession));
+      setSubscriberCount(Number.isFinite(Number(subCount)) ? Math.max(0, Math.floor(Number(subCount))) : 0);
+
+      let unlocked = false;
+      if (user?.id && user.id !== mentorId) {
+        unlocked = await videoApi.checkUnlocked({ learnerId: user.id, mentorId }).catch(() => false);
+      } else if (user?.id === mentorId) {
+        unlocked = true;
+      }
       setIsUnlocked(unlocked);
-    } catch {
+    } catch (e) {
+      setError(e?.message || 'Failed to load mentor');
       setMentor(null);
-      Toast.show('Failed to load mentor profile');
+      setVideos([]);
+      setPastSessions([]);
+      setSubscriberCount(0);
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
-  };
+  }, [mentorId, paramMentorName, user?.id]);
+
+  useEffect(() => {
+    loadData(false);
+  }, [loadData]);
+
+  const allTags = useMemo(() => {
+    if (Array.isArray(mentor?.tags) && mentor.tags.length) return mentor.tags;
+    const cat = mentor?.category?.trim();
+    const raw = mentor?.specialization || '';
+    const fromSpec = raw.split(',').map(s => s.trim()).filter(Boolean);
+    const merged = [...(cat ? [cat] : []), ...fromSpec];
+    return [...new Set(merged)];
+  }, [mentor]);
+
+  const tagOverflow = Math.max(0, allTags.length - TAG_VISIBLE);
+  const visibleTags = allTags.slice(0, TAG_VISIBLE);
+
+  const hasLockedVideos = useMemo(() => (
+    videos.some((v, i) => !isPreviewSlot(v, i))
+  ), [videos]);
+
+  const memberVideos = useMemo(() => videos.filter((v, i) => !isPreviewSlot(v, i)), [videos]);
+  const previewVideos = useMemo(() => videos.filter((v, i) => isPreviewSlot(v, i)), [videos]);
 
   const handleUnlock = async () => {
-    if (!user) { Toast.show('Please log in to unlock'); return; }
+    if (!hasLockedVideos) {
+      Toast.show('All videos here are already free.', Toast.SHORT);
+      return;
+    }
+    if (!user?.id) {
+      Toast.show('Please log in to subscribe.', Toast.SHORT);
+      return;
+    }
+    if (user.id === mentorId) {
+      Toast.show('This is your channel.', Toast.SHORT);
+      return;
+    }
     setUnlocking(true);
     try {
-      // Step 1: create order (amount calculated server-side)
-      const order = await videoApi.createVideoOrder({
-        mentorId,
-        learnerId: user.id,
-      });
-
-      // Step 2: Razorpay checkout
+      const order = await videoApi.createVideoOrder({ mentorId, learnerId: user.id });
+      const displayName = mentor?.profiles?.name || 'Mentor';
       const paymentData = await RazorpayCheckout.open({
-        key:         order.keyId,
-        amount:      order.amount,
-        currency:    order.currency || 'INR',
-        name:        'Connectiqo',
-        description: 'Subscribe to mentor video library',
-        order_id:    order.orderId,
-        prefill:     { email: user.email || '' },
-        theme:       { color: '#5eead4' },
+        key: order.keyId,
+        amount: order.amount,
+        currency: order.currency || 'INR',
+        name: 'Connectiqo',
+        description: `Subscribe to ${displayName}'s video library`,
+        order_id: order.orderId,
+        prefill: { email: user.email || '' },
+        theme: { color: '#5eead4' },
       });
 
-      // Step 3: verify + record subscription + credit mentor wallet (amounts server-side)
       await videoApi.verifyVideoSubscription({
-        razorpayOrderId:   order.orderId,
+        razorpayOrderId: order.orderId,
         razorpayPaymentId: paymentData.razorpay_payment_id,
         razorpaySignature: paymentData.razorpay_signature,
         mentorId,
@@ -242,7 +709,7 @@ export default function MentorProfileScreen({ navigation, route }) {
       });
 
       setIsUnlocked(true);
-      Toast.show('Subscribed! Watch all videos this month.', Toast.SHORT);
+      Toast.show('Subscribed! You can watch all videos.', Toast.SHORT);
     } catch (e) {
       if (e?.code !== 'PAYMENT_CANCELLED') {
         Toast.show(e?.message || 'Payment failed', Toast.LONG);
@@ -252,722 +719,534 @@ export default function MentorProfileScreen({ navigation, route }) {
     }
   };
 
-  if (loading) {
-    return <LoadingOverlay visible message="Loading profile…" />;
-  }
+  const goBook = () => {
+    if (!mentorId) return;
+    if (!user?.id) {
+      Toast.show('Please log in to book a session.', Toast.SHORT);
+      return;
+    }
+    const nm = mentor?.profiles?.name || paramMentorName || 'Mentor';
+    navigation.navigate(SCREEN_NAMES.Booking, { mentorId, mentorName: nm });
+  };
 
-  if (!mentor) {
+  const seeAll = () => {
+    Toast.show('Full list coming soon.', Toast.SHORT);
+  };
+
+  const openRecap = (session) => {
+    if (!session?.recap_url) {
+      Toast.show('No recording available yet.', Toast.SHORT);
+      return;
+    }
+    navigation.navigate(SCREEN_NAMES.RecordingPlayer, { recordingUrl: session.recap_url });
+  };
+
+  const avatarUrl = mentor?.profiles?.avatar_url;
+  const name = mentor?.profiles?.name || paramMentorName || 'Mentor';
+  const specialization = mentor?.specialization || 'Not specified';
+  const bio = mentor?.bio || 'No bio provided yet.';
+  const rating = mentor?.rating ?? 0;
+  const totalSessions = mentor?.total_sessions ?? 0;
+  const videoStat = videos.length;
+  const showSubscribeCta = hasLockedVideos && !libraryUnlocked && !isOwnProfile;
+  const heroCoverUri = coverFromParams || COVER_IMAGE_URI;
+
+  if (!mentorId) {
     return (
-      <SafeScreen scrollable={false} padding={T.spacing.lg} hasBottomTabs={false}>
-        <View style={styles.errorWrap}>
-          <LinearGradient
-            colors={['rgba(248, 113, 113, 0.15)', 'rgba(6, 6, 31, 0.9)']}
-            style={styles.errorIconRing}
-          >
-            <MaterialIcons name="person-off" size={40} color={C.accent.error} />
-          </LinearGradient>
-          <Text style={styles.errorTitle}>Mentor not found</Text>
-          <Text style={styles.errorSub}>This profile may be unavailable. Try going back and opening it again.</Text>
-          <Button text="Go back" onPress={() => navigation.goBack()} style={styles.errorBtn} />
+      <SafeScreen scrollable={false} padding={0} hasBottomTabs={false}>
+        <View style={[styles.root, styles.centerFill]}>
+          <Text style={styles.errTxt}>Missing mentor.</Text>
+          <TouchableOpacity style={styles.retryBtn} onPress={() => navigation.goBack()}>
+            <Text style={styles.retryTxt}>Go back</Text>
+          </TouchableOpacity>
         </View>
       </SafeScreen>
     );
   }
 
-  const avatarUrl = mentor.profiles?.avatar_url;
-  const name = mentor.profiles?.name || 'Unknown';
-  const specialization = mentor.specialization || 'Not specified';
-  const bio = mentor.bio || 'No bio provided yet.';
-  const experienceYears = mentor.experience_years ?? 0;
-  const pricePerHour = mentor.price_per_hour ?? 0;
-  const rating = mentor.rating ?? 0;
-  const totalSessions = mentor.total_sessions ?? 0;
+  if (loading && !mentor) {
+    return (
+      <SafeScreen scrollable={false} padding={0} hasBottomTabs={false}>
+        <View style={[styles.root, styles.centerFill]}>
+          <ActivityIndicator size="large" color={PURPLE_LINK} />
+        </View>
+      </SafeScreen>
+    );
+  }
+
+  if (error && !mentor) {
+    return (
+      <SafeScreen scrollable={false} padding={0} hasBottomTabs={false}>
+        <View style={[styles.root, styles.centerFill]}>
+          <MaterialIcons name="error-outline" size={40} color={C.accent.error} />
+          <Text style={styles.errTxt}>{error}</Text>
+          <TouchableOpacity style={styles.retryBtn} onPress={() => loadData(false)}>
+            <Text style={styles.retryTxt}>Retry</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={[styles.retryBtn, { marginTop: 8 }]} onPress={() => navigation.goBack()}>
+            <Text style={styles.retryTxtMuted}>Go back</Text>
+          </TouchableOpacity>
+        </View>
+      </SafeScreen>
+    );
+  }
 
   return (
-    <SafeScreen scrollable={false} padding={0} hasBottomTabs={false}>
+    <SafeScreen
+      scrollable
+      padding={0}
+      hasBottomTabs={false}
+      refreshControl={(
+        <RefreshControl
+          refreshing={refreshing}
+          onRefresh={() => loadData(true)}
+          tintColor={PURPLE_LINK}
+          colors={[PURPLE_LINK]}
+          progressBackgroundColor={SCREEN_BG}
+        />
+      )}
+    >
       <View style={styles.root}>
-        <View style={[styles.topBar, { paddingTop: insets.top + T.spacing.sm }]}>
-          <TouchableOpacity
-            onPress={() => navigation.goBack()}
-            style={styles.backHit}
-            hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
-            accessibilityRole="button"
-            accessibilityLabel="Close profile"
-          >
-            <MaterialIcons name="arrow-back" size={24} color={C.text.primary} />
-          </TouchableOpacity>
-          <Text style={styles.topBarTitle}>Mentor Profile</Text>
-          <View style={styles.topBarRightBadge}>
-            <MaterialIcons name="verified" size={14} color={C.accent.secondary} />
+        <View style={styles.mainColumn}>
+          <View style={[styles.hero, { height: compactHero }]}>
+            <ImageBackground
+              source={{ uri: heroCoverUri }}
+              style={StyleSheet.absoluteFill}
+              resizeMode="cover"
+            >
+              <LinearGradient
+                colors={['rgba(5,5,16,0.02)', 'rgba(5,5,16,0.28)', 'rgba(5,5,16,0.78)']}
+                locations={[0, 0.42, 1]}
+                style={StyleSheet.absoluteFill}
+              />
+            </ImageBackground>
+            <View style={[styles.heroTopBar, { paddingTop: Math.max(6, insets.top - 6) }]}>
+              <View style={styles.heroBarActions}>
+                <TouchableOpacity
+                  onPress={() => navigation.goBack()}
+                  style={styles.heroCircleBtn}
+                  hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+                >
+                  <MaterialIcons name="arrow-back" size={22} color={C.text.primary} />
+                </TouchableOpacity>
+              </View>
+            </View>
           </View>
-        </View>
 
-        <ScrollView
-          style={styles.scroll}
-          contentContainerStyle={styles.scrollContent}
-          showsVerticalScrollIndicator={false}
-        >
-          <LinearGradient
-            colors={['rgba(124, 58, 237, 0.22)', 'rgba(6, 6, 31, 0.95)', 'transparent']}
-            locations={[0, 0.55, 1]}
-            style={styles.heroWash}
-            pointerEvents="none"
-          />
-
-          <View style={styles.profileCard}>
-            <LinearGradient
-              colors={['rgba(167, 139, 250, 0.14)', 'rgba(94, 234, 212, 0.06)']}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={styles.profileCardGlow}
-              pointerEvents="none"
-            />
-            <View style={styles.hero}>
-              <View style={styles.avatarRing}>
+          <View style={styles.identityBlock}>
+            <View style={styles.identityAvatarCol}>
+              <View style={styles.avatarRingWrap}>
                 <LinearGradient
-                  colors={TB.topNavIconRing}
+                  colors={['rgba(167,139,250,0.95)', 'rgba(255,255,255,0.55)', 'rgba(94,234,212,0.5)']}
                   start={{ x: 0, y: 0 }}
                   end={{ x: 1, y: 1 }}
                   style={styles.avatarRingGrad}
                 >
                   {avatarUrl ? (
-                    <Image source={{ uri: avatarUrl }} style={styles.avatar} />
+                    <Image source={{ uri: avatarUrl }} style={styles.avatar} resizeMode="cover" />
                   ) : (
                     <View style={[styles.avatar, styles.avatarPlaceholder]}>
-                      <MaterialIcons name="person" size={52} color={C.accent.primary} />
+                      <MaterialIcons name="person" size={44} color={PURPLE_LINK} />
                     </View>
                   )}
                 </LinearGradient>
-              </View>
-
-              <View style={styles.heroInfo}>
-                <Text style={styles.profileEyebrow}>Mentor profile</Text>
-                <Text style={styles.name}>{name}</Text>
-
-                <View style={styles.specialtyChip}>
-                  <MaterialIcons name="school" size={16} color={C.accent.primary} />
-                  <Text style={styles.specialtyText} numberOfLines={2}>
-                    {specialization}
-                  </Text>
-                </View>
-
-                <View style={styles.ratingRow}>
-                  <StarRating rating={rating} size={17} />
-                  <Text style={styles.ratingNum}>{rating.toFixed(1)}</Text>
-                  <Text style={styles.ratingMeta}>Learner rating</Text>
-                </View>
-
-                <View style={styles.heroMetaRow}>
-                  <View style={styles.heroMetaChip}>
-                    <MaterialIcons name="event-available" size={14} color={C.text.muted} />
-                    <Text style={styles.sessionsHint}>{totalSessions} sessions</Text>
-                  </View>
-                  <View style={styles.heroMetaChip}>
-                    <MaterialIcons name="payments" size={14} color={C.text.muted} />
-                    <Text style={styles.sessionsHint}>{formatPrice(pricePerHour)}/hr</Text>
-                  </View>
-                  <View style={styles.heroMetaChip}>
-                    <MaterialIcons name="workspace-premium" size={14} color={C.text.muted} />
-                    <Text style={styles.sessionsHint}>
-                      {experienceYears > 0 ? `${experienceYears}+ yrs` : 'New mentor'}
-                    </Text>
-                  </View>
-                </View>
+                <View style={styles.avatarOnlineDot} />
               </View>
             </View>
-          </View>
 
-          <Text style={styles.sectionEyebrow}>Overview</Text>
-          <View style={styles.statsRow}>
-            <StatPill
-              icon="history-edu"
-              label="Experience"
-              value={`${experienceYears} yr${experienceYears === 1 ? '' : 's'}`}
-              accent={C.accent.secondary}
-            />
-            <StatPill
-              icon="payments"
-              label="Rate / hr"
-              value={formatPrice(pricePerHour)}
-              accent={C.accent.primary}
-            />
-            <StatPill
-              icon="groups"
-              label="Sessions"
-              value={`${totalSessions}`}
-              accent={C.accent.success}
-            />
-          </View>
-
-          <Text style={styles.sectionEyebrow}>About Mentor</Text>
-          <View style={styles.aboutCard}>
-            <View style={styles.aboutHeader}>
-              <LinearGradient
-                colors={['rgba(94, 234, 212, 0.2)', 'rgba(167, 139, 250, 0.12)']}
-                style={styles.aboutIconBadge}
-              >
-                <MaterialIcons name="format-quote" size={20} color={C.accent.secondary} />
-              </LinearGradient>
-              <Text style={styles.aboutTitle}>About</Text>
-            </View>
-            <View style={styles.aboutAccent} />
-            <Text style={styles.aboutBody}>{bio}</Text>
-          </View>
-
-          {/* Reviews */}
-          <Text style={styles.sectionEyebrow}>Reviews ({reviews.length})</Text>
-          {reviews.length > 0 ? (
-            <View style={styles.reviewsList}>
-              {reviews.slice(0, 5).map(r => (
-                <View key={r.id} style={styles.reviewCard}>
-                  <View style={styles.reviewHeader}>
-                    <View style={styles.reviewAvatar}>
-                      {r.profiles?.avatar_url ? (
-                        <Image source={{ uri: r.profiles.avatar_url }} style={styles.reviewAvatarImg} />
-                      ) : (
-                        <MaterialIcons name="person" size={18} color={C.accent.secondary} />
-                      )}
-                    </View>
-                    <View style={styles.reviewMeta}>
-                      <Text style={styles.reviewerName}>{r.profiles?.name || 'Learner'}</Text>
-                      <StarRating rating={r.rating} size={13} />
-                    </View>
-                  </View>
-                  {r.comment ? (
-                    <Text style={styles.reviewComment}>{r.comment}</Text>
-                  ) : null}
-                </View>
-              ))}
-            </View>
-          ) : (
-            <View style={styles.noReviews}>
-              <MaterialIcons name="rate-review" size={28} color={C.text.muted} />
-              <Text style={styles.noReviewsTxt}>No reviews yet</Text>
-            </View>
-          )}
-
-          {/* ── Videos Section ── */}
-          {videos.length > 0 && (
-            <>
-              <View style={styles.videoSectionHeader}>
-                <Text style={styles.sectionEyebrow}>Videos ({videos.length})</Text>
-                {!isUnlocked && videos.some((v, i) => !v.is_free && i >= FREE_LIMIT) && (
-                  <View style={styles.lockBadge}>
-                    <MaterialIcons name="lock" size={11} color={C.accent.primary} />
-                    <Text style={styles.lockBadgeText}>Some locked</Text>
-                  </View>
+            <View style={styles.identityInfoCol}>
+              <View style={styles.nameRow}>
+                <Text style={styles.heroName} numberOfLines={2}>{name}</Text>
+                {(rating >= 4 || totalSessions >= 5) && (
+                  <MaterialIcons name="verified" size={18} color={VERIFIED_BLUE} style={styles.verifiedIcon} />
                 )}
               </View>
 
-              <ScrollView
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                contentContainerStyle={styles.videoRow}
-              >
-                {videos.map((v, i) => (
-                  <VideoTile
-                    key={v.id}
-                    video={v}
-                    index={i}
-                    isUnlocked={isUnlocked}
-                    onPlay={setPlayingVideo}
-                    onLockPress={() => {}}
-                  />
-                ))}
-              </ScrollView>
+              <Text style={styles.titleGold} numberOfLines={1}>{specialization}</Text>
+              <Text style={styles.heroBio} numberOfLines={2}>{bio}</Text>
 
-              {/* Unlock paywall */}
-              {!isUnlocked && videos.some((v, i) => !v.is_free && i >= FREE_LIMIT) && (
-                <TouchableOpacity
-                  style={[styles.unlockBtn, unlocking && { opacity: 0.6 }]}
-                  onPress={handleUnlock}
-                  disabled={unlocking}
-                  activeOpacity={0.85}
-                >
-                  <LinearGradient
-                    colors={['rgba(240,216,117,0.18)', 'rgba(94,234,212,0.12)']}
-                    style={styles.unlockBtnInner}
-                    start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
-                  >
-                    {unlocking ? (
-                      <ActivityIndicator color={C.accent.primary} size="small" />
-                    ) : (
-                      <>
-                        <MaterialIcons name="lock-open" size={18} color={C.accent.primary} />
-                        <Text style={styles.unlockBtnText}>
-                          Subscribe to videos · ₹{unlockPrice}/mo
-                        </Text>
-                        <MaterialIcons name="chevron-right" size={18} color={C.accent.primary} />
-                      </>
-                    )}
-                  </LinearGradient>
-                </TouchableOpacity>
+              {visibleTags.length > 0 && (
+                <ScrollView horizontal nestedScrollEnabled showsHorizontalScrollIndicator={false} contentContainerStyle={styles.tagStrip}>
+                  {visibleTags.map(t => (
+                    <View key={t} style={styles.tagChip}>
+                      <Text style={styles.tagTxt}>{t}</Text>
+                    </View>
+                  ))}
+                  {tagOverflow > 0 && (
+                    <View style={[styles.tagChip, styles.tagOverflowChip]}>
+                      <Text style={styles.tagTxt}>+{tagOverflow}</Text>
+                    </View>
+                  )}
+                </ScrollView>
               )}
+            </View>
+          </View>
 
-              {isUnlocked && (
-                <View style={styles.unlockedBadge}>
-                  <MaterialIcons name="check-circle" size={14} color={C.accent.success} />
-                  <Text style={styles.unlockedText}>Subscribed — watch all videos this month</Text>
+          <View style={styles.bodyFlex}>
+            <View style={styles.singleScreenBody}>
+              <MetricsStatRow
+                subscriberCount={subscriberCount}
+                rating={Number(rating) || 0}
+                videoCount={videoStat}
+                totalSessions={totalSessions}
+              />
+
+              <View style={styles.dualCtas}>
+                {showSubscribeCta ? (
+                  <TouchableOpacity
+                    style={styles.ctaHalf}
+                    onPress={handleUnlock}
+                    disabled={unlocking}
+                    activeOpacity={0.92}
+                  >
+                    <LinearGradient
+                      colors={['#fde68a', GOLD, '#b45309']}
+                      start={{ x: 0, y: 0 }}
+                      end={{ x: 1, y: 1 }}
+                      style={[styles.ctaHalfInner, styles.ctaHalfInnerCompact, unlocking && { opacity: 0.75 }]}
+                    >
+                      {unlocking ? (
+                        <ActivityIndicator color="#0c1228" />
+                      ) : (
+                        <>
+                          <MaterialIcons name="star" size={16} color="#0c1228" />
+                          <Text style={styles.ctaHalfTxtDark} numberOfLines={1}>Subscribe</Text>
+                        </>
+                      )}
+                    </LinearGradient>
+                  </TouchableOpacity>
+                ) : (
+                  <TouchableOpacity
+                    style={styles.ctaHalf}
+                    onPress={() => {
+                      if (isOwnProfile) Toast.show('This is your channel.', Toast.SHORT);
+                      else if (libraryUnlocked && hasLockedVideos) Toast.show('You are subscribed.', Toast.SHORT);
+                      else Toast.show('Nothing to subscribe here.', Toast.SHORT);
+                    }}
+                    activeOpacity={0.92}
+                  >
+                    <View style={[styles.ctaHalfMuted, styles.ctaHalfInnerCompact]}>
+                      <MaterialIcons name="star" size={16} color={C.text.muted} />
+                      <Text style={styles.ctaHalfTxtMuted} numberOfLines={1}>
+                        {isOwnProfile ? 'Your channel' : (libraryUnlocked && hasLockedVideos ? 'Subscribed' : 'Subscribe')}
+                      </Text>
+                    </View>
+                  </TouchableOpacity>
+                )}
+
+                <TouchableOpacity style={styles.ctaHalf} onPress={goBook} activeOpacity={0.92}>
+                  <View style={[styles.bookBtn, styles.ctaHalfInnerCompact]}>
+                    <MaterialIcons name="calendar-today" size={16} color={TEAL} />
+                    <Text style={styles.bookBtnTxt} numberOfLines={1}>Book 1-on-1</Text>
+                  </View>
+                </TouchableOpacity>
+              </View>
+
+              {memberVideos.length > 0 && (
+                <View style={styles.videoRailSection}>
+                  <SectionHeaderRow title="Members Only" onSeeAll={seeAll} />
+                  <ScrollView
+                    horizontal
+                    nestedScrollEnabled
+                    showsHorizontalScrollIndicator={false}
+                    style={styles.videoRailScroll}
+                    contentContainerStyle={styles.hRailPad}
+                  >
+                    {memberVideos.map((v) => {
+                      const globIdx = videos.findIndex(x => x.id === v.id);
+                      return (
+                        <PortraitVideoCard
+                          key={v.id}
+                          video={v}
+                          index={globIdx >= 0 ? globIdx : 0}
+                          isUnlocked={libraryUnlocked}
+                          onPlay={setPlayingVideo}
+                          locked
+                          cardWidth={compactRailW}
+                          thumbAspect={0.82}
+                        />
+                      );
+                    })}
+                  </ScrollView>
                 </View>
               )}
-            </>
-          )}
 
-          <View style={{ height: T.spacing.xxxl }} />
-        </ScrollView>
+              {previewVideos.length > 0 && (
+                <View style={styles.videoRailSection}>
+                  <SectionHeaderRow title="Free Preview Videos" onSeeAll={seeAll} />
+                  <ScrollView
+                    horizontal
+                    nestedScrollEnabled
+                    showsHorizontalScrollIndicator={false}
+                    style={styles.videoRailScroll}
+                    contentContainerStyle={styles.hRailPad}
+                  >
+                    {previewVideos.map((v) => {
+                      const globIdx = videos.findIndex(x => x.id === v.id);
+                      return (
+                        <PortraitVideoCard
+                          key={v.id}
+                          video={v}
+                          index={globIdx >= 0 ? globIdx : 0}
+                          isUnlocked={libraryUnlocked}
+                          onPlay={setPlayingVideo}
+                          locked={false}
+                          cardWidth={compactRailW}
+                          thumbAspect={0.82}
+                        />
+                      );
+                    })}
+                  </ScrollView>
+                </View>
+              )}
+
+              {pastSessions.length > 0 && (
+                <>
+                  <SectionHeaderRow title="Past 1-on-1 Sessions" onSeeAll={seeAll} />
+                  <View style={styles.pastSessionList}>
+                    {pastSessions.slice(0, 1).map(s => (
+                      <PastSessionRow
+                        key={s.id}
+                        session={s}
+                        onWatchRecap={() => openRecap(s)}
+                      />
+                    ))}
+                  </View>
+                </>
+              )}
+
+              {videos.length === 0 && (
+                <View style={styles.emptyVideos}>
+                  <MaterialIcons name="videocam-off" size={28} color={C.text.muted} />
+                  <Text style={styles.emptyVideosTxt}>No videos published yet.</Text>
+                </View>
+              )}
+
+              {libraryUnlocked && hasLockedVideos && !isOwnProfile && (
+                <View style={styles.subNote}>
+                  <MaterialIcons name="check-circle" size={14} color={C.accent.success} />
+                  <Text style={styles.subNoteTxt}>Subscribed — watch all locked videos.</Text>
+                </View>
+              )}
+            </View>
+          </View>
+        </View>
 
         <VideoPlayerModal video={playingVideo} onClose={() => setPlayingVideo(null)} />
-
-        <View
-          style={[
-            styles.footer,
-            {
-              paddingBottom: Math.max(insets.bottom, T.spacing.md),
-            },
-          ]}
-        >
-          <LinearGradient
-            colors={TB.flatBarEdge}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 0 }}
-            style={styles.footerEdge}
-          />
-          <LinearGradient
-            colors={['rgba(6, 6, 31, 0.97)', 'rgba(12, 12, 40, 0.99)']}
-            style={styles.footerInner}
-          >
-            <Text style={styles.footerHint}>
-              Choose a date and time in the next step.
-            </Text>
-            <Button
-              text="Book a session"
-              onPress={() =>
-                navigation.navigate(SCREEN_NAMES.Booking, {
-                  mentorId,
-                  mentorName: name,
-                })
-              }
-              style={styles.bookButton}
-            />
-          </LinearGradient>
-        </View>
       </View>
     </SafeScreen>
   );
 }
 
 const styles = StyleSheet.create({
-  root: {
-    flex: 1,
-  },
-  topBar: {
+  root: { flexGrow: 1, backgroundColor: SCREEN_BG },
+  mainColumn: { flexGrow: 1 },
+  bodyFlex: { width: '100%' },
+  videoRailSection: { flexShrink: 0 },
+  videoRailScroll: { flexGrow: 0 },
+  centerFill: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: T.spacing.xl, gap: T.spacing.md },
+  errTxt: { color: C.text.secondary, fontSize: 15, textAlign: 'center', paddingHorizontal: T.spacing.lg },
+  retryBtn: { marginTop: T.spacing.sm, paddingVertical: 10, paddingHorizontal: T.spacing.xl, borderRadius: 12, backgroundColor: 'rgba(167,139,250,0.2)' },
+  retryTxt: { color: PURPLE_LINK, fontWeight: '800', fontSize: 14 },
+  retryTxtMuted: { color: C.text.muted, fontWeight: '600', fontSize: 13 },
+  hero: { width: SCREEN_W },
+  heroTopBar: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
+    justifyContent: 'flex-start',
     paddingHorizontal: T.spacing.md,
-    paddingBottom: T.spacing.md,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: C.border.light,
-    backgroundColor: 'rgba(6, 6, 31, 0.72)',
   },
-  backHit: {
-    width: 44,
-    height: 44,
-    justifyContent: 'center',
-    alignItems: 'flex-start',
-  },
-  topBarTitle: {
-    ...T.typography.bodyMd,
-    color: C.text.primary,
-    fontWeight: '800',
-    letterSpacing: 0.3,
-  },
-  topBarRightBadge: {
-    width: 44,
-    height: 44,
-    alignItems: 'flex-end',
-    justifyContent: 'center',
-  },
-  scroll: {
-    flex: 1,
-  },
-  scrollContent: {
-    paddingBottom: T.spacing.lg,
-  },
-  heroWash: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    top: 0,
-    height: 320,
-  },
-  profileCard: {
-    marginHorizontal: T.spacing.lg,
-    marginTop: T.spacing.md,
-    marginBottom: T.spacing.lg,
-    borderRadius: T.borderRadius.xl,
+  heroBarActions: { flexDirection: 'row', alignItems: 'center', gap: T.spacing.sm },
+  heroCircleBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(12,12,40,0.55)',
     borderWidth: 1,
-    borderColor: C.border.light,
-    backgroundColor: C.component.card,
-    overflow: 'hidden',
-    borderLeftWidth: 3,
-    borderLeftColor: C.accent.secondary,
-    ...Platform.select({
-      ios: T.shadows.medium,
-      android: { elevation: 4 },
-    }),
+    borderColor: 'rgba(255,255,255,0.12)',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
-  profileCardGlow: {
-    ...StyleSheet.absoluteFillObject,
-  },
-  hero: {
-    flexDirection: 'column',
+  identityBlock: {
+    marginTop: -40,
+    marginBottom: T.spacing.sm,
+    paddingHorizontal: T.spacing.lg,
+    flexDirection: 'row',
     alignItems: 'center',
     gap: T.spacing.md,
-    padding: T.spacing.lg,
   },
-  avatarRing: {
-    padding: 3,
-    borderRadius: 68,
+  identityAvatarCol: {
+    position: 'relative',
+    flexShrink: 0,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  identityInfoCol: {
+    flex: 1,
+    minWidth: 0,
+  },
+  avatarRingWrap: {
+    position: 'relative',
+    alignItems: 'center',
   },
   avatarRingGrad: {
     padding: 3,
-    borderRadius: 65,
-  },
-  avatar: {
-    width: 104,
-    height: 104,
-    borderRadius: 52,
-    backgroundColor: C.primary.dark,
-  },
-  heroInfo: {
-    width: '100%',
-    alignItems: 'center',
-  },
-  profileEyebrow: {
-    ...T.typography.labelSm,
-    color: C.accent.secondary,
-    letterSpacing: 1.2,
-    textTransform: 'uppercase',
-    marginBottom: 2,
-  },
-  avatarPlaceholder: {
-    justifyContent: 'center',
-    alignItems: 'center',
+    borderRadius: 48,
     borderWidth: 1,
-    borderColor: C.border.light,
+    borderColor: 'rgba(255,255,255,0.35)',
+    ...Platform.select({ ios: T.shadows.medium, android: { elevation: 8 } }),
   },
-  name: {
-    ...T.typography.headingMd,
-    fontSize: 24,
-    color: C.text.primary,
-    fontWeight: '800',
-    textAlign: 'center',
-    letterSpacing: -0.5,
-    marginBottom: T.spacing.xs,
+  avatar: { width: 88, height: 88, borderRadius: 44, backgroundColor: SCREEN_BG },
+  avatarPlaceholder: { justifyContent: 'center', alignItems: 'center' },
+  avatarOnlineDot: {
+    position: 'absolute',
+    right: 4,
+    bottom: 4,
+    width: 14,
+    height: 14,
+    borderRadius: 7,
+    backgroundColor: '#22c55e',
+    borderWidth: 2,
+    borderColor: SCREEN_BG,
   },
-  specialtyChip: {
+  nameRow: {
     flexDirection: 'row',
-    alignItems: 'center',
-    gap: T.spacing.sm,
-    alignSelf: 'center',
-    maxWidth: '92%',
-    paddingVertical: T.spacing.sm,
-    paddingHorizontal: T.spacing.md,
-    borderRadius: T.borderRadius.md,
-    backgroundColor: C.component.input,
-    borderWidth: 1,
-    borderColor: C.border.light,
-    marginBottom: T.spacing.sm,
-  },
-  specialtyText: {
-    ...T.typography.bodySm,
-    color: C.accent.primary,
-    fontWeight: '700',
-    flex: 1,
-  },
-  ratingRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: T.spacing.sm,
-    gap: T.spacing.sm,
-  },
-  ratingNum: {
-    ...T.typography.labelLg,
-    color: C.text.primary,
-    fontWeight: '800',
-  },
-  ratingMeta: {
-    ...T.typography.bodySm,
-    color: C.text.muted,
-  },
-  heroMetaRow: {
-    flexDirection: 'row',
-    gap: T.spacing.sm,
+    alignItems: 'flex-start',
+    justifyContent: 'flex-start',
+    gap: 6,
     flexWrap: 'wrap',
-    justifyContent: 'center',
   },
-  heroMetaChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
-    borderRadius: T.borderRadius.md,
-    paddingVertical: 7,
-    paddingHorizontal: T.spacing.sm,
-    borderWidth: 1,
-    borderColor: C.border.light,
-    backgroundColor: 'rgba(255, 255, 255, 0.04)',
+  verifiedIcon: { marginTop: 2 },
+  heroName: {
+    flex: 1,
+    fontSize: 18,
+    fontWeight: '800',
+    color: C.text.primary,
+    letterSpacing: -0.35,
+    textAlign: 'left',
   },
-  sessionsHint: {
-    ...T.typography.bodySm,
-    color: C.text.muted,
-    fontWeight: '600',
-  },
-  statsRow: {
-    flexDirection: 'row',
-    paddingHorizontal: T.spacing.lg,
-    gap: T.spacing.sm,
-    marginBottom: T.spacing.lg,
-    justifyContent: 'space-between',
-  },
-  sectionEyebrow: {
-    ...T.typography.labelSm,
-    color: C.text.muted,
-    letterSpacing: 1,
-    textTransform: 'uppercase',
+  titleGold: {
+    marginTop: 4,
+    color: GOLD,
     fontWeight: '700',
-    marginBottom: T.spacing.sm,
+    fontSize: 13,
+    textAlign: 'left',
+    lineHeight: 18,
+  },
+  heroBio: {
+    marginTop: 4,
+    color: C.text.secondary,
+    fontSize: 12,
+    lineHeight: 17,
+    textAlign: 'left',
+  },
+  tagStrip: {
+    flexGrow: 0,
+    marginTop: T.spacing.sm,
+    paddingVertical: 0,
+    gap: T.spacing.xs,
+  },
+  tagChip: {
+    paddingVertical: 4,
+    paddingHorizontal: T.spacing.sm,
+    borderRadius: 999,
+    backgroundColor: 'rgba(255,255,255,0.08)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.1)',
+    marginRight: T.spacing.xs,
+  },
+  tagTxt: { color: C.text.primary, fontSize: 10, fontWeight: '700' },
+  tagOverflowChip: {
+    backgroundColor: 'rgba(167,139,250,0.12)',
+    borderColor: 'rgba(167,139,250,0.35)',
+  },
+  dualCtas: {
+    flexDirection: 'row',
+    gap: T.spacing.sm,
+    marginTop: T.spacing.xs,
+    marginBottom: 2,
     paddingHorizontal: T.spacing.lg,
   },
-  statPill: {
+  ctaHalf: {
     flex: 1,
     minWidth: 0,
-    borderRadius: T.borderRadius.md,
-    overflow: 'hidden',
-    borderWidth: 1,
-    borderColor: C.border.light,
-    ...Platform.select({
-      ios: T.shadows.small,
-      android: { elevation: 3 },
-    }),
-  },
-  statPillInner: {
-    padding: T.spacing.md,
-    alignItems: 'center',
-    minHeight: 112,
-    justifyContent: 'center',
-  },
-  statIconWrap: {
-    width: 40,
-    height: 40,
     borderRadius: 12,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: 'rgba(2, 0, 20, 0.35)',
-    borderWidth: 1,
-    marginBottom: T.spacing.sm,
-  },
-  statPillValue: {
-    ...T.typography.labelLg,
-    color: C.text.primary,
-    fontWeight: '800',
-    textAlign: 'center',
-    marginBottom: 4,
-  },
-  statPillLabel: {
-    ...T.typography.labelSm,
-    color: C.text.muted,
-    textAlign: 'center',
-    lineHeight: 16,
-  },
-  aboutCard: {
-    marginHorizontal: T.spacing.lg,
-    backgroundColor: C.component.card,
-    borderRadius: T.borderRadius.md,
-    borderWidth: 1,
-    borderColor: C.border.light,
-    padding: T.spacing.lg,
-    borderLeftWidth: 3,
-    borderLeftColor: C.accent.primary,
-    ...Platform.select({
-      ios: T.shadows.small,
-      android: { elevation: 2 },
-    }),
-    marginBottom: T.spacing.sm,
-  },
-  aboutHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: T.spacing.md,
-    marginBottom: T.spacing.md,
-  },
-  aboutIconBadge: {
-    width: 40,
-    height: 40,
-    borderRadius: 12,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: C.border.light,
-  },
-  aboutTitle: {
-    ...T.typography.headingSm,
-    fontSize: 18,
-    color: C.text.primary,
-    fontWeight: '800',
-  },
-  aboutAccent: {
-    width: 48,
-    height: 3,
-    borderRadius: 2,
-    backgroundColor: C.accent.secondary,
-    opacity: 0.85,
-    marginBottom: T.spacing.md,
-  },
-  aboutBody: {
-    ...T.typography.bodyMd,
-    color: C.text.secondary,
-    lineHeight: 24,
-  },
-  reviewsList: { gap: T.spacing.sm, marginBottom: T.spacing.lg },
-  reviewCard: {
-    backgroundColor: T.colors.component.card,
-    borderRadius: T.borderRadius.md,
-    borderWidth: 1,
-    borderColor: T.colors.border.light,
-    padding: T.spacing.md,
-    gap: T.spacing.sm,
-  },
-  reviewHeader: { flexDirection: 'row', alignItems: 'center', gap: T.spacing.sm },
-  reviewAvatar: {
-    width: 34, height: 34, borderRadius: 17,
-    backgroundColor: 'rgba(94,234,212,0.1)',
-    borderWidth: 1, borderColor: 'rgba(94,234,212,0.2)',
-    justifyContent: 'center', alignItems: 'center',
     overflow: 'hidden',
+    ...Platform.select({ ios: T.shadows.small, android: { elevation: 3 } }),
   },
-  reviewAvatarImg: { width: 34, height: 34, borderRadius: 17 },
-  reviewMeta: { gap: 2 },
-  reviewerName: { fontSize: 13, fontWeight: '700', color: C.text.primary },
-  reviewComment: { fontSize: 13, color: C.text.secondary, lineHeight: 20 },
-  noReviews: {
-    alignItems: 'center', paddingVertical: T.spacing.xl, gap: T.spacing.sm,
-    backgroundColor: T.colors.component.card,
-    borderRadius: T.borderRadius.md,
-    borderWidth: 1, borderColor: T.colors.border.light,
-    marginBottom: T.spacing.lg,
-  },
-  noReviewsTxt: { fontSize: 13, color: C.text.muted },
-  footer: {
-    borderTopWidth: 1,
-    borderTopColor: C.border.light,
-    backgroundColor: 'rgba(6, 6, 31, 0.94)',
-  },
-  footerEdge: {
-    height: 2,
-    opacity: 0.45,
-  },
-  footerInner: {
-    paddingHorizontal: T.spacing.lg,
-    paddingTop: T.spacing.md,
-  },
-  footerHint: {
-    ...T.typography.bodySm,
-    color: C.text.muted,
-    textAlign: 'center',
-    marginBottom: T.spacing.sm,
-  },
-  bookButton: {
-    marginBottom: 0,
-    borderRadius: T.borderRadius.md,
-  },
-  errorWrap: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: T.spacing.xl,
-  },
-  errorIconRing: {
-    width: 96,
-    height: 96,
-    borderRadius: 48,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: T.spacing.lg,
-    borderWidth: 1,
-    borderColor: 'rgba(248, 113, 113, 0.35)',
-  },
-  errorTitle: {
-    ...T.typography.headingSm,
-    color: C.text.primary,
-    marginBottom: T.spacing.sm,
-    textAlign: 'center',
-  },
-  errorSub: {
-    ...T.typography.bodySm,
-    color: C.text.muted,
-    textAlign: 'center',
-    lineHeight: 20,
-    marginBottom: T.spacing.xl,
-  },
-  errorBtn: {
-    minWidth: 200,
-  },
-
-  // Videos section
-  videoSectionHeader: {
+  ctaHalfInner: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: T.spacing.lg,
-    marginBottom: T.spacing.sm,
+    justifyContent: 'center',
+    gap: 6,
+    paddingVertical: 13,
+    paddingHorizontal: T.spacing.sm,
+    minHeight: 46,
   },
-  lockBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
+  ctaHalfInnerCompact: {
+    paddingVertical: 8,
+    paddingHorizontal: T.spacing.sm,
+    minHeight: 38,
     gap: 4,
-    backgroundColor: 'rgba(240,216,117,0.1)',
-    borderRadius: 6,
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderWidth: 1,
-    borderColor: 'rgba(240,216,117,0.2)',
   },
-  lockBadgeText: { color: C.accent.primary, fontSize: 10, fontWeight: '700' },
-  videoRow: {
-    paddingHorizontal: T.spacing.lg,
-    paddingBottom: T.spacing.sm,
-  },
-  unlockBtn: {
-    marginHorizontal: T.spacing.lg,
-    marginTop: 8,
-    marginBottom: T.spacing.md,
-    borderRadius: 14,
-    overflow: 'hidden',
-    borderWidth: 1,
-    borderColor: 'rgba(240,216,117,0.25)',
-  },
-  unlockBtnInner: {
+  bookBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 8,
-    paddingVertical: 14,
-    paddingHorizontal: 16,
+    gap: 6,
+    paddingVertical: 13,
+    paddingHorizontal: T.spacing.sm,
+    minHeight: 46,
+    backgroundColor: TEAL_DEEP,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: TEAL,
   },
-  unlockBtnText: {
-    color: C.accent.primary,
-    fontSize: 14,
-    fontWeight: '700',
-    flex: 1,
-    textAlign: 'center',
-  },
-  unlockedBadge: {
+  bookBtnTxt: { color: TEAL, fontWeight: '800', fontSize: 12 },
+  ctaHalfMuted: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingVertical: 13,
+    paddingHorizontal: T.spacing.sm,
+    minHeight: 46,
+    backgroundColor: 'rgba(255,255,255,0.06)',
+    borderWidth: 1,
+    borderColor: C.border.light,
+    borderRadius: 12,
+  },
+  ctaHalfTxtDark: { color: '#0c1228', fontWeight: '800', fontSize: 12 },
+  ctaHalfTxtMuted: { color: C.text.muted, fontWeight: '700', fontSize: 12 },
+  singleScreenBody: {
+    flexGrow: 1,
+    paddingTop: 2,
+    paddingBottom: T.spacing.md,
+  },
+  hRailPad: {
+    paddingLeft: T.spacing.lg,
+    paddingRight: T.spacing.lg,
+    paddingBottom: T.spacing.sm,
+    paddingTop: 6,
+    alignItems: 'stretch',
+    flexDirection: 'row',
+  },
+  pastSessionList: {
+    paddingHorizontal: 0,
+    gap: T.spacing.xs,
+  },
+  emptyVideos: {
+    alignItems: 'center',
+    paddingVertical: T.spacing.md,
+    gap: T.spacing.xs,
+  },
+  emptyVideosTxt: { color: C.text.muted, fontSize: 12 },
+  subNote: {
+    flexDirection: 'row',
     gap: 6,
     marginHorizontal: T.spacing.lg,
-    marginBottom: T.spacing.md,
+    marginTop: T.spacing.xs,
+    alignItems: 'center',
   },
-  unlockedText: { color: C.accent.success, fontSize: 12, fontWeight: '600' },
+  subNoteTxt: { color: C.accent.success, fontSize: 12, fontWeight: '600' },
 });

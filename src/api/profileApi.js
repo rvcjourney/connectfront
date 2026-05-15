@@ -41,12 +41,35 @@ export const profileApi = {
     try {
       const { data, error } = await supabase
         .from('mentor_profiles')
-        .select('id, specialization, bio, experience_years, price_per_hour, rating, total_sessions')
+        .select('id, specialization, bio, experience_years, price_per_hour, rating, total_sessions, unlock_price, category')
         .eq('id', mentorId)
         .single();
 
       if (error) throw error;
       return data;
+    } catch (error) {
+      throw new Error(getSupabaseErrorMessage(error));
+    }
+  },
+
+  /** Public reviews for a mentor (RLS allows read). */
+  getReviewsForMentor: async (mentorId, { limit = 40 } = {}) => {
+    try {
+      const { data, error } = await supabase
+        .from('reviews')
+        .select(`
+          id,
+          rating,
+          comment,
+          created_at,
+          profiles:learner_id (name, avatar_url)
+        `)
+        .eq('mentor_id', mentorId)
+        .order('created_at', { ascending: false })
+        .limit(limit);
+
+      if (error) throw error;
+      return data || [];
     } catch (error) {
       throw new Error(getSupabaseErrorMessage(error));
     }
