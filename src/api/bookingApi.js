@@ -3,8 +3,18 @@ import { getSupabaseErrorMessage } from '../lib/supabaseErrorHandler';
 import { cancelSessionReminder } from '../utils/sessionReminder';
 import { recordingsApi } from './recordingsApi';
 
-/** Session room + recording URLs live on `recordings`, not on `bookings`. */
-const RECORDINGS_EMBED = `recordings ( meeting_id, recording_url, recording_playback_url )`;
+/** Fetch recordings for a list of bookings and merge them in (no FK → can't use PostgREST join). */
+async function attachRecordings(bookings) {
+  if (!bookings?.length) return bookings;
+  const ids = bookings.map(b => b.id);
+  const { data: recs } = await supabase
+    .from('recordings')
+    .select('booking_id, meeting_id, recording_url, recording_playback_url')
+    .in('booking_id', ids);
+  const recMap = {};
+  (recs || []).forEach(r => { recMap[r.booking_id] = r; });
+  return bookings.map(b => ({ ...b, recordings: recMap[b.id] ?? null }));
+}
 
 export const bookingApi = {
   createBooking: async ({ learnerId, mentorId, slotId, message }) => {
@@ -58,23 +68,16 @@ export const bookingApi = {
         .from('bookings')
         .select(`
           *,
-          profiles!learner_id (
-            name,
-            avatar_url
-          ),
-          availability_slots (
-            date,
-            start_time,
-            end_time
-          ),
-          ${RECORDINGS_EMBED},
+          profiles!learner_id ( name, avatar_url ),
+          availability_slots ( date, start_time, end_time ),
           mentor_profiles ( price_per_hour )
         `)
         .eq('id', bookingId)
         .single();
 
       if (error) throw error;
-      return data;
+      const [withRec] = await attachRecordings([data]);
+      return withRec;
     } catch (error) {
       throw new Error(getSupabaseErrorMessage(error));
     }
@@ -86,23 +89,14 @@ export const bookingApi = {
         .from('bookings')
         .select(`
           *,
-          profiles:mentor_id (
-            id,
-            name,
-            avatar_url
-          ),
-          availability_slots (
-            date,
-            start_time,
-            end_time
-          ),
-          ${RECORDINGS_EMBED}
+          profiles:mentor_id ( id, name, avatar_url ),
+          availability_slots ( date, start_time, end_time )
         `)
         .eq('learner_id', learnerId)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      return data || [];
+      return attachRecordings(data || []);
     } catch (error) {
       throw new Error(getSupabaseErrorMessage(error));
     }
@@ -115,15 +109,14 @@ export const bookingApi = {
         .select(`
           *,
           profiles:mentor_id (id, name, avatar_url),
-          availability_slots (date, start_time, end_time),
-          ${RECORDINGS_EMBED}
+          availability_slots (date, start_time, end_time)
         `)
         .eq('learner_id', learnerId)
         .in('status', ['pending', 'confirmed'])
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      return data || [];
+      return attachRecordings(data || []);
     } catch (error) {
       throw new Error(getSupabaseErrorMessage(error));
     }
@@ -138,8 +131,7 @@ export const bookingApi = {
         .select(`
           *,
           profiles:mentor_id (id, name, avatar_url),
-          availability_slots (date, start_time, end_time),
-          ${RECORDINGS_EMBED}
+          availability_slots (date, start_time, end_time)
         `)
         .eq('learner_id', learnerId)
         .in('status', ['completed', 'cancelled', 'rejected'])
@@ -147,7 +139,7 @@ export const bookingApi = {
         .range(from, to);
 
       if (error) throw error;
-      return data || [];
+      return attachRecordings(data || []);
     } catch (error) {
       throw new Error(getSupabaseErrorMessage(error));
     }
@@ -159,23 +151,14 @@ export const bookingApi = {
         .from('bookings')
         .select(`
           *,
-          profiles:learner_id (
-            id,
-            name,
-            avatar_url
-          ),
-          availability_slots (
-            date,
-            start_time,
-            end_time
-          ),
-          ${RECORDINGS_EMBED}
+          profiles:learner_id ( id, name, avatar_url ),
+          availability_slots ( date, start_time, end_time )
         `)
         .eq('mentor_id', mentorId)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      return data || [];
+      return attachRecordings(data || []);
     } catch (error) {
       throw new Error(getSupabaseErrorMessage(error));
     }
@@ -188,15 +171,14 @@ export const bookingApi = {
         .select(`
           *,
           profiles:learner_id (id, name, avatar_url),
-          availability_slots (date, start_time, end_time),
-          ${RECORDINGS_EMBED}
+          availability_slots (date, start_time, end_time)
         `)
         .eq('mentor_id', mentorId)
         .in('status', ['pending', 'confirmed'])
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      return data || [];
+      return attachRecordings(data || []);
     } catch (error) {
       throw new Error(getSupabaseErrorMessage(error));
     }
@@ -211,8 +193,7 @@ export const bookingApi = {
         .select(`
           *,
           profiles:learner_id (id, name, avatar_url),
-          availability_slots (date, start_time, end_time),
-          ${RECORDINGS_EMBED}
+          availability_slots (date, start_time, end_time)
         `)
         .eq('mentor_id', mentorId)
         .in('status', ['completed', 'cancelled', 'rejected'])
@@ -220,7 +201,7 @@ export const bookingApi = {
         .range(from, to);
 
       if (error) throw error;
-      return data || [];
+      return attachRecordings(data || []);
     } catch (error) {
       throw new Error(getSupabaseErrorMessage(error));
     }
@@ -241,7 +222,6 @@ export const bookingApi = {
           created_at,
           profiles:learner_id (id, name, avatar_url),
           availability_slots (date, start_time, end_time),
-          ${RECORDINGS_EMBED},
           reviews ( rating )
         `)
         .eq('mentor_id', mentorId)
@@ -250,7 +230,7 @@ export const bookingApi = {
         .limit(limit);
 
       if (error) throw error;
-      return data || [];
+      return attachRecordings(data || []);
     } catch (error) {
       throw new Error(getSupabaseErrorMessage(error));
     }
@@ -266,12 +246,7 @@ export const bookingApi = {
           message,
           status,
           created_at,
-          availability_slots (
-            date,
-            start_time,
-            end_time
-          ),
-          ${RECORDINGS_EMBED}
+          availability_slots ( date, start_time, end_time )
         `)
         .eq('learner_id', learnerId)
         .eq('mentor_id', mentorId)
@@ -280,7 +255,7 @@ export const bookingApi = {
         .limit(limit);
 
       if (error) throw error;
-      return data || [];
+      return attachRecordings(data || []);
     } catch (error) {
       throw new Error(getSupabaseErrorMessage(error));
     }
@@ -377,8 +352,7 @@ export const bookingApi = {
           .select(`
             *,
             profiles:learner_id (id, name, avatar_url),
-            availability_slots (date, start_time, end_time),
-            ${RECORDINGS_EMBED}
+            availability_slots (date, start_time, end_time)
           `)
           .eq('mentor_id', mentorId)
           .order('created_at', { ascending: false }),
@@ -391,7 +365,8 @@ export const bookingApi = {
 
       if (error) throw error;
       const price = mentorProfile?.price_per_hour ?? null;
-      return (data || []).map(b => ({ ...b, mentor_profiles: { price_per_hour: price } }));
+      const withRecs = await attachRecordings(data || []);
+      return withRecs.map(b => ({ ...b, mentor_profiles: { price_per_hour: price } }));
     } catch (error) {
       throw new Error(getSupabaseErrorMessage(error));
     }
@@ -404,14 +379,13 @@ export const bookingApi = {
         .select(`
           *,
           profiles:mentor_id (id, name, avatar_url),
-          availability_slots (date, start_time, end_time),
-          ${RECORDINGS_EMBED}
+          availability_slots (date, start_time, end_time)
         `)
         .eq('learner_id', learnerId)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      const rows = data || [];
+      const rows = await attachRecordings(data || []);
 
       // Fetch price for each unique mentor in one query
       const mentorIds = [...new Set(rows.map(b => b.mentor_id).filter(Boolean))];
