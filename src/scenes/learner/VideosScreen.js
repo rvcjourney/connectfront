@@ -11,6 +11,7 @@ import {
   ScrollView,
   Modal,
   useWindowDimensions,
+  AppState,
 } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
@@ -339,6 +340,7 @@ export default function VideosScreen({ navigation, route }) {
   const startVideoId    = route?.params?.startVideoId;
   const filterMentorId  = route?.params?.filterMentorId;
   const [screenFocused, setScreenFocused] = useState(true);
+  const [appActive, setAppActive] = useState(true);
 
   useFocusEffect(
     useCallback(() => {
@@ -346,6 +348,22 @@ export default function VideosScreen({ navigation, route }) {
       return () => setScreenFocused(false);
     }, [])
   );
+
+  useEffect(() => {
+    const sub = AppState.addEventListener('change', state => {
+      setAppActive(state === 'active');
+    });
+    return () => sub.remove();
+  }, []);
+
+  // Scroll to top (latest video) when user taps the tab directly
+  useEffect(() => {
+    const unsubscribe = navigation?.addListener('tabPress', () => {
+      flatListRef.current?.scrollToOffset({ offset: 0, animated: true });
+      setActiveIndex(0);
+    });
+    return unsubscribe;
+  }, [navigation]);
 
   const onViewableItemsChanged = useCallback(({ viewableItems }) => {
     if (viewableItems[0] != null) setActiveIndex(viewableItems[0].index ?? 0);
@@ -378,7 +396,7 @@ export default function VideosScreen({ navigation, route }) {
     else setLoading(true);
     try {
       const [vids, unlocks, homeResult] = await Promise.all([
-        videoApi.getAllPublicVideos({ excludeMentorId: filterMentorId ? null : userId }),
+        videoApi.getAllPublicVideos({ excludeMentorId: null }),
         userId ? videoApi.getLearnerUnlocks(userId) : Promise.resolve(new Map()),
         homeApi.getVideos().catch(() => ({ sessions: [] })),
       ]);
@@ -426,7 +444,7 @@ export default function VideosScreen({ navigation, route }) {
   });
 
   return (
-    <View style={s.root}>
+    <View style={[s.root, { height: windowHeight - BOTTOM_TAB_H - insets.bottom }]}>
 
       {/* ── Filter chips ──────────────────────────────────────────────────────── */}
       <ScrollView
@@ -488,7 +506,7 @@ export default function VideosScreen({ navigation, route }) {
                 expiresAt={unlocksMap.get(item.mentor_id)?.expiresAt}
                 onLockPress={setLockSheetVideo}
                 onViewProfile={handleViewProfile}
-                forcePaused={lockSheetVideo !== null || !screenFocused}
+                forcePaused={lockSheetVideo !== null || !screenFocused || !appActive}
               />
             )}
             viewabilityConfigCallbackPairs={viewabilityConfigCallbackPairs.current}

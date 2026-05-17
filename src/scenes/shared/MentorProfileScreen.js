@@ -728,13 +728,16 @@ export default function MentorProfileScreen({ navigation, route }) {
   };
 
   const seeAll = () => {
-    navigation.navigate(SCREEN_NAMES.MentorVideoFeed, { filterMentorId: mentorId });
+    navigation.navigate(SCREEN_NAMES.RootUnifiedTabs, {
+      screen: SCREEN_NAMES.LearnerSection,
+      params: { screen: SCREEN_NAMES.LearnerVideos, params: { filterMentorId: mentorId } },
+    });
   };
 
   const handlePlayVideo = (video) => {
-    navigation.navigate(SCREEN_NAMES.MentorVideoFeed, {
-      filterMentorId: mentorId,
-      startVideoId: video.id,
+    navigation.navigate(SCREEN_NAMES.RootUnifiedTabs, {
+      screen: SCREEN_NAMES.LearnerSection,
+      params: { screen: SCREEN_NAMES.LearnerVideos, params: { filterMentorId: mentorId, startVideoId: video.id } },
     });
   };
 

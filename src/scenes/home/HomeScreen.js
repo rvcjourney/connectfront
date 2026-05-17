@@ -12,6 +12,7 @@ import {
   Modal,
   useWindowDimensions,
   Image,
+  RefreshControl,
 } from 'react-native';
 import Video from 'react-native-video';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
@@ -228,6 +229,7 @@ export default function HomeScreen() {
   const [urlPlayback, setUrlPlayback] = useState(null);
 
   const [dataLoaded, setDataLoaded] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
   const [heroSlides, setHeroSlides] = useState(FALLBACK_SLIDES);
   const [introVideo, setIntroVideo] = useState(null);
   const [sessionVideos, setSessionVideos] = useState([]);
@@ -252,40 +254,52 @@ export default function HomeScreen() {
     ]).start();
   }, []);
 
-  useFocusEffect(
-    useCallback(() => {
-      Promise.allSettled([
-        homeApi.getVideos(),
-        videoApi.getFreeVideos(),
-        homeApi.getHeroSlides(),
-      ]).then(([homeResult, freeResult, slidesResult]) => {
-        const sessions = homeResult.status === 'fulfilled' ? homeResult.value.sessions : [];
-        const freeVideos = freeResult.status === 'fulfilled' ? freeResult.value : [];
-        if (homeResult.status === 'fulfilled' && homeResult.value.intro) {
-          setIntroVideo(homeResult.value.intro);
-        }
-        if (sessions.length || freeVideos.length) {
-          const seen = new Set();
-          const merged = [...sessions, ...freeVideos].filter(v => {
+  const loadHome = useCallback((isRefresh = false) => {
+    if (isRefresh) setRefreshing(true);
+    Promise.allSettled([
+      homeApi.getVideos(),
+      videoApi.getFreeVideos(),
+      homeApi.getHeroSlides(),
+    ]).then(([homeResult, freeResult, slidesResult]) => {
+      const sessions = homeResult.status === 'fulfilled' ? homeResult.value.sessions : [];
+      const freeVideos = freeResult.status === 'fulfilled' ? freeResult.value : [];
+      if (homeResult.status === 'fulfilled' && homeResult.value.intro) {
+        setIntroVideo(homeResult.value.intro);
+      }
+      if (sessions.length || freeVideos.length) {
+        const seen = new Set();
+        const merged = [...sessions, ...freeVideos]
+          .filter(v => {
             if (seen.has(v.id)) return false;
             seen.add(v.id);
             return true;
-          });
-          setSessionVideos(merged);
-        }
-        if (slidesResult.status === 'fulfilled' && slidesResult.value.length > 0) {
-          setHeroSlides(slidesResult.value);
-        }
-        setDataLoaded(true);
-      });
-    }, [])
-  );
+          })
+          .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+        setSessionVideos(merged.slice(0, 10));
+      }
+      if (slidesResult.status === 'fulfilled' && slidesResult.value.length > 0) {
+        setHeroSlides(slidesResult.value);
+      }
+      setDataLoaded(true);
+      setRefreshing(false);
+    });
+  }, []);
+
+  useFocusEffect(useCallback(() => { loadHome(false); }, [loadHome]));
 
   return (
     <SafeScreen scrollable={false} padding={0} hasBottomTabs={false}>
       <ScrollView
         contentContainerStyle={[styles.page, { paddingTop: insets.top + T.spacing.lg }]}
         showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={() => loadHome(true)}
+            tintColor={C.accent.primary}
+            colors={[C.accent.primary]}
+          />
+        }
       >
 
         {/* ── APP BAR ── */}

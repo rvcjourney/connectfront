@@ -21,9 +21,9 @@ export const homeApi = {
     try {
       const { data, error } = await supabase
         .from('home_videos')
-        .select('id, type, title, label, video_url, thumbnail_url')
+        .select('id, type, title, label, video_url, thumbnail_url, created_at')
         .eq('is_active', true)
-        .order('created_at', { ascending: true });
+        .order('created_at', { ascending: false });
 
       if (error) throw error;
 

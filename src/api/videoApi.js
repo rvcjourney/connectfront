@@ -18,13 +18,13 @@ function extractErrorMsg(parsed) {
 }
 
 // XHR upload — Supabase JS client v2 + React Native FormData is incompatible (body.has error)
-const uploadFileXHR = (storagePath, fileUri, fileName, contentType, token, onProgress) =>
+const uploadFileXHR = (storagePath, fileUri, fileName, contentType, token, onProgress, bucket = BUCKET) =>
   new Promise((resolve, reject) => {
     const formData = new FormData();
     formData.append('', { uri: fileUri, name: fileName, type: contentType });
 
     const xhr = new XMLHttpRequest();
-    xhr.open('POST', `${SUPABASE_URL}/storage/v1/object/${BUCKET}/${storagePath}`);
+    xhr.open('POST', `${SUPABASE_URL}/storage/v1/object/${bucket}/${storagePath}`);
     xhr.setRequestHeader('Authorization', `Bearer ${token}`);
     xhr.setRequestHeader('apikey', SUPABASE_ANON_KEY);
     if (onProgress) {
@@ -63,7 +63,7 @@ export const videoApi = {
         const thumbExt = (thumbnailFileName.split('.').pop() || 'jpg').toLowerCase();
         const thumbContentType = `image/${thumbExt === 'jpg' ? 'jpeg' : thumbExt}`;
         const thumbPath = `${mentorId}/${Date.now()}_thumb.${thumbExt}`;
-        await uploadFileXHR(thumbPath, thumbnailUri, thumbnailFileName, thumbContentType, session.access_token);
+        await uploadFileXHR(thumbPath, thumbnailUri, thumbnailFileName, thumbContentType, session.access_token, undefined, THUMB_BUCKET);
         const { data: { publicUrl: thumbPublicUrl } } = supabase.storage
           .from(THUMB_BUCKET)
           .getPublicUrl(thumbPath);
@@ -92,7 +92,7 @@ export const videoApi = {
   },
 
   // ─── Get free videos only (for HomeScreen session tiles) ────────────────────
-  getFreeVideos: async ({ page = 0, pageSize = 30 } = {}) => {
+  getFreeVideos: async ({ page = 0, pageSize = 10 } = {}) => {
     try {
       const from = page * pageSize;
       const to   = from + pageSize - 1;
