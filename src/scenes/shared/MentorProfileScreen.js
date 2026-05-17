@@ -242,7 +242,7 @@ function MetricsStatRow({ subscriberCount, rating, videoCount, totalSessions }) 
         </View>
         <View style={statsBar.starsSlot}>
           <View style={statsBar.starsSlotInner}>
-            {hasRating ? <GoldStarsRow rating={ratingNum} size={9} /> : null}
+            {/* {hasRating ? <GoldStarsRow rating={ratingNum} size={9} /> : null} */}
           </View>
         </View>
         <View style={statsBar.labelRow}>
@@ -583,10 +583,10 @@ export default function MentorProfileScreen({ navigation, route }) {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState(null);
-  const [playingVideo, setPlayingVideo] = useState(null);
   const [unlocking, setUnlocking] = useState(false);
   const [isUnlocked, setIsUnlocked] = useState(false);
   const [subscriberCount, setSubscriberCount] = useState(0);
+  const [showSubSheet, setShowSubSheet] = useState(false);
 
   const isOwnProfile = Boolean(user?.id && mentorId && user.id === mentorId);
   const libraryUnlocked = isUnlocked || isOwnProfile;
@@ -665,12 +665,10 @@ export default function MentorProfileScreen({ navigation, route }) {
   const tagOverflow = Math.max(0, allTags.length - TAG_VISIBLE);
   const visibleTags = allTags.slice(0, TAG_VISIBLE);
 
-  const hasLockedVideos = useMemo(() => (
-    videos.some((v, i) => !isPreviewSlot(v, i))
-  ), [videos]);
+  const hasLockedVideos = useMemo(() => videos.some(v => !v.is_free), [videos]);
 
-  const memberVideos = useMemo(() => videos.filter((v, i) => !isPreviewSlot(v, i)), [videos]);
-  const previewVideos = useMemo(() => videos.filter((v, i) => isPreviewSlot(v, i)), [videos]);
+  const memberVideos = useMemo(() => videos.filter(v => !v.is_free), [videos]);
+  const previewVideos = useMemo(() => videos.filter(v => v.is_free), [videos]);
 
   const handleUnlock = async () => {
     if (!hasLockedVideos) {
@@ -730,7 +728,14 @@ export default function MentorProfileScreen({ navigation, route }) {
   };
 
   const seeAll = () => {
-    Toast.show('Full list coming soon.', Toast.SHORT);
+    navigation.navigate(SCREEN_NAMES.MentorVideoFeed, { filterMentorId: mentorId });
+  };
+
+  const handlePlayVideo = (video) => {
+    navigation.navigate(SCREEN_NAMES.MentorVideoFeed, {
+      filterMentorId: mentorId,
+      startVideoId: video.id,
+    });
   };
 
   const openRecap = (session) => {
@@ -748,8 +753,9 @@ export default function MentorProfileScreen({ navigation, route }) {
   const rating = mentor?.rating ?? 0;
   const totalSessions = mentor?.total_sessions ?? 0;
   const videoStat = videos.length;
+  const unlockPrice = mentor?.unlock_price || 299;
   const showSubscribeCta = hasLockedVideos && !libraryUnlocked && !isOwnProfile;
-  const heroCoverUri = coverFromParams || COVER_IMAGE_URI;
+  const heroCoverUri = coverFromParams || mentor?.cover_image_url || COVER_IMAGE_URI;
 
   if (!mentorId) {
     return (
@@ -833,53 +839,54 @@ export default function MentorProfileScreen({ navigation, route }) {
             </View>
           </View>
 
+          {/* ── Identity Block ── */}
           <View style={styles.identityBlock}>
-            <View style={styles.identityAvatarCol}>
-              <View style={styles.avatarRingWrap}>
-                <LinearGradient
-                  colors={['rgba(167,139,250,0.95)', 'rgba(255,255,255,0.55)', 'rgba(94,234,212,0.5)']}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 1 }}
-                  style={styles.avatarRingGrad}
-                >
-                  {avatarUrl ? (
-                    <Image source={{ uri: avatarUrl }} style={styles.avatar} resizeMode="cover" />
-                  ) : (
-                    <View style={[styles.avatar, styles.avatarPlaceholder]}>
-                      <MaterialIcons name="person" size={44} color={PURPLE_LINK} />
-                    </View>
-                  )}
-                </LinearGradient>
-                <View style={styles.avatarOnlineDot} />
-              </View>
+            {/* Avatar */}
+            <View style={styles.avatarRingWrap}>
+              <LinearGradient
+                colors={['rgba(167,139,250,0.95)', 'rgba(255,255,255,0.55)', 'rgba(94,234,212,0.5)']}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={styles.avatarRingGrad}
+              >
+                {avatarUrl ? (
+                  <Image source={{ uri: avatarUrl }} style={styles.avatar} resizeMode="cover" />
+                ) : (
+                  <View style={[styles.avatar, styles.avatarPlaceholder]}>
+                    <MaterialIcons name="person" size={48} color={PURPLE_LINK} />
+                  </View>
+                )}
+              </LinearGradient>
+              <View style={styles.avatarOnlineDot} />
             </View>
 
-            <View style={styles.identityInfoCol}>
-              <View style={styles.nameRow}>
-                <Text style={styles.heroName} numberOfLines={2}>{name}</Text>
-                {(rating >= 4 || totalSessions >= 5) && (
-                  <MaterialIcons name="verified" size={18} color={VERIFIED_BLUE} style={styles.verifiedIcon} />
-                )}
-              </View>
-
-              <Text style={styles.titleGold} numberOfLines={1}>{specialization}</Text>
-              <Text style={styles.heroBio} numberOfLines={2}>{bio}</Text>
-
-              {visibleTags.length > 0 && (
-                <ScrollView horizontal nestedScrollEnabled showsHorizontalScrollIndicator={false} contentContainerStyle={styles.tagStrip}>
-                  {visibleTags.map(t => (
-                    <View key={t} style={styles.tagChip}>
-                      <Text style={styles.tagTxt}>{t}</Text>
-                    </View>
-                  ))}
-                  {tagOverflow > 0 && (
-                    <View style={[styles.tagChip, styles.tagOverflowChip]}>
-                      <Text style={styles.tagTxt}>+{tagOverflow}</Text>
-                    </View>
-                  )}
-                </ScrollView>
+            {/* Name + specialization + verified */}
+            <View style={styles.nameRow}>
+              <Text style={styles.heroName}>{name}</Text>
+              {(rating >= 4 || totalSessions >= 5) && (
+                <MaterialIcons name="verified" size={18} color={VERIFIED_BLUE} />
               )}
             </View>
+            <Text style={styles.titleGold}>{specialization}</Text>
+
+            {/* Bio */}
+            <Text style={styles.heroBio}>{bio}</Text>
+
+            {/* Tags */}
+            {visibleTags.length > 0 && (
+              <ScrollView horizontal nestedScrollEnabled showsHorizontalScrollIndicator={false} contentContainerStyle={styles.tagStrip}>
+                {visibleTags.map(t => (
+                  <View key={t} style={styles.tagChip}>
+                    <Text style={styles.tagTxt}>{t}</Text>
+                  </View>
+                ))}
+                {tagOverflow > 0 && (
+                  <View style={[styles.tagChip, styles.tagOverflowChip]}>
+                    <Text style={styles.tagTxt}>+{tagOverflow}</Text>
+                  </View>
+                )}
+              </ScrollView>
+            )}
           </View>
 
           <View style={styles.bodyFlex}>
@@ -895,14 +902,13 @@ export default function MentorProfileScreen({ navigation, route }) {
                 {showSubscribeCta ? (
                   <TouchableOpacity
                     style={styles.ctaHalf}
-                    onPress={handleUnlock}
-                    disabled={unlocking}
+                    onPress={() => setShowSubSheet(true)}
                     activeOpacity={0.92}
                   >
                     <LinearGradient
-                      colors={['#fde68a', GOLD, '#b45309']}
+                      colors={['#facc15', '#f59e0b']}
                       start={{ x: 0, y: 0 }}
-                      end={{ x: 1, y: 1 }}
+                      end={{ x: 1, y: 0 }}
                       style={[styles.ctaHalfInner, styles.ctaHalfInnerCompact, unlocking && { opacity: 0.75 }]}
                     >
                       {unlocking ? (
@@ -910,25 +916,37 @@ export default function MentorProfileScreen({ navigation, route }) {
                       ) : (
                         <>
                           <MaterialIcons name="star" size={16} color="#0c1228" />
-                          <Text style={styles.ctaHalfTxtDark} numberOfLines={1}>Subscribe</Text>
+                          <Text style={styles.ctaHalfTxtDark} numberOfLines={1}>Subscribe · ₹{unlockPrice}/mo</Text>
                         </>
                       )}
+                    </LinearGradient>
+                  </TouchableOpacity>
+                ) : libraryUnlocked && hasLockedVideos && !isOwnProfile ? (
+                  <TouchableOpacity
+                    style={styles.ctaHalf}
+                    onPress={() => Toast.show('You are subscribed.', Toast.SHORT)}
+                    activeOpacity={0.92}
+                  >
+                    <LinearGradient
+                      colors={['#34d399', '#059669']}
+                      start={{ x: 0, y: 0 }}
+                      end={{ x: 1, y: 1 }}
+                      style={[styles.ctaHalfInner, styles.ctaHalfInnerCompact]}
+                    >
+                      <MaterialIcons name="check-circle" size={16} color="#fff" />
+                      <Text style={styles.ctaHalfTxtDark} numberOfLines={1}>Subscribed</Text>
                     </LinearGradient>
                   </TouchableOpacity>
                 ) : (
                   <TouchableOpacity
                     style={styles.ctaHalf}
-                    onPress={() => {
-                      if (isOwnProfile) Toast.show('This is your channel.', Toast.SHORT);
-                      else if (libraryUnlocked && hasLockedVideos) Toast.show('You are subscribed.', Toast.SHORT);
-                      else Toast.show('Nothing to subscribe here.', Toast.SHORT);
-                    }}
+                    onPress={() => Toast.show(isOwnProfile ? 'This is your channel.' : 'Nothing to subscribe here.', Toast.SHORT)}
                     activeOpacity={0.92}
                   >
                     <View style={[styles.ctaHalfMuted, styles.ctaHalfInnerCompact]}>
                       <MaterialIcons name="star" size={16} color={C.text.muted} />
                       <Text style={styles.ctaHalfTxtMuted} numberOfLines={1}>
-                        {isOwnProfile ? 'Your channel' : (libraryUnlocked && hasLockedVideos ? 'Subscribed' : 'Subscribe')}
+                        {isOwnProfile ? 'Your channel' : 'Subscribe'}
                       </Text>
                     </View>
                   </TouchableOpacity>
@@ -960,8 +978,8 @@ export default function MentorProfileScreen({ navigation, route }) {
                           video={v}
                           index={globIdx >= 0 ? globIdx : 0}
                           isUnlocked={libraryUnlocked}
-                          onPlay={setPlayingVideo}
-                          locked
+                          onPlay={handlePlayVideo}
+                          locked={!libraryUnlocked}
                           cardWidth={compactRailW}
                           thumbAspect={0.82}
                         />
@@ -989,7 +1007,7 @@ export default function MentorProfileScreen({ navigation, route }) {
                           video={v}
                           index={globIdx >= 0 ? globIdx : 0}
                           isUnlocked={libraryUnlocked}
-                          onPlay={setPlayingVideo}
+                          onPlay={handlePlayVideo}
                           locked={false}
                           cardWidth={compactRailW}
                           thumbAspect={0.82}
@@ -1000,20 +1018,6 @@ export default function MentorProfileScreen({ navigation, route }) {
                 </View>
               )}
 
-              {pastSessions.length > 0 && (
-                <>
-                  <SectionHeaderRow title="Past 1-on-1 Sessions" onSeeAll={seeAll} />
-                  <View style={styles.pastSessionList}>
-                    {pastSessions.slice(0, 1).map(s => (
-                      <PastSessionRow
-                        key={s.id}
-                        session={s}
-                        onWatchRecap={() => openRecap(s)}
-                      />
-                    ))}
-                  </View>
-                </>
-              )}
 
               {videos.length === 0 && (
                 <View style={styles.emptyVideos}>
@@ -1031,18 +1035,124 @@ export default function MentorProfileScreen({ navigation, route }) {
             </View>
           </View>
         </View>
+        <View style={{ height: T.spacing.xxxl }} />
 
-        <VideoPlayerModal video={playingVideo} onClose={() => setPlayingVideo(null)} />
       </View>
+
+      {/* ── Subscribe Bottom Sheet ── */}
+      <Modal
+        visible={showSubSheet}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setShowSubSheet(false)}
+        statusBarTranslucent
+      >
+        <TouchableOpacity
+          style={sheet.backdrop}
+          activeOpacity={1}
+          onPress={() => setShowSubSheet(false)}
+        />
+        <View style={sheet.container}>
+          <View style={sheet.handle} />
+
+          {/* Mentor row */}
+          <View style={sheet.mentorRow}>
+            {avatarUrl ? (
+              <Image source={{ uri: avatarUrl }} style={sheet.avatar} />
+            ) : (
+              <View style={[sheet.avatar, sheet.avatarFallback]}>
+                <MaterialIcons name="person" size={22} color={C.accent.primary} />
+              </View>
+            )}
+            <View style={{ flex: 1 }}>
+              <Text style={sheet.mentorName}>{name}</Text>
+              <Text style={sheet.mentorSpec} numberOfLines={1}>{mentor?.specialization || ''}</Text>
+            </View>
+            <View style={sheet.pricePill}>
+              <Text style={sheet.priceText}>₹{unlockPrice}/mo</Text>
+            </View>
+          </View>
+
+          <View style={sheet.divider} />
+
+          <Text style={sheet.title}>Subscribe to video library</Text>
+          <Text style={sheet.sub}>Monthly subscription · Access all of {name}'s videos</Text>
+
+          <View style={sheet.perks}>
+            {['All current videos', 'All future uploads', 'Cancel anytime'].map(p => (
+              <View key={p} style={sheet.perkRow}>
+                <MaterialIcons name="check-circle" size={16} color={C.accent.success} />
+                <Text style={sheet.perkText}>{p}</Text>
+              </View>
+            ))}
+          </View>
+
+          <TouchableOpacity
+            style={[sheet.payBtn, unlocking && { opacity: 0.6 }]}
+            onPress={() => { setShowSubSheet(false); handleUnlock(); }}
+            disabled={unlocking}
+            activeOpacity={0.85}
+          >
+            <LinearGradient
+              colors={[C.accent.secondary, C.accent.primary]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+              style={sheet.payBtnInner}
+            >
+              {unlocking
+                ? <ActivityIndicator color="#000" size="small" />
+                : <Text style={sheet.payBtnText}>Subscribe · ₹{unlockPrice}/mo</Text>
+              }
+            </LinearGradient>
+          </TouchableOpacity>
+
+          <TouchableOpacity onPress={() => setShowSubSheet(false)} style={sheet.cancelBtn}>
+            <Text style={sheet.cancelText}>Maybe later</Text>
+          </TouchableOpacity>
+        </View>
+      </Modal>
+
     </SafeScreen>
   );
 }
+
+const sheet = StyleSheet.create({
+  backdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.55)' },
+  container: {
+    backgroundColor: '#0f0e2a',
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    padding: 24,
+    paddingBottom: 36,
+    borderTopWidth: 1,
+    borderColor: 'rgba(255,255,255,0.08)',
+  },
+  handle: { width: 40, height: 4, backgroundColor: 'rgba(255,255,255,0.2)', borderRadius: 2, alignSelf: 'center', marginBottom: 20 },
+  mentorRow: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 16 },
+  avatar: { width: 48, height: 48, borderRadius: 24 },
+  avatarFallback: { backgroundColor: 'rgba(124,58,237,0.15)', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: 'rgba(124,58,237,0.2)' },
+  mentorName: { color: C.text.primary, fontSize: 15, fontWeight: '700' },
+  mentorSpec: { color: C.text.muted, fontSize: 12, marginTop: 2 },
+  pricePill: { backgroundColor: 'rgba(94,234,212,0.12)', borderRadius: 10, paddingHorizontal: 10, paddingVertical: 5, borderWidth: 1, borderColor: 'rgba(94,234,212,0.25)' },
+  priceText: { color: C.accent.secondary, fontSize: 14, fontWeight: '800' },
+  divider: { height: 1, backgroundColor: 'rgba(255,255,255,0.07)', marginBottom: 16 },
+  title: { color: C.text.primary, fontSize: 18, fontWeight: '800', marginBottom: 6 },
+  sub: { color: C.text.muted, fontSize: 13, lineHeight: 19, marginBottom: 16 },
+  perks: { gap: 10, marginBottom: 24 },
+  perkRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  perkText: { color: C.text.secondary, fontSize: 13 },
+  payBtn: { borderRadius: 14, overflow: 'hidden', marginBottom: 12 },
+  payBtnInner: { paddingVertical: 15, alignItems: 'center' },
+  payBtnText: { color: '#000', fontSize: 15, fontWeight: '800' },
+  cancelBtn: { alignItems: 'center', paddingVertical: 8 },
+  cancelText: { color: C.text.muted, fontSize: 13 },
+});
 
 const styles = StyleSheet.create({
   root: { flexGrow: 1, backgroundColor: SCREEN_BG },
   mainColumn: { flexGrow: 1 },
   bodyFlex: { width: '100%' },
-  videoRailSection: { flexShrink: 0 },
+  videoRailSection: { flexShrink: 0, marginTop: T.spacing.md, marginBottom: T.spacing.sm },
   videoRailScroll: { flexGrow: 0 },
   centerFill: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: T.spacing.xl, gap: T.spacing.md },
   errTxt: { color: C.text.secondary, fontSize: 15, textAlign: 'center', paddingHorizontal: T.spacing.lg },
@@ -1068,22 +1178,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   identityBlock: {
-    marginTop: -40,
-    marginBottom: T.spacing.sm,
+    marginTop: -48,
     paddingHorizontal: T.spacing.lg,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: T.spacing.md,
-  },
-  identityAvatarCol: {
-    position: 'relative',
-    flexShrink: 0,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  identityInfoCol: {
-    flex: 1,
-    minWidth: 0,
+    paddingBottom: T.spacing.md,
+    alignItems: 'flex-start',
   },
   avatarRingWrap: {
     position: 'relative',
@@ -1111,34 +1209,30 @@ const styles = StyleSheet.create({
   },
   nameRow: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
-    justifyContent: 'flex-start',
+    alignItems: 'center',
     gap: 6,
-    flexWrap: 'wrap',
+    marginTop: T.spacing.md,
+    marginBottom: 2,
   },
-  verifiedIcon: { marginTop: 2 },
   heroName: {
-    flex: 1,
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: '800',
     color: C.text.primary,
-    letterSpacing: -0.35,
-    textAlign: 'left',
+    letterSpacing: -0.4,
+    flexShrink: 1,
   },
   titleGold: {
-    marginTop: 4,
+    marginTop: 2,
     color: GOLD,
     fontWeight: '700',
     fontSize: 13,
-    textAlign: 'left',
     lineHeight: 18,
   },
   heroBio: {
-    marginTop: 4,
+    marginTop: 8,
     color: C.text.secondary,
-    fontSize: 12,
-    lineHeight: 17,
-    textAlign: 'left',
+    fontSize: 13,
+    lineHeight: 20,
   },
   tagStrip: {
     flexGrow: 0,
@@ -1163,8 +1257,8 @@ const styles = StyleSheet.create({
   dualCtas: {
     flexDirection: 'row',
     gap: T.spacing.sm,
-    marginTop: T.spacing.xs,
-    marginBottom: 2,
+    marginTop: T.spacing.md,
+    marginBottom: T.spacing.md,
     paddingHorizontal: T.spacing.lg,
   },
   ctaHalf: {
@@ -1184,10 +1278,10 @@ const styles = StyleSheet.create({
     minHeight: 46,
   },
   ctaHalfInnerCompact: {
-    paddingVertical: 8,
+    paddingVertical: 13,
     paddingHorizontal: T.spacing.sm,
-    minHeight: 38,
-    gap: 4,
+    minHeight: 46,
+    gap: 6,
   },
   bookBtn: {
     flexDirection: 'row',

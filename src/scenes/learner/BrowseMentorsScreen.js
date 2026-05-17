@@ -49,7 +49,10 @@ export default function BrowseMentorsScreen({ navigation }) {
   };
 
   const handleMentorPress = mentor => {
-    navigation.navigate(SCREEN_NAMES.MentorProfile, {
+    navigation.navigate(SCREEN_NAMES.Mentor
+      
+      
+      , {
       mentorId: mentor.id,
     });
   };
@@ -277,10 +280,9 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
-    paddingBottom: T.spacing.xl,
   },
   section: {
-    marginBottom: T.spacing.xxl,
+    marginBottom: T.spacing.sm,
   },
   mentorsRow: {
     paddingRight: T.spacing.lg,

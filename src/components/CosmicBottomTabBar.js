@@ -8,6 +8,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import LinearGradient from 'react-native-linear-gradient';
+import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import { UNIFIED_THEME } from '../unifiedTheme';
 
 const C = UNIFIED_THEME.colors;
@@ -108,6 +109,36 @@ export function CosmicBottomTabBar({ state, descriptors, navigation }) {
             const inactiveColor = C.text.secondary;
             const color = isFocused ? activeColor : inactiveColor;
             const Icon = options.tabBarIcon;
+            const isSpecial = options.tabBarSpecial;
+
+            // ── Special center Upload button ──────────────────────────────
+            if (isSpecial) {
+              return (
+                <TouchableOpacity
+                  key={route.key}
+                  accessibilityRole="button"
+                  accessibilityState={isFocused ? { selected: true } : {}}
+                  onPress={onPress}
+                  onLongPress={onLongPress}
+                  style={styles.uploadHit}
+                  activeOpacity={0.85}
+                >
+                  <View style={styles.uploadRing}>
+                    <LinearGradient
+                      colors={[C.accent.primary, C.accent.secondary]}
+                      start={{ x: 0, y: 0 }}
+                      end={{ x: 1, y: 1 }}
+                      style={styles.uploadCircle}
+                    >
+                      <MaterialIcons name="file-upload" size={18} color="#fff" />
+                    </LinearGradient>
+                  </View>
+                  <Text style={[styles.label, { color: isFocused ? activeColor : inactiveColor, marginTop: 4 }]} numberOfLines={1}>
+                    {label}
+                  </Text>
+                </TouchableOpacity>
+              );
+            }
 
             return (
               <TouchableOpacity
@@ -249,5 +280,36 @@ const styles = StyleSheet.create({
   },
   labelWrap: {
     marginTop: 1,
+  },
+  uploadHit: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'flex-start',
+    paddingTop: 0,
+  },
+  uploadRing: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    padding: 2,
+    backgroundColor: 'rgba(124,58,237,0.25)',
+    borderWidth: 1.5,
+    borderColor: 'rgba(124,58,237,0.55)',
+    marginTop: -10,
+    ...Platform.select({
+      ios: {
+        shadowColor: C.accent.primary,
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.55,
+        shadowRadius: 10,
+      },
+      android: { elevation: 12 },
+    }),
+  },
+  uploadCircle: {
+    flex: 1,
+    borderRadius: 26,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 });

@@ -16,8 +16,9 @@ export const SCREEN_NAMES = {
 
   // Unified bottom tabs
   UnifiedHome: "UnifiedHome_Screen",
-  MentorSection: "MentorSection_Screen",
   LearnerSection: "LearnerSection_Screen",
+  UploadTab: "UploadTab_Screen",
+  MentorSection: "MentorSection_Screen",
   UnifiedSettings: "UnifiedSettings_Screen",
 
   // Mentor top tabs
@@ -55,4 +56,7 @@ export const SCREEN_NAMES = {
 
   // Learner video player
   VideoPlayer: "VideoPlayer_Screen",
+
+  // Standalone video feed (pushed from mentor profile — back returns to profile)
+  MentorVideoFeed: "MentorVideoFeed_Screen",
 };

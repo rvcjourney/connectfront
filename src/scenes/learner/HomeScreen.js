@@ -283,50 +283,7 @@ export default function LearnerHomeScreen({ navigation }) {
         />
       }
     >
-      {/*<View style={styles.hero}>
-        <LinearGradient
-          colors={TB.flatBarEdge}
-          locations={[0, 0.4, 0.7, 1]}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 0 }}
-          style={styles.heroBeam}
-          pointerEvents="none"
-        />
-          <LinearGradient
-          colors={[
-            'rgba(167, 139, 250, 0.14)',
-            'rgba(94, 234, 212, 0.1)',
-            'rgba(2, 0, 20, 0.68)',
-          ]}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={StyleSheet.absoluteFill}
-          pointerEvents="none"
-        />
 
-         <View style={styles.heroTop}>
-          <View style={styles.heroBadge}>
-            <MaterialIcons name="explore" size={16} color={T.colors.accent.secondary} />
-            <Text style={styles.heroBadgeText}>Discover</Text>
-          </View>
-        </View>
-        <Text style={styles.heroTitle}>Find your mentor</Text>
-        <Text style={styles.heroSubtitle}>
-          Search by name or skill, then book a session in a few taps.
-        </Text> 
-
-        <View style={styles.heroStats}>
-          <View style={styles.heroStat}>
-            <Text style={styles.heroStatValue}>{filteredCategories.length}</Text>
-            <Text style={styles.heroStatLabel}>Topics</Text>
-          </View>
-          <View style={styles.heroStatDivider} />
-          <View style={styles.heroStat}>
-            <Text style={styles.heroStatValue}>{totalMentors}</Text>
-            <Text style={styles.heroStatLabel}>Mentors</Text>
-          </View>
-        </View>
-      </View>  */}
 
       <View style={styles.searchWrap}>
         <View style={styles.searchLabelRow}>

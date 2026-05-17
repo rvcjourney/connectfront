@@ -170,7 +170,7 @@ export function MentorDetailSheet({ mentor, visible, onClose, onBook, onViewProf
             activeOpacity={0.8}
           >
             <MaterialIcons name="person-outline" size={18} color={C.accent.secondary} />
-            <Text style={styles.profileBtnTxt}>Full Profile</Text>
+            <Text style={styles.profileBtnTxt}>Profile</Text>
           </TouchableOpacity>
 
           <TouchableOpacity

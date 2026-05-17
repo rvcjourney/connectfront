@@ -28,32 +28,7 @@ const T = UNIFIED_THEME;
 const C = T.colors;
 const TB = C.tabBar;
 
-const STEPS = [
-  {
-    icon: 'search',
-    title: 'Browse Mentors',
-    desc: 'Filter by skill, rating, or hourly rate to find the right expert.',
-    color: C.accent.primary,
-    bg: 'rgba(240,216,117,0.1)',
-    border: 'rgba(240,216,117,0.25)',
-  },
-  {
-    icon: 'event-available',
-    title: 'Book a Slot',
-    desc: 'Pick a time that works. Secure checkout with instant confirmation.',
-    color: C.accent.secondary,
-    bg: 'rgba(94,234,212,0.1)',
-    border: 'rgba(94,234,212,0.25)',
-  },
-  {
-    icon: 'videocam',
-    title: 'Join Live Session',
-    desc: 'Connect face-to-face via HD video. Real mentorship, in real time.',
-    color: 'rgba(167,139,250,1)',
-    bg: 'rgba(167,139,250,0.1)',
-    border: 'rgba(167,139,250,0.25)',
-  },
-];
+
 
 // Accent colours cycle across session tiles (DB has no accent column)
 const TILE_ACCENTS = ['#a78bfa', '#5eead4', '#f0d875', '#f9a8d4'];
@@ -104,17 +79,13 @@ function VideoTileCard({ item, accent, onPress }) {
       </View>
 
       {/* Centered play button */}
-      <View style={styles.tilePlayWrap}>
-        <View style={styles.tilePlayBtn}>
-          <MaterialIcons name="play-arrow" size={26} color="#fff" style={{ marginLeft: 3 }} />
-        </View>
-      </View>
+      <View style={styles.tilePlayWrap}></View>
 
       {/* Bottom label */}
       <View style={styles.tileBottom}>
         <Text style={styles.tileTitle} numberOfLines={2}>{item.title || item.label}</Text>
         <Text style={[styles.tileSub, { color: `${accent}cc` }]} numberOfLines={1}>
-          {item.profiles?.name || 'Free video'}
+          {item.profiles?.name || 'Featured'}
         </Text>
       </View>
     </TouchableOpacity>
@@ -251,7 +222,7 @@ function useEntrance() {
 export default function HomeScreen() {
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
-  const { width } = useWindowDimensions();
+  const { width, height } = useWindowDimensions();
   const [playerVisible, setPlayerVisible] = useState(false);
   const [playerError, setPlayerError] = useState(false);
   const [urlPlayback, setUrlPlayback] = useState(null);
@@ -333,7 +304,7 @@ export default function HomeScreen() {
             onPress={() => navigation.navigate(SCREEN_NAMES.UnifiedSettings)}
             activeOpacity={0.75}
           >
-            <MaterialIcons name="notifications-none" size={22} color={C.text.secondary} />
+            <MaterialIcons name="bolt" size={22} color={C.text.secondary} />
           </TouchableOpacity>
         </Animated.View>
 
@@ -359,9 +330,9 @@ export default function HomeScreen() {
             }}
           >
             <LinearGradient
-              colors={['rgba(167,139,250,0.22)', 'rgba(94,234,212,0.1)', 'rgba(2,0,20,0.6)']}
+              colors={['rgba(167,139,250,0.12)', 'rgba(2,0,20,0.85)']}
               start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
+              end={{ x: 1, y: 0 }}
               style={StyleSheet.absoluteFill}
             />
             <LinearGradient
@@ -384,10 +355,14 @@ export default function HomeScreen() {
                 </LinearGradient>
               </View>
               <View style={styles.videoCardText}>
-                <Text style={styles.videoCardLabel}>WATCH</Text>
-                <Text style={styles.videoCardTitle}>{introVideo.title}</Text>
+                <Text style={styles.videoCardTitle} numberOfLines={1}>
+                  {introVideo.title}{' '}
+                  <Text style={{ color: '#f0d875', fontWeight: '800' }}>
+                    {introVideo.label}
+                  </Text>
+                </Text>
               </View>
-              <MaterialIcons name="chevron-right" size={22} color={C.text.muted} />
+              <Text style={styles.videoCardArrows}>{'>>>'}</Text>
             </View>
           </TouchableOpacity>
         </Animated.View>
@@ -401,7 +376,7 @@ export default function HomeScreen() {
               <View style={[styles.sectionDot, { backgroundColor: C.accent.primary }]} />
               <Text style={styles.sectionLabel}>Recent Sessions</Text>
             </View>
-            <TouchableOpacity onPress={() => navigation.navigate(SCREEN_NAMES.LearnerSection, { screen: SCREEN_NAMES.LearnerVideos })} activeOpacity={0.7}>
+            <TouchableOpacity onPress={() => navigation.navigate(SCREEN_NAMES.LearnerSection, { screen: SCREEN_NAMES.LearnerVideos, params: { filterMentorId: null } })} activeOpacity={0.7}>
               <Text style={styles.seeAll}>See all</Text>
             </TouchableOpacity>
           </View>
@@ -419,7 +394,7 @@ export default function HomeScreen() {
                 onPress={cat => {
                   navigation.navigate(SCREEN_NAMES.LearnerSection, {
                     screen: SCREEN_NAMES.LearnerVideos,
-                    params: { startVideoId: cat.id },
+                    params: { startVideoId: cat.id, filterMentorId: null },
                   });
                 }}
               />
@@ -428,82 +403,6 @@ export default function HomeScreen() {
         </Animated.View>
         )}
 
-
-        {/* ── DUAL ROLE CARDS ── */}
-        <Animated.View style={[styles.dualRow, s3.style]}>
-          {/* Learner card */}
-          <TouchableOpacity style={[styles.roleCard, styles.roleCardLeft]} onPress={() => navigation.navigate(SCREEN_NAMES.LearnerSection)} activeOpacity={0.82}>
-            <LinearGradient
-              colors={['rgba(94,234,212,0.14)', 'rgba(94,234,212,0.04)']}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={StyleSheet.absoluteFill}
-            />
-            <View style={[styles.roleIconWrap, { backgroundColor: 'rgba(94,234,212,0.14)', borderColor: 'rgba(94,234,212,0.3)' }]}>
-              <MaterialIcons name="school" size={24} color={C.accent.secondary} />
-            </View>
-            <Text style={styles.roleTitle}>As a Learner</Text>
-            <Text style={styles.roleDesc}>Browse mentors, book sessions, and level up your skills 1-on-1.</Text>
-            <View style={styles.roleFeatures}>
-              {['Search by skill', 'Pay per session', 'Live video call'].map(f => (
-                <View key={f} style={styles.roleFeatureRow}>
-                  <MaterialIcons name="check-circle" size={12} color={C.accent.secondary} />
-                  <Text style={styles.roleFeatureText}>{f}</Text>
-                </View>
-              ))}
-            </View>
-          </TouchableOpacity>
-
-          {/* Mentor card */}
-          <TouchableOpacity style={[styles.roleCard, styles.roleCardRight]} onPress={() => navigation.navigate(SCREEN_NAMES.MentorSection)} activeOpacity={0.82}>
-            <LinearGradient
-              colors={['rgba(240,216,117,0.14)', 'rgba(240,216,117,0.04)']}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={StyleSheet.absoluteFill}
-            />
-            <View style={[styles.roleIconWrap, { backgroundColor: 'rgba(240,216,117,0.14)', borderColor: 'rgba(240,216,117,0.3)' }]}>
-              <MaterialIcons name="workspace-premium" size={24} color={C.accent.primary} />
-            </View>
-            <Text style={styles.roleTitle}>As a Mentor</Text>
-            <Text style={styles.roleDesc}>Set your rate, manage availability, and earn by teaching what you love.</Text>
-            <View style={styles.roleFeatures}>
-              {['Set hourly rate', 'Manage schedule', 'Track earnings'].map(f => (
-                <View key={f} style={styles.roleFeatureRow}>
-                  <MaterialIcons name="check-circle" size={12} color={C.accent.primary} />
-                  <Text style={styles.roleFeatureText}>{f}</Text>
-                </View>
-              ))}
-            </View>
-          </TouchableOpacity>
-        </Animated.View>
-
-        {/* ── HOW IT WORKS ── */}
-        <Animated.View style={[styles.section, s4.style]}>
-          <View style={styles.sectionHeaderRow}>
-            <View style={[styles.sectionDot, { backgroundColor: C.accent.secondary }]} />
-            <Text style={styles.sectionLabel}>HOW IT WORKS</Text>
-          </View>
-          <Text style={styles.sectionTitle}>From discovery to live session in minutes</Text>
-
-          {STEPS.map((step, i) => (
-            <View key={step.title} style={styles.stepRow}>
-              <View style={styles.stepLeft}>
-                <View style={[styles.stepIconBox, { backgroundColor: step.bg, borderColor: step.border }]}>
-                  <MaterialIcons name={step.icon} size={22} color={step.color} />
-                </View>
-                {i < STEPS.length - 1 ? <View style={styles.stepConnector} /> : null}
-              </View>
-              <View style={styles.stepBody}>
-                <View style={styles.stepTitleRow}>
-                  <Text style={styles.stepNum}>0{i + 1}</Text>
-                  <Text style={styles.stepTitle}>{step.title}</Text>
-                </View>
-                <Text style={styles.stepDesc}>{step.desc}</Text>
-              </View>
-            </View>
-          ))}
-        </Animated.View>
 
         {/* ── TRUST STRIP ── */}
         <Animated.View style={[styles.trustStrip, s5.style]}>
@@ -587,7 +486,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: T.spacing.md,
-    marginBottom: T.spacing.xl,
+    marginBottom: T.spacing.xs,
   },
   logoMark: {
     width: 48,
@@ -637,10 +536,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 6,
   },
-  catSubtitle: {
-    ...T.typography.labelSm,
-    color: C.text.muted,
-    fontSize: 11,
+  sectionLabel: {
+    color: '#ffffff',
   },
   tileRow: {
     gap: T.spacing.md,
@@ -679,16 +576,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingBottom: 5,
   },
-  tilePlayBtn: {
-    width: 42,
-    height: 42,
-    borderRadius: 24,
-    backgroundColor: 'rgba(255,255,255,0.18)',
-    borderWidth: 2,
-    borderColor: 'rgba(255,255,255,0.6)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
   tileBottom: {
     padding: T.spacing.sm,
     paddingBottom: T.spacing.md,
@@ -704,149 +591,6 @@ const styles = StyleSheet.create({
     fontSize: 10,
     color: 'rgba(255,255,255,0.42)',
     fontWeight: '500',
-  },
-
-  // Dual role
-  dualRow: {
-    flexDirection: 'row',
-    gap: T.spacing.sm,
-    marginBottom: T.spacing.xl,
-  },
-  roleCard: {
-    flex: 1,
-    borderRadius: T.borderRadius.sm,
-    borderWidth: 1,
-    padding: T.spacing.md,
-    overflow: 'hidden',
-    position: 'relative',
-    ...Platform.select({ ios: T.shadows.small, android: { elevation: 3 } }),
-  },
-  roleCardLeft: {
-    borderColor: 'rgba(94,234,212,0.28)',
-    backgroundColor: C.primary.dark,
-    borderTopWidth: 2,
-    borderTopColor: 'rgba(94,234,212,0.6)',
-  },
-  roleCardRight: {
-    borderColor: 'rgba(240,216,117,0.28)',
-    backgroundColor: C.primary.dark,
-    borderTopWidth: 2,
-    borderTopColor: 'rgba(240,216,117,0.6)',
-  },
-  roleIconWrap: {
-    width: 44,
-    height: 44,
-    borderRadius: 12,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 1,
-    marginBottom: T.spacing.sm,
-  },
-  roleTitle: {
-    ...T.typography.labelMd,
-    color: C.text.primary,
-    fontWeight: '800',
-    marginBottom: T.spacing.xs,
-  },
-  roleDesc: {
-    ...T.typography.bodyXs,
-    color: C.text.muted,
-    lineHeight: 15,
-    marginBottom: T.spacing.md,
-  },
-  roleFeatures: {
-    gap: 5,
-  },
-  roleFeatureRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
-  },
-  roleFeatureText: {
-    ...T.typography.bodyXs,
-    color: C.text.secondary,
-    fontSize: 11,
-  },
-
-  // How it works
-  section: {
-    marginBottom: T.spacing.xl,
-  },
-  sectionHeaderRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    marginBottom: 5,
-  },
-  sectionDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-  },
-  sectionLabel: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: C.text.muted,
-    letterSpacing: 1.4,
-  },
-  sectionTitle: {
-    ...T.typography.headingSm,
-    color: C.text.primary,
-    fontWeight: '800',
-    marginBottom: T.spacing.lg,
-  },
-  stepRow: {
-    flexDirection: 'row',
-    gap: T.spacing.md,
-    marginBottom: 2,
-  },
-  stepLeft: {
-    alignItems: 'center',
-    width: 44,
-  },
-  stepIconBox: {
-    width: 44,
-    height: 44,
-    borderRadius: 12,
-    borderWidth: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  stepConnector: {
-    width: 2,
-    flex: 1,
-    minHeight: 20,
-    backgroundColor: C.border.light,
-    borderRadius: 1,
-    opacity: 0.5,
-    marginVertical: 4,
-  },
-  stepBody: {
-    flex: 1,
-    paddingBottom: T.spacing.lg,
-  },
-  stepTitleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: T.spacing.sm,
-    marginBottom: 5,
-    marginTop: T.spacing.sm,
-  },
-  stepNum: {
-    fontSize: 10,
-    fontWeight: '900',
-    color: C.text.muted,
-    letterSpacing: 0.5,
-  },
-  stepTitle: {
-    ...T.typography.labelMd,
-    color: C.text.primary,
-    fontWeight: '800',
-  },
-  stepDesc: {
-    ...T.typography.bodySm,
-    color: C.text.muted,
-    lineHeight: 20,
   },
 
   // Trust strip
@@ -883,9 +627,9 @@ const styles = StyleSheet.create({
   videoCard: {
     borderRadius: T.borderRadius.md,
     overflow: 'hidden',
-    borderWidth: 1,
-    borderColor: C.border.light,
-    backgroundColor: C.primary.dark,
+    borderWidth: 0,
+    borderColor: 'transparent',
+    backgroundColor: 'transparent',
     marginBottom: T.spacing.lg,
     position: 'relative',
     ...Platform.select({ ios: T.shadows.small, android: { elevation: 4 } }),
@@ -902,14 +646,14 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: T.spacing.md,
-    padding: T.spacing.lg,
+    padding: T.spacing.md,
   },
   videoPlayBtn: {
     width: 52,
     height: 52,
     borderRadius: 26,
     overflow: 'hidden',
-    borderWidth: 1,
+    // borderWidth: 1,
     borderColor: C.border.light,
     ...Platform.select({
       ios: { shadowColor: C.accent.primary, shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.45, shadowRadius: 6 },
@@ -924,19 +668,19 @@ const styles = StyleSheet.create({
   videoCardText: {
     flex: 1,
     minWidth: 0,
-  },
-  videoCardLabel: {
-    fontSize: 9,
-    fontWeight: '800',
-    color: C.text.muted,
-    letterSpacing: 1.4,
-    marginBottom: 3,
+    justifyContent: 'center',
   },
   videoCardTitle: {
     ...T.typography.labelMd,
     color: C.text.primary,
-    fontWeight: '800',
-    marginBottom: 5,
+    fontWeight: '700',
+  },
+  videoCardArrows: {
+    fontSize: 14,
+    fontWeight: '900',
+    color: C.accent.primary,
+    letterSpacing: 2,
+    marginLeft: 4,
   },
   // Player modal
   playerScreen: {

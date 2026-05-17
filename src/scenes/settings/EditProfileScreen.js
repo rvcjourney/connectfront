@@ -155,6 +155,7 @@ export default function EditProfileScreen({ navigation }) {
   const [experienceYears, setExperienceYears] = useState('');
   const [pricePerHour, setPricePerHour] = useState('');
   const [category, setCategory] = useState('');
+  const [coverImageUrl, setCoverImageUrl] = useState('');
   const [showCategoryPicker, setShowCategoryPicker] = useState(false);
   const [adminCategoryNames, setAdminCategoryNames] = useState([]);
 
@@ -194,6 +195,7 @@ export default function EditProfileScreen({ navigation }) {
         setExperienceYears(m.experience_years ? String(m.experience_years) : '');
         setPricePerHour(m.price_per_hour ? String(m.price_per_hour) : '');
         setCategory(m.category || '');
+        setCoverImageUrl(m.cover_image_url || '');
       }
       if (learnerData.status === 'fulfilled' && learnerData.value) {
         const l = learnerData.value;
@@ -234,6 +236,33 @@ export default function EditProfileScreen({ navigation }) {
     );
   };
 
+  const handlePickCover = () => {
+    launchImageLibrary(
+      { mediaType: 'photo', quality: 0.85, includeBase64: true },
+      async response => {
+        if (response.didCancel || response.errorCode) return;
+        const asset = response.assets?.[0];
+        if (!asset?.base64) return;
+        try {
+          setLoading(true);
+          const url = await profileApi.uploadCoverImage({
+            userId: profile.id,
+            base64: asset.base64,
+            mimeType: asset.type || 'image/jpeg',
+            fileName: asset.fileName || 'cover.jpg',
+          });
+          setCoverImageUrl(url);
+          Toast.show('Cover updated');
+        } catch (e) {
+          console.error('[handlePickCover]', e?.message || e);
+          Toast.show(e?.message || 'Failed to upload cover', Toast.LONG);
+        } finally {
+          setLoading(false);
+        }
+      }
+    );
+  };
+
   const handleSave = async () => {
     if (!name.trim()) {
       Toast.show('Please enter your name');
@@ -249,6 +278,7 @@ export default function EditProfileScreen({ navigation }) {
           bio: mentorBio,
           experienceYears: parseInt(experienceYears) || 0,
           pricePerHour: parseFloat(pricePerHour) || 0,
+          coverImageUrl,
         }),
         profileApi.updateLearnerProfile({
           userId: profile.id,
@@ -409,6 +439,32 @@ export default function EditProfileScreen({ navigation }) {
               </View>
             </View>
 
+            {/* Cover Image */}
+            <View style={[sField.wrapper]}>
+              <View style={sField.labelRow}>
+                <MaterialIcons name="image" size={13} color={UNIFIED_THEME.colors.text.muted} style={sField.icon} />
+                <Text style={sField.label}>Cover Image</Text>
+              </View>
+              <TouchableOpacity
+                style={styles.coverPicker}
+                onPress={handlePickCover}
+                disabled={loading}
+                activeOpacity={0.8}
+              >
+                {coverImageUrl ? (
+                  <Image source={{ uri: coverImageUrl }} style={styles.coverPreview} resizeMode="cover" />
+                ) : (
+                  <View style={styles.coverPlaceholder}>
+                    <MaterialIcons name="add-photo-alternate" size={28} color={UNIFIED_THEME.colors.text.muted} />
+                    <Text style={styles.coverPlaceholderTxt}>Tap to upload cover</Text>
+                  </View>
+                )}
+                <View style={styles.coverEditBadge}>
+                  <MaterialIcons name="edit" size={14} color="#fff" />
+                </View>
+              </TouchableOpacity>
+            </View>
+
             {/* Category dropdown */}
             <View style={[sField.wrapper, sField.noBorder]}>
               <View style={sField.labelRow}>
@@ -517,6 +573,45 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     paddingBottom: UNIFIED_THEME.spacing.xl,
+  },
+  coverPicker: {
+    width: '100%',
+    height: 110,
+    borderRadius: 10,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: UNIFIED_THEME.colors.border.light,
+    backgroundColor: UNIFIED_THEME.colors.component.input,
+    marginTop: 6,
+    position: 'relative',
+  },
+  coverPreview: {
+    width: '100%',
+    height: '100%',
+  },
+  coverPlaceholder: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+  },
+  coverPlaceholderTxt: {
+    fontSize: 12,
+    color: UNIFIED_THEME.colors.text.muted,
+    fontWeight: '600',
+  },
+  coverEditBadge: {
+    position: 'absolute',
+    bottom: 8,
+    right: 8,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: 'rgba(0,0,0,0.55)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.2)',
   },
   avatarSection: {
     alignItems: 'center',

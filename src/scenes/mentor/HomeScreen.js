@@ -23,6 +23,7 @@ import { useAuth } from '../../hooks/useAuth';
 import { bookingApi } from '../../api/bookingApi';
 import { earningsApi } from '../../api/earningsApi';
 import { profileApi } from '../../api/profileApi';
+import { videoApi } from '../../api/videoApi';
 import { formatCurrency } from '../../utils/formatCurrency';
 
 const T = UNIFIED_THEME;
@@ -142,6 +143,7 @@ export default function MentorDashboardScreen() {
   const [totalEarnings, setTotalEarnings] = useState(0);
   const [totalSessions, setTotalSessions] = useState(0);
   const [rating, setRating] = useState(0);
+  const [subscriberCount, setSubscriberCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
@@ -170,16 +172,18 @@ export default function MentorDashboardScreen() {
       setLoading(true);
 
       // All three fetches fire in parallel
-      const [mentorData, bookings, earnings] = await Promise.all([
+      const [mentorData, bookings, earnings, subCount] = await Promise.all([
         profileApi.getMentorProfile(profile.id).catch(() => null),
         bookingApi.getBookingsByMentor(profile.id).catch(() => []),
         earningsApi.getTotalEarnings(profile.id).catch(() => 0),
+        videoApi.getMentorActiveSubscriberCount(profile.id).catch(() => 0),
       ]);
 
       setMentorProfile(mentorData);
       setRating(mentorData?.rating || 0);
       setTotalEarnings(earnings || 0);
       setTotalSessions(mentorData?.total_sessions || 0);
+      setSubscriberCount(Number.isFinite(Number(subCount)) ? Math.max(0, Math.floor(Number(subCount))) : 0);
 
       const upcomingBookings = (bookings || []).filter(b => {
         const dateStr = b.availability_slots?.date;
@@ -300,6 +304,14 @@ export default function MentorDashboardScreen() {
             <MaterialIcons name="school" size={16} color={T.colors.accent.secondary} />
             <Text style={styles.heroBadgeText}>Mentor</Text>
           </View>
+          <TouchableOpacity
+            style={styles.previewBtn}
+            onPress={() => navigation.navigate(SCREEN_NAMES.MentorProfile, { mentorId: profile?.id })}
+            activeOpacity={0.8}
+          >
+            <MaterialIcons name="visibility" size={13} color={T.colors.accent.primary} />
+            <Text style={styles.previewBtnTxt}>Preview Profile</Text>
+          </TouchableOpacity>
         </View>
         {/* <Text style={styles.heroGreeting}>Welcome back</Text> */}
         <Text style={styles.heroTitle}>Hi, {firstName}</Text>
@@ -309,27 +321,28 @@ export default function MentorDashboardScreen() {
         <Text style={styles.heroSubtitle}>
           Manage sessions, track earnings, and keep your availability up to date.
         </Text>
+        {/* Row 1 — experience */}
         <View style={styles.heroMetaRow}>
           <View style={styles.heroMetaChip}>
-            <MaterialIcons
-              name="work-history"
-              size={14}
-              color={T.colors.accent.secondary}
-            />
+            <MaterialIcons name="work-history" size={14} color={T.colors.accent.secondary} />
             <Text style={styles.heroMetaText}>
-              {(mentorProfile?.experience_years ?? 0) || 0}+ yrs
+              {(mentorProfile?.experience_years ?? 0) || 0}+ yrs experience
             </Text>
           </View>
-          <View style={styles.heroMetaChip}>
-            <MaterialIcons
-              name="payments"
-              size={14}
-              color={T.colors.accent.success}
-            />
+        </View>
+
+        {/* Row 2 — pricing */}
+        <View style={styles.heroPricingRow}>
+          <View style={[styles.heroMetaChip, styles.heroPricingChip]}>
+            <MaterialIcons name="payments" size={14} color={T.colors.accent.success} />
             <Text style={styles.heroMetaText}>
-              {mentorProfile?.price_per_hour
-                ? `₹${mentorProfile.price_per_hour}/hr`
-                : 'Rate not set'}
+              Session: {mentorProfile?.price_per_hour ? `₹${mentorProfile.price_per_hour}/hr` : 'Not set'}
+            </Text>
+          </View>
+          <View style={[styles.heroMetaChip, styles.heroPricingChip]}>
+            <MaterialIcons name="star" size={14} color={T.colors.accent.warning} />
+            <Text style={styles.heroMetaText}>
+              Subscribe: {mentorProfile?.unlock_price ? `₹${mentorProfile.unlock_price}/mo` : 'Not set'}
             </Text>
           </View>
         </View>
@@ -394,21 +407,29 @@ export default function MentorDashboardScreen() {
 
         <View style={styles.heroSnapshot}>
           <View style={styles.snapshotItem}>
-            <Text style={styles.snapshotLabel}>Total earned</Text>
+            <Text style={styles.snapshotLabel}>Earned</Text>
             <Text style={styles.snapshotValue} numberOfLines={1}>
               {formatCurrency(totalEarnings)}
             </Text>
           </View>
           <View style={styles.snapshotDivider} />
           <View style={styles.snapshotItem}>
-            <Text style={styles.snapshotLabel}>Completed</Text>
+            <Text style={styles.snapshotLabel}>Sessions</Text>
             <Text style={styles.snapshotValue}>{totalSessions}</Text>
+          </View>
+          <View style={styles.snapshotDivider} />
+          <View style={styles.snapshotItem}>
+            <Text style={styles.snapshotLabel}>Subscribers</Text>
+            <View style={styles.snapshotRatingRow}>
+              <MaterialIcons name="groups" size={15} color={T.colors.accent.primary} />
+              <Text style={styles.snapshotValue}>{subscriberCount}</Text>
+            </View>
           </View>
           <View style={styles.snapshotDivider} />
           <View style={styles.snapshotItem}>
             <Text style={styles.snapshotLabel}>Rating</Text>
             <View style={styles.snapshotRatingRow}>
-              <MaterialIcons name="star" size={16} color={T.colors.accent.warning} />
+              <MaterialIcons name="star" size={15} color={T.colors.accent.warning} />
               <Text style={styles.snapshotValue}>{ratingDisplay}</Text>
             </View>
           </View>
@@ -510,6 +531,22 @@ const styles = StyleSheet.create({
     color: T.colors.text.secondary,
     fontWeight: '700',
   },
+  previewBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    paddingHorizontal: T.spacing.sm + 2,
+    paddingVertical: 5,
+    borderRadius: T.borderRadius.sm,
+    backgroundColor: 'rgba(124,58,237,0.12)',
+    borderWidth: 1,
+    borderColor: 'rgba(124,58,237,0.3)',
+  },
+  previewBtnTxt: {
+    ...T.typography.labelSm,
+    color: T.colors.accent.primary,
+    fontWeight: '700',
+  },
   heroTitle: {
     ...T.typography.headingMd,
     color: T.colors.text.primary,
@@ -528,9 +565,19 @@ const styles = StyleSheet.create({
   heroMetaRow: {
     flexDirection: 'row',
     gap: T.spacing.sm,
-    marginBottom: T.spacing.md,
+    marginBottom: T.spacing.sm,
     zIndex: 1,
     paddingRight: 76,
+  },
+  heroPricingRow: {
+    flexDirection: 'row',
+    gap: T.spacing.sm,
+    marginBottom: T.spacing.md,
+    zIndex: 1,
+  },
+  heroPricingChip: {
+    flex: 1,
+    justifyContent: 'center',
   },
   heroMetaChip: {
     flexDirection: 'row',

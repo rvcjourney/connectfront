@@ -7,6 +7,7 @@ import HomeScreen from '../scenes/home/HomeScreen';
 import { MentorSectionNavigator } from './MentorSectionNavigator';
 import { LearnerSectionNavigator } from './LearnerSectionNavigator';
 import UnifiedSettingsScreen from '../scenes/settings/UnifiedSettingsScreen';
+import MentorVideosScreen from '../scenes/mentor/MentorVideosScreen';
 
 const BottomTab = createBottomTabNavigator();
 
@@ -43,9 +44,20 @@ export const UnifiedTabNavigator = () => {
         name={SCREEN_NAMES.LearnerSection}
         component={LearnerSectionNavigator}
         options={{
-          tabBarLabel: 'Learner',
+          tabBarLabel: 'Search',
           tabBarIcon: ({ color, size }) => (
-            <MaterialIcons name="menu-book" size={size} color={color} />
+            <MaterialIcons name="search" size={size} color={color} />
+          ),
+        }}
+      />
+      <BottomTab.Screen
+        name={SCREEN_NAMES.UploadTab}
+        component={MentorVideosScreen}
+        options={{
+          tabBarLabel: 'Upload',
+          tabBarSpecial: true,
+          tabBarIcon: ({ color, size }) => (
+            <MaterialIcons name="file-upload" size={size} color={color} />
           ),
         }}
       />
@@ -53,9 +65,9 @@ export const UnifiedTabNavigator = () => {
         name={SCREEN_NAMES.MentorSection}
         component={MentorSectionNavigator}
         options={{
-          tabBarLabel: 'Mentor',
+          tabBarLabel: 'Me',
           tabBarIcon: ({ color, size }) => (
-            <MaterialIcons name="school" size={size} color={color} />
+            <MaterialIcons name="person" size={size} color={color} />
           ),
         }}
       />

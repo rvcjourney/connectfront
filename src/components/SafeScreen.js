@@ -19,41 +19,34 @@ export const SafeScreen = ({
 }) => {
   const insets = useSafeAreaInsets();
 
-  // Floating bottom tab bar (~88px) + safe area handled in tab bar shell
-  const bottomTabHeight = hasBottomTabs ? 88 : 0;
+  // Tab bar content ~54px + its own safe-area padding; don't double-count insets
+  const bottomTabHeight = hasBottomTabs ? 64 : 0;
   const topPad = padding + (includeTopInset ? insets.top : 0);
 
-  const content = (
-    <View
-      style={[
-        styles.container,
-        {
-          backgroundColor,
-          paddingTop: topPad,
-          paddingBottom: padding + insets.bottom + bottomTabHeight,
-          paddingLeft: padding + insets.left,
-          paddingRight: padding + insets.right,
-        },
-      ]}
-    >
-      {children}
-    </View>
-  );
+  const paddingStyle = {
+    backgroundColor,
+    paddingTop: topPad,
+    paddingBottom: insets.bottom + bottomTabHeight,
+    paddingLeft: padding + insets.left,
+    paddingRight: padding + insets.right,
+  };
 
   return (
     <CosmicBackground style={styles.safeArea}>
       {scrollable ? (
         <ScrollView
           showsVerticalScrollIndicator={false}
-          contentContainerStyle={{ flexGrow: 1 }}
+          contentContainerStyle={paddingStyle}
           keyboardShouldPersistTaps="handled"
           nestedScrollEnabled
           refreshControl={refreshControl}
         >
-          {content}
+          {children}
         </ScrollView>
       ) : (
-        content
+        <View style={[styles.container, paddingStyle]}>
+          {children}
+        </View>
       )}
     </CosmicBackground>
   );

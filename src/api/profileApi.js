@@ -41,7 +41,7 @@ export const profileApi = {
     try {
       const { data, error } = await supabase
         .from('mentor_profiles')
-        .select('id, specialization, bio, experience_years, price_per_hour, rating, total_sessions, unlock_price, category')
+        .select('id, specialization, bio, experience_years, price_per_hour, rating, total_sessions, unlock_price, category, cover_image_url')
         .eq('id', mentorId)
         .single();
 
@@ -81,17 +81,21 @@ export const profileApi = {
     bio,
     experienceYears,
     pricePerHour,
+    coverImageUrl,
   }) => {
     try {
+      const updates = {
+        id: userId,
+        specialization: specialization || '',
+        bio: bio || '',
+        experience_years: experienceYears ?? 0,
+        price_per_hour: pricePerHour ?? 0,
+      };
+      if (coverImageUrl !== undefined) updates.cover_image_url = coverImageUrl;
+
       const { data, error } = await supabase
         .from('mentor_profiles')
-        .upsert({
-          id: userId,
-          specialization: specialization || '',
-          bio: bio || '',
-          experience_years: experienceYears ?? 0,
-          price_per_hour: pricePerHour ?? 0,
-        }, { onConflict: 'id' })
+        .upsert(updates, { onConflict: 'id' })
         .select()
         .single();
 
@@ -176,6 +180,37 @@ export const profileApi = {
       return avatarUrl;
     } catch (error) {
       console.error('uploadAvatar error:', error);
+      throw new Error(getSupabaseErrorMessage(error));
+    }
+  },
+
+  uploadCoverImage: async ({ userId, base64, mimeType, fileName }) => {
+    try {
+      const fileExt = (fileName || 'cover.jpg').split('.').pop();
+      const filePath = `${userId}/cover.${fileExt}`;
+      const arrayBuffer = decode(base64);
+
+      const { error: uploadError } = await supabase.storage
+        .from('cover_image')
+        .upload(filePath, arrayBuffer, {
+          contentType: mimeType || 'image/jpeg',
+          upsert: true,
+        });
+
+      if (uploadError) throw uploadError;
+
+      const { data } = supabase.storage.from('cover_image').getPublicUrl(filePath);
+      const coverUrl = `${data.publicUrl}?t=${Date.now()}`;
+
+      const { error: updateError } = await supabase
+        .from('mentor_profiles')
+        .update({ cover_image_url: coverUrl })
+        .eq('id', userId);
+
+      if (updateError) throw updateError;
+      return coverUrl;
+    } catch (error) {
+      console.error('[uploadCoverImage]', error?.message || error);
       throw new Error(getSupabaseErrorMessage(error));
     }
   },

@@ -20,6 +20,7 @@ import Toast from 'react-native-simple-toast';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { UNIFIED_THEME } from '../../unifiedTheme';
 import { videoApi } from '../../api/videoApi';
+import { homeApi } from '../../api/homeApi';
 import { useAuth } from '../../hooks/useAuth';
 import { useFocusEffect } from '@react-navigation/native';
 import { SCREEN_NAMES } from '../../navigators/screenNames';
@@ -258,7 +259,7 @@ function ShortCard({ item, isActive, height, isUnlocked, expiresAt, onLockPress,
       {(paused || !canPlay) && (
         <TouchableOpacity
           style={s.mentorTopRow}
-          onPress={() => onViewProfile(item.mentor_id)}
+          onPress={() => item.mentor_id && onViewProfile(item.mentor_id)}
           activeOpacity={0.75}
         >
           {item.profiles?.avatar_url ? (
@@ -335,7 +336,8 @@ export default function VideosScreen({ navigation, route }) {
   const [lockSheetVideo, setLockSheetVideo] = useState(null);
 
   const flatListRef = useRef(null);
-  const startVideoId = route?.params?.startVideoId;
+  const startVideoId    = route?.params?.startVideoId;
+  const filterMentorId  = route?.params?.filterMentorId;
   const [screenFocused, setScreenFocused] = useState(true);
 
   useFocusEffect(
@@ -356,7 +358,7 @@ export default function VideosScreen({ navigation, route }) {
 
   useEffect(() => {
     loadFeed(false, user?.id);
-  }, [user?.id]);
+  }, [user?.id, filterMentorId]);
 
   // Scroll to startVideoId when navigated from HomeScreen
   useEffect(() => {
@@ -375,11 +377,26 @@ export default function VideosScreen({ navigation, route }) {
     if (isRefresh) setRefreshing(true);
     else setLoading(true);
     try {
-      const [vids, unlocks] = await Promise.all([
-        videoApi.getAllPublicVideos({ excludeMentorId: userId }),
+      const [vids, unlocks, homeResult] = await Promise.all([
+        videoApi.getAllPublicVideos({ excludeMentorId: filterMentorId ? null : userId }),
         userId ? videoApi.getLearnerUnlocks(userId) : Promise.resolve(new Map()),
+        homeApi.getVideos().catch(() => ({ sessions: [] })),
       ]);
-      setVideos(vids);
+
+      // Normalize admin videos to match ShortCard's expected shape
+      const adminVids = (homeResult.sessions || []).map(v => ({
+        ...v,
+        is_free: true,
+        mentor_id: null,
+        profiles: { name: 'Connectiqo', avatar_url: null },
+        mentor_profiles: { unlock_price: 0, specialization: 'Featured' },
+      }));
+
+      const allVids = [...adminVids, ...vids];
+
+      setVideos(filterMentorId
+        ? [...allVids.filter(v => v.mentor_id === filterMentorId), ...allVids.filter(v => v.mentor_id !== filterMentorId)]
+        : allVids);
       setUnlocksMap(unlocks);
     } catch (e) {
       Toast.show('Failed to load videos');
