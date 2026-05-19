@@ -7,6 +7,8 @@ export const SCREEN_NAMES = {
   Welcome: "Welcome_Screen",
   Signup: "Signup_Screen",
   Login: "Login_Screen",
+  ForgotPassword: "ForgotPassword_Screen",
+  ResetPassword: "ResetPassword_Screen",
   IntroVideos: "IntroVideos_Screen",
 
   /** Root stack — main tabs (must match RootNavigator screen name) */
@@ -47,6 +49,9 @@ export const SCREEN_NAMES = {
 
   // Mentor video library
   MentorVideos: "MentorVideos_Screen",
+
+  // Mentor stats dashboard (accessible from own profile preview)
+  MentorStats: "MentorStats_Screen",
 
   // Payout / KYC setup
   PayoutSetup: "PayoutSetup_Screen",

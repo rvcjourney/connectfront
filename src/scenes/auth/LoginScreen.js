@@ -15,6 +15,7 @@ import CosmicBackground from '../../components/CosmicBackground';
 import { UNIFIED_THEME } from '../../unifiedTheme';
 import Button from '../../components/Button';
 import { authApi } from '../../api/authApi';
+import { SCREEN_NAMES } from '../../navigators/screenNames';
 
 export default function LoginScreen({ navigation }) {
   const [email, setEmail] = useState('');
@@ -135,7 +136,7 @@ export default function LoginScreen({ navigation }) {
 
             {/* Forgot Password */}
             <TouchableOpacity
-              onPress={() => navigation.navigate('Welcome_Screen')}
+              onPress={() => navigation.navigate(SCREEN_NAMES.ForgotPassword)}
               disabled={loading}
               style={styles.forgotWrap}
             >

@@ -167,6 +167,8 @@ export default function MentorAvailabilityScreen({ navigation }) {
         const uniqueSlots = [...new Set(slots)];
         for (const slot of uniqueSlots) {
           const [startTime, endTime] = slot.split('-');
+          // Skip past time slots on today
+          if (isTimeInPast(date, startTime)) continue;
           insertTasks.push(
             availabilityApi.addAvailabilitySlot({
               mentorId: profile.id,
@@ -334,7 +336,7 @@ export default function MentorAvailabilityScreen({ navigation }) {
                   >
                     {day}
                   </Text>
-                  {hasSlots && allowed && (
+                  {hasSlots && (
                     <Text style={[
                       styles.slotCount,
                       isSelected && styles.slotCountSelected,

@@ -6,6 +6,8 @@ import { SCREEN_NAMES } from './screenNames';
 import WelcomeScreen from '../scenes/auth/WelcomeScreen';
 import SignupScreen from '../scenes/auth/SignupScreen';
 import LoginScreen from '../scenes/auth/LoginScreen';
+import ForgotPasswordScreen from '../scenes/auth/ForgotPasswordScreen';
+import ResetPasswordScreen from '../scenes/auth/ResetPasswordScreen';
 import IntroVideosScreen from '../scenes/auth/IntroVideosScreen';
 
 const AuthStack = createStackNavigator();
@@ -27,6 +29,8 @@ export const AuthNavigator = () => {
       />
       <AuthStack.Screen name={SCREEN_NAMES.Signup} component={SignupScreen} />
       <AuthStack.Screen name={SCREEN_NAMES.Login} component={LoginScreen} />
+      <AuthStack.Screen name={SCREEN_NAMES.ForgotPassword} component={ForgotPasswordScreen} />
+      <AuthStack.Screen name={SCREEN_NAMES.ResetPassword} component={ResetPasswordScreen} />
     </AuthStack.Navigator>
   );
 };

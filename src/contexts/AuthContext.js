@@ -9,6 +9,7 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [pendingPasswordReset, setPendingPasswordReset] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -167,6 +168,8 @@ export const AuthProvider = ({ children }) => {
     loading,
     signOut,
     refreshProfile: () => user && fetchProfile(user.id),
+    pendingPasswordReset,
+    setPendingPasswordReset,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

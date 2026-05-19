@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   RefreshControl,
   Dimensions,
+  ActivityIndicator,
 } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
@@ -93,7 +94,10 @@ export default function MentorEarningsScreen() {
   const [chartData, setChartData] = useState(null);
   const [recentEarnings, setRecentEarnings] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [periodLoading, setPeriodLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const [totalPayouts, setTotalPayouts] = useState(0);
+  const hasLoadedRef = useRef(false);
 
   useEffect(() => {
     if (profile?.id) loadEarningsData();
@@ -102,7 +106,11 @@ export default function MentorEarningsScreen() {
   const loadEarningsData = async () => {
     if (!profile?.id) return;
     try {
-      setLoading(true);
+      if (!hasLoadedRef.current) {
+        setLoading(true);
+      } else {
+        setPeriodLoading(true);
+      }
 
       const periodFetch =
         activePeriod === 'week' ? earningsApi.getEarningsByWeek(profile.id)
@@ -115,8 +123,10 @@ export default function MentorEarningsScreen() {
         earningsApi.getEarningsByMentor(profile.id),
       ]);
 
+      hasLoadedRef.current = true;
       setTotalEarnings(total || 0);
       setPeriodEarnings(data || []);
+      setTotalPayouts((all || []).length);
       setRecentEarnings((all || []).slice(0, 10));
 
       // Build full period grid (fill missing slots with 0)
@@ -125,17 +135,12 @@ export default function MentorEarningsScreen() {
 
       if (activePeriod === 'week') {
         const DAY_LABELS = ['Su','Mo','Tu','We','Th','Fr','Sa'];
-        const today = new Date();
-        const dayOfWeek = today.getDay();
-        labels = DAY_LABELS.map((lbl, i) => {
-          const d = new Date(today);
-          d.setDate(today.getDate() - dayOfWeek + i);
-          return lbl;
-        });
+        labels = [...DAY_LABELS];
         const earningsByDate = {};
         (data || []).forEach(d => {
           if (d.date) {
-            const dayIdx = new Date(d.date).getDay();
+            const [y, m, day] = d.date.split('-').map(Number);
+            const dayIdx = new Date(y, m - 1, day).getDay();
             earningsByDate[DAY_LABELS[dayIdx]] = parseFloat(d.amount || 0);
           }
         });
@@ -159,11 +164,13 @@ export default function MentorEarningsScreen() {
         values = MONTHS.map(m => earningsByMonth[m] || 0);
       }
 
-      setChartData({ labels, datasets: [{ data: values }] });
+      const hasData = values.some(v => v > 0);
+      setChartData(hasData ? { labels, datasets: [{ data: values }] } : null);
     } catch {
       Toast.show('Failed to load earnings');
     } finally {
       setLoading(false);
+      setPeriodLoading(false);
     }
   };
 
@@ -187,7 +194,7 @@ export default function MentorEarningsScreen() {
           <View style={styles.kpiCol}>
             <View style={styles.kpiCard}>
               <MaterialIcons name="receipt-long" size={16} color={T.colors.accent.secondary} />
-              <Text style={styles.kpiVal}>{recentEarnings.length}</Text>
+              <Text style={styles.kpiVal}>{totalPayouts}</Text>
               <Text style={styles.kpiLbl}>Payouts</Text>
             </View>
             <View style={styles.kpiCard}>
@@ -216,7 +223,11 @@ export default function MentorEarningsScreen() {
 
         {/* ── Chart Card ── */}
         <View style={styles.chartCard}>
-          {chartData ? (
+          {periodLoading ? (
+            <View style={styles.emptyChart}>
+              <ActivityIndicator color={T.colors.accent.secondary} />
+            </View>
+          ) : chartData ? (
             <CustomBarChart data={chartData} />
           ) : (
             <View style={styles.emptyChart}>

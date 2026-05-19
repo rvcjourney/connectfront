@@ -25,6 +25,7 @@ import { SafeScreen } from '../../components/SafeScreen';
 import { UNIFIED_THEME } from '../../unifiedTheme';
 import { profileApi } from '../../api/profileApi';
 import { videoApi } from '../../api/videoApi';
+import MentorStatsScreen from '../mentor/MentorStatsScreen';
 import { bookingApi } from '../../api/bookingApi';
 import { useAuth } from '../../hooks/useAuth';
 import { SCREEN_NAMES } from '../../navigators/screenNames';
@@ -587,6 +588,7 @@ export default function MentorProfileScreen({ navigation, route }) {
   const [isUnlocked, setIsUnlocked] = useState(false);
   const [subscriberCount, setSubscriberCount] = useState(0);
   const [showSubSheet, setShowSubSheet] = useState(false);
+  const [showStats, setShowStats] = useState(false);
 
   const isOwnProfile = Boolean(user?.id && mentorId && user.id === mentorId);
   const libraryUnlocked = isUnlocked || isOwnProfile;
@@ -831,14 +833,26 @@ export default function MentorProfileScreen({ navigation, route }) {
             </ImageBackground>
             <View style={[styles.heroTopBar, { paddingTop: Math.max(6, insets.top - 6) }]}>
               <View style={styles.heroBarActions}>
-                <TouchableOpacity
-                  onPress={() => navigation.goBack()}
-                  style={styles.heroCircleBtn}
-                  hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
-                >
-                  <MaterialIcons name="arrow-back" size={22} color={C.text.primary} />
-                </TouchableOpacity>
+                {!isOwnProfile && (
+                  <TouchableOpacity
+                    onPress={() => navigation.goBack()}
+                    style={styles.heroCircleBtn}
+                    hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+                  >
+                    <MaterialIcons name="arrow-back" size={22} color={C.text.primary} />
+                  </TouchableOpacity>
+                )}
               </View>
+              {isOwnProfile && (
+                <TouchableOpacity
+                  style={styles.mentorBadge}
+                  onPress={() => setShowStats(true)}
+                  activeOpacity={0.8}
+                >
+                  <MaterialIcons name="school" size={13} color={C.accent.secondary} />
+                  <Text style={styles.mentorBadgeTxt}>Mentor</Text>
+                </TouchableOpacity>
+              )}
             </View>
           </View>
 
@@ -955,8 +969,13 @@ export default function MentorProfileScreen({ navigation, route }) {
                   </TouchableOpacity>
                 )}
 
-                <TouchableOpacity style={styles.ctaHalf} onPress={goBook} activeOpacity={0.92}>
-                  <View style={[styles.bookBtn, styles.ctaHalfInnerCompact]}>
+                <TouchableOpacity
+                  style={styles.ctaHalf}
+                  onPress={isOwnProfile ? undefined : goBook}
+                  activeOpacity={isOwnProfile ? 1 : 0.92}
+                  disabled={isOwnProfile}
+                >
+                  <View style={[styles.bookBtn, styles.ctaHalfInnerCompact, isOwnProfile && { opacity: 0.45 }]}>
                     <MaterialIcons name="calendar-today" size={16} color={TEAL} />
                     <Text style={styles.bookBtnTxt} numberOfLines={1}>Book 1-on-1</Text>
                   </View>
@@ -1041,6 +1060,15 @@ export default function MentorProfileScreen({ navigation, route }) {
         <View style={{ height: T.spacing.xxxl }} />
 
       </View>
+
+      {/* ── Mentor Stats Modal ── */}
+      <Modal
+        visible={showStats}
+        animationType="slide"
+        onRequestClose={() => setShowStats(false)}
+      >
+        <MentorStatsScreen onClose={() => setShowStats(false)} />
+      </Modal>
 
       {/* ── Subscribe Bottom Sheet ── */}
       <Modal
@@ -1166,10 +1194,26 @@ const styles = StyleSheet.create({
   heroTopBar: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'flex-start',
+    justifyContent: 'space-between',
     paddingHorizontal: T.spacing.md,
   },
   heroBarActions: { flexDirection: 'row', alignItems: 'center', gap: T.spacing.sm },
+  mentorBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 8,
+    backgroundColor: 'rgba(0,0,0,0.45)',
+    borderWidth: 1,
+    borderColor: 'rgba(94,234,212,0.35)',
+  },
+  mentorBadgeTxt: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: C.accent.secondary,
+  },
   heroCircleBtn: {
     width: 40,
     height: 40,

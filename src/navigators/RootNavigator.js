@@ -24,11 +24,12 @@ import CategoryMentorsScreen from '../scenes/learner/CategoryMentorsScreen';
 import MentorVideosScreen from '../scenes/mentor/MentorVideosScreen';
 import PayoutSetupScreen from '../scenes/settings/PayoutSetupScreen';
 import ConnectivityScreen from '../scenes/settings/ConnectivityScreen';
+import MentorStatsScreen from '../scenes/mentor/MentorStatsScreen';
 
 const RootStack = createStackNavigator();
 
 export const RootNavigator = () => {
-  const { session, loading } = useContext(AuthContext);
+  const { session, loading, pendingPasswordReset } = useContext(AuthContext);
   const [postLoginIntro, setPostLoginIntro] = useState({
     ready: false,
     needsIntro: false,
@@ -72,11 +73,13 @@ export const RootNavigator = () => {
     return <LoadingOverlay visible message="Loading..." />;
   }
 
-  if (session && !postLoginIntro.ready) {
+  if (session && !pendingPasswordReset && !postLoginIntro.ready) {
     return <LoadingOverlay visible message="Loading..." />;
   }
 
-  const initialRouteName = !session
+  const showAuth = !session || pendingPasswordReset;
+
+  const initialRouteName = showAuth
     ? 'Auth'
     : postLoginIntro.needsIntro
       ? SCREEN_NAMES.PostLoginIntro
@@ -84,7 +87,7 @@ export const RootNavigator = () => {
 
   return (
     <RootStack.Navigator
-      key={session ? 'root-authed' : 'root-guest'}
+      key={showAuth ? 'root-guest' : 'root-authed'}
       initialRouteName={initialRouteName}
       screenOptions={{
         headerShown: false,
@@ -92,7 +95,7 @@ export const RootNavigator = () => {
         cardStyle: { backgroundColor: UNIFIED_THEME.colors.primary.void },
       }}
     >
-      {!session ? (
+      {showAuth ? (
         <RootStack.Screen
           name="Auth"
           component={AuthNavigator}
@@ -159,6 +162,10 @@ export const RootNavigator = () => {
             <RootStack.Screen
               name={SCREEN_NAMES.Connectivity}
               component={ConnectivityScreen}
+            />
+            <RootStack.Screen
+              name={SCREEN_NAMES.MentorStats}
+              component={MentorStatsScreen}
             />
           </RootStack.Group>
           <RootStack.Screen
