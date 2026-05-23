@@ -1,15 +1,11 @@
-import React, { useContext, useEffect, useState } from 'react'; // eslint-disable-line
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import React, { useContext } from 'react';
 import { createStackNavigator } from '@react-navigation/stack';
 import { AuthContext } from '../contexts/AuthContext';
 import { LoadingOverlay } from '../components/LoadingOverlay';
 import { UNIFIED_THEME } from '../unifiedTheme';
-import { INTRO_FLOW } from '../constants/introFlow';
-import { postLoginIntroSeenKey } from '../constants/storageKeys';
 import { SCREEN_NAMES } from './screenNames';
 import { AuthNavigator } from './AuthNavigator';
 import { UnifiedTabNavigator } from './UnifiedTabNavigator';
-import IntroVideosScreen from '../scenes/auth/IntroVideosScreen';
 import SharedMentorProfileScreen from '../scenes/shared/MentorProfileScreen';
 import BookingScreen from '../scenes/shared/BookingScreen';
 import VideoCallScreen from '../scenes/shared/VideoCallScreen';
@@ -31,65 +27,17 @@ const RootStack = createStackNavigator();
 
 export const RootNavigator = () => {
   const { session, loading, pendingPasswordReset } = useContext(AuthContext);
-  const [postLoginIntro, setPostLoginIntro] = useState({
-    ready: false,
-    needsIntro: false,
-  });
-
-  useEffect(() => {
-    if (loading) {
-      return;
-    }
-    if (!session?.user?.id) {
-      setPostLoginIntro({ ready: true, needsIntro: false });
-      return;
-    }
-
-    setPostLoginIntro({ ready: false, needsIntro: false });
-
-    let cancelled = false;
-    (async () => {
-      try {
-        const key = postLoginIntroSeenKey(session.user.id);
-        const v = await AsyncStorage.getItem(key);
-        if (!cancelled) {
-          setPostLoginIntro({
-            ready: true,
-            needsIntro: v !== '1',
-          });
-        }
-      } catch {
-        if (!cancelled) {
-          setPostLoginIntro({ ready: true, needsIntro: false });
-        }
-      }
-    })();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [session?.user?.id, loading]);
 
   if (loading) {
     return <LoadingOverlay visible message="Loading..." />;
   }
 
-  if (session && !pendingPasswordReset && !postLoginIntro.ready) {
-    return <LoadingOverlay visible message="Loading..." />;
-  }
-
   const showAuth = !session || pendingPasswordReset;
-
-  const initialRouteName = showAuth
-    ? 'Auth'
-    : postLoginIntro.needsIntro
-      ? SCREEN_NAMES.PostLoginIntro
-      : SCREEN_NAMES.RootUnifiedTabs;
 
   return (
     <RootStack.Navigator
       key={showAuth ? 'root-guest' : 'root-authed'}
-      initialRouteName={initialRouteName}
+      initialRouteName={showAuth ? 'Auth' : SCREEN_NAMES.RootUnifiedTabs}
       screenOptions={{
         headerShown: false,
         animationEnabled: true,
@@ -104,12 +52,6 @@ export const RootNavigator = () => {
         />
       ) : (
         <>
-          <RootStack.Screen
-            name={SCREEN_NAMES.PostLoginIntro}
-            component={IntroVideosScreen}
-            initialParams={{ flow: INTRO_FLOW.POST_AUTH }}
-            options={{ gestureEnabled: false, animationEnabled: true }}
-          />
           <RootStack.Screen
             name={SCREEN_NAMES.RootUnifiedTabs}
             component={UnifiedTabNavigator}

@@ -9,13 +9,9 @@ export const SCREEN_NAMES = {
   Login: "Login_Screen",
   ForgotPassword: "ForgotPassword_Screen",
   ResetPassword: "ResetPassword_Screen",
-  IntroVideos: "IntroVideos_Screen",
 
   /** Root stack — main tabs (must match RootNavigator screen name) */
   RootUnifiedTabs: "UnifiedTabs",
-  /** Shown once per user after login until Skip / close */
-  PostLoginIntro: "PostLoginIntro_Screen",
-
   // Unified bottom tabs
   UnifiedHome: "UnifiedHome_Screen",
   LearnerSection: "LearnerSection_Screen",
