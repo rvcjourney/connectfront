@@ -10,13 +10,17 @@ import { LoadingOverlay } from '../../components/LoadingOverlay';
 import { useAuth } from '../../hooks/useAuth';
 import { availabilityApi } from '../../api/availabilityApi';
 
-const TIME_SLOTS = [
-  '06:00', '07:00', '08:00', '09:00', '10:00', '11:00',
-  '12:00', '13:00', '14:00', '15:00', '16:00', '17:00',
-  '18:00', '19:00', '20:00', '21:00', '22:00',
-];
+// 20-min slots with 10-min gap: 06:00, 06:30, 07:00, 07:30 ...
+const TIME_SLOTS = (() => {
+  const slots = [];
+  for (let h = 6; h <= 22; h++) {
+    slots.push(`${String(h).padStart(2, '0')}:00`);
+    if (h < 22) slots.push(`${String(h).padStart(2, '0')}:30`);
+  }
+  return slots;
+})();
 
-const SLOT_DURATION = 60;         // minutes per slot
+const SLOT_DURATION = 20;         // minutes per slot
 const SLOT_BUFFER_MINS = 30;      // don't allow slots starting within 30 min from now
 
 const getDaysInMonth = (date) => {
@@ -233,7 +237,7 @@ export default function MentorAvailabilityScreen({ navigation }) {
           <Text style={styles.eyebrow}>Availability</Text>
           <Text style={styles.title}>When you can teach</Text>
           <Text style={styles.subtitle}>
-            Pick dates, then choose hour-long slots. Save to publish your calendar.
+            Pick dates, then choose 20-minute slots (with 10-min break between). Save to publish your calendar.
           </Text>
         </View>
       </View>
