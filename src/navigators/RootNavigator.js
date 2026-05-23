@@ -1,7 +1,7 @@
 import React, { useContext } from 'react';
 import { createStackNavigator } from '@react-navigation/stack';
 import { AuthContext } from '../contexts/AuthContext';
-import { LoadingOverlay } from '../components/LoadingOverlay';
+import { SplashScreen } from '../components/SplashScreen';
 import { UNIFIED_THEME } from '../unifiedTheme';
 import { SCREEN_NAMES } from './screenNames';
 import { AuthNavigator } from './AuthNavigator';
@@ -28,7 +28,7 @@ export const RootNavigator = () => {
   const { session, loading, pendingPasswordReset } = useContext(AuthContext);
 
   if (loading) {
-    return <LoadingOverlay visible message="Loading..." />;
+    return <SplashScreen />;
   }
 
   const showAuth = !session || pendingPasswordReset;
