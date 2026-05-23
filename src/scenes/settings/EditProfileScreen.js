@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import {
   View,
   Text,
@@ -7,6 +7,7 @@ import {
   Image,
   StyleSheet,
   ScrollView,
+  Alert,
 } from 'react-native';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import Toast from 'react-native-simple-toast';
@@ -16,6 +17,7 @@ import { SafeScreen } from '../../components/SafeScreen';
 import { LoadingOverlay } from '../../components/LoadingOverlay';
 import { useAuth } from '../../hooks/useAuth';
 import { profileApi } from '../../api/profileApi';
+import { supabase } from '../../lib/supabase';
 import { MENTOR_CATEGORIES } from '../../constants/mentorCategories';
 import { fetchActiveCategoryNames } from '../../api/contentApi';
 
@@ -56,7 +58,7 @@ const sSection = StyleSheet.create({
   },
 });
 
-const Field = ({ icon, label, value, onChangeText, placeholder, readOnly, hint, multiline, isLast, keyboardType }) => (
+const Field = ({ icon, label, value, onChangeText, placeholder, readOnly, hint, error, multiline, isLast, keyboardType }) => (
   <View style={[sField.wrapper, isLast && sField.noBorder]}>
     <View style={sField.labelRow}>
       {icon && <MaterialIcons name={icon} size={13} color={UNIFIED_THEME.colors.text.muted} style={sField.icon} />}
@@ -80,7 +82,7 @@ const Field = ({ icon, label, value, onChangeText, placeholder, readOnly, hint, 
         textAlignVertical={multiline ? 'top' : 'center'}
       />
     )}
-    {hint && <Text style={sField.hint}>{hint}</Text>}
+    {hint && <Text style={[sField.hint, error && sField.hintError]}>{hint}</Text>}
   </View>
 );
 
@@ -139,6 +141,9 @@ const sField = StyleSheet.create({
     color: UNIFIED_THEME.colors.text.disabled,
     marginTop: 4,
   },
+  hintError: {
+    color: '#EF4444',
+  },
 });
 
 export default function EditProfileScreen({ navigation }) {
@@ -148,6 +153,8 @@ export default function EditProfileScreen({ navigation }) {
   const [saving, setSaving] = useState(false);
 
   const [name, setName] = useState(profile?.name || '');
+  const [username, setUsername] = useState(profile?.username || '');
+  const [usernameError, setUsernameError] = useState('');
   const [learnerBio, setLearnerBio] = useState('');
   const [interests, setInterests] = useState('');
   const [specialization, setSpecialization] = useState('');
@@ -177,6 +184,7 @@ export default function EditProfileScreen({ navigation }) {
   useEffect(() => {
     setAvatarUrl(profile?.avatar_url || '');
     setName(profile?.name || '');
+    setUsername(profile?.username || '');
     loadProfiles();
   }, [profile?.id]);
 
@@ -263,15 +271,74 @@ export default function EditProfileScreen({ navigation }) {
     );
   };
 
+  const validateUsername = useCallback(async (val) => {
+    const clean = val.trim().toLowerCase();
+    if (!clean) { setUsernameError('Username is required'); return false; }
+    if (!/^[a-z0-9_]{3,30}$/.test(clean)) {
+      setUsernameError('3–30 chars, only letters, numbers, underscores');
+      return false;
+    }
+    if (clean !== profile?.username) {
+      const { data } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('username', clean)
+        .maybeSingle();
+      if (data) { setUsernameError('Username already taken'); return false; }
+    }
+    setUsernameError('');
+    return true;
+  }, [profile?.username]);
+
+  const handleDeleteAccount = () => {
+    Alert.alert(
+      'Delete Account',
+      'Are you sure you want to permanently delete your account? All your data will be lost and this cannot be undone.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: () => {
+            Alert.alert(
+              'Final Confirmation',
+              'Type DELETE to confirm — this action is irreversible.',
+              [
+                { text: 'Cancel', style: 'cancel' },
+                {
+                  text: 'Yes, Delete My Account',
+                  style: 'destructive',
+                  onPress: async () => {
+                    try {
+                      setSaving(true);
+                      await supabase.from('profiles').delete().eq('id', profile.id);
+                      await supabase.auth.signOut();
+                    } catch (err) {
+                      Toast.show('Failed to delete account. Please contact support.');
+                    } finally {
+                      setSaving(false);
+                    }
+                  },
+                },
+              ],
+            );
+          },
+        },
+      ],
+    );
+  };
+
   const handleSave = async () => {
     if (!name.trim()) {
       Toast.show('Please enter your name');
       return;
     }
+    const uValid = await validateUsername(username);
+    if (!uValid) return;
     try {
       setSaving(true);
       await Promise.all([
-        profileApi.updateProfile({ userId: profile.id, name: name.trim() }),
+        profileApi.updateProfile({ userId: profile.id, name: name.trim(), username: username.trim().toLowerCase() }),
         profileApi.updateMentorProfile({
           userId: profile.id,
           specialization,
@@ -359,6 +426,18 @@ export default function EditProfileScreen({ navigation }) {
               value={name}
               onChangeText={setName}
               placeholder="Your display name"
+            />
+            <Field
+              icon="alternate-email"
+              label="Username"
+              value={username}
+              onChangeText={v => {
+                setUsername(v.toLowerCase().replace(/[^a-z0-9_]/g, ''));
+                setUsernameError('');
+              }}
+              placeholder="your_username"
+              hint={usernameError || 'Letters, numbers, underscores only. Min 3 chars.'}
+              error={!!usernameError}
             />
             <Field
               icon="email"
@@ -508,6 +587,31 @@ export default function EditProfileScreen({ navigation }) {
                   ))}
                 </View>
               )}
+            </View>
+          </View>
+
+          {/* Danger Zone */}
+          <View style={styles.dangerZoneWrap}>
+            <View style={styles.dangerZoneHeader}>
+              <MaterialIcons name="warning" size={14} color="#EF4444" />
+              <Text style={styles.dangerZoneTitle}>Danger Zone</Text>
+              <View style={styles.dangerZoneLine} />
+            </View>
+            <View style={styles.dangerCard}>
+              <View style={styles.dangerInfo}>
+                <Text style={styles.dangerActionTitle}>Delete Account</Text>
+                <Text style={styles.dangerActionDesc}>
+                  Permanently delete your account and all associated data. This cannot be undone.
+                </Text>
+              </View>
+              <TouchableOpacity
+                style={styles.deleteBtn}
+                onPress={handleDeleteAccount}
+                activeOpacity={0.8}
+              >
+                <MaterialIcons name="delete-forever" size={16} color="#EF4444" />
+                <Text style={styles.deleteBtnTxt}>Delete</Text>
+              </TouchableOpacity>
             </View>
           </View>
 
@@ -717,5 +821,68 @@ const styles = StyleSheet.create({
   dropdownItemTextActive: {
     color: UNIFIED_THEME.colors.accent.primary,
     fontWeight: '600',
+  },
+  dangerZoneWrap: {
+    marginTop: UNIFIED_THEME.spacing.xl,
+    marginBottom: UNIFIED_THEME.spacing.xxl,
+  },
+  dangerZoneHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: UNIFIED_THEME.spacing.sm,
+    marginBottom: UNIFIED_THEME.spacing.md,
+  },
+  dangerZoneTitle: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#EF4444',
+    letterSpacing: 1.2,
+    textTransform: 'uppercase',
+  },
+  dangerZoneLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: 'rgba(239,68,68,0.25)',
+  },
+  dangerCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: 'rgba(239,68,68,0.06)',
+    borderWidth: 1,
+    borderColor: 'rgba(239,68,68,0.2)',
+    borderRadius: 14,
+    padding: UNIFIED_THEME.spacing.md,
+    gap: UNIFIED_THEME.spacing.md,
+  },
+  dangerInfo: {
+    flex: 1,
+  },
+  dangerActionTitle: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#FCA5A5',
+    marginBottom: 3,
+  },
+  dangerActionDesc: {
+    fontSize: 12,
+    color: 'rgba(252,165,165,0.7)',
+    lineHeight: 17,
+  },
+  deleteBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 10,
+    backgroundColor: 'rgba(239,68,68,0.15)',
+    borderWidth: 1,
+    borderColor: 'rgba(239,68,68,0.35)',
+  },
+  deleteBtnTxt: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#EF4444',
   },
 });

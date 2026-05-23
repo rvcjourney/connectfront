@@ -14,6 +14,8 @@ import { RootNavigator } from "./src/navigators/RootNavigator";
 import { SCREEN_NAMES } from "./src/navigators/screenNames";
 import { linking } from "./src/navigators/linkingConfig";
 import { loadRemoteConfig } from "./src/utils/remoteConfig";
+import { requestBatteryOptimizationExemption } from "./src/utils/sessionReminder";
+import notifee, { AndroidImportance } from "@notifee/react-native";
 
 LogBox.ignoreLogs([
   "Warning: Non-serializable values detected",
@@ -33,7 +35,38 @@ const navigationTheme = {
 export default function App() {
   const navigationRef = React.useRef();
 
-  React.useEffect(() => { loadRemoteConfig(); }, []);
+  React.useEffect(() => {
+    loadRemoteConfig();
+    requestBatteryOptimizationExemption();
+
+    // Create notification channel on startup (Android requires this)
+    notifee.createChannel({
+      id: 'session_reminders',
+      name: 'Session Reminders',
+      importance: AndroidImportance.HIGH,
+      sound: 'default',
+    });
+
+    // Show FCM notifications when app is in foreground
+    let unsubscribeForeground;
+    try {
+      const { getMessaging, onMessage } = require('@react-native-firebase/messaging');
+      const messaging = getMessaging();
+      unsubscribeForeground = onMessage(messaging, async remoteMessage => {
+        await notifee.displayNotification({
+          title: remoteMessage.notification?.title || 'Connectiqo',
+          body:  remoteMessage.notification?.body  || '',
+          android: {
+            channelId:   'session_reminders',
+            smallIcon:   'ic_notification',
+            pressAction: { id: 'default' },
+          },
+        });
+      });
+    } catch (_) {}
+
+    return () => { unsubscribeForeground?.(); };
+  }, []);
 
   return (
     <ErrorBoundary

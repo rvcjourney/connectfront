@@ -14,6 +14,7 @@ import Toast from 'react-native-simple-toast';
 import { UNIFIED_THEME } from '../../unifiedTheme';
 import { LoadingOverlay } from '../../components/LoadingOverlay';
 import { getToken, createMeeting, validateMeeting, fetchRecordingUrl } from '../../api/api';
+import { supabase } from '../../lib/supabase';
 import { bookingApi } from '../../api/bookingApi';
 import { recordingsApi, meetingIdFromBooking } from '../../api/recordingsApi';
 import { earningsApi } from '../../api/earningsApi';
@@ -91,7 +92,7 @@ export default function VideoCallScreen({ navigation, route }) {
       } else {
         // Guest: get meeting ID from booking
         booking = await bookingApi.getBooking(bookingId);
-        const mid = meetingIdFromBooking(booking);
+        const mid = booking?.meeting_id || meetingIdFromBooking(booking);
         if (!mid) {
           throw new Error('Host has not started the meeting yet');
         }
@@ -154,12 +155,16 @@ export default function VideoCallScreen({ navigation, route }) {
           }
 
           if (recordingUrl) {
-            await recordingsApi.updateRecordingUrls({
-              bookingId,
-              recordingUrl,
-              recordingPlaybackUrl: recordingUrl,
-            });
-            console.log(`✅ Recording URL saved for booking ${bookingId}`);
+            try {
+              await recordingsApi.updateRecordingUrls({
+                bookingId,
+                recordingUrl,
+                recordingPlaybackUrl: recordingUrl,
+              });
+              console.log(`✅ Recording URL saved for booking ${bookingId}`);
+            } catch (recErr) {
+              console.warn('⚠️ Recording URL save skipped (recordings table not set up):', recErr);
+            }
           } else {
             console.log(`⚠️ Recording URL not available yet for booking ${bookingId}`);
           }
@@ -167,10 +172,13 @@ export default function VideoCallScreen({ navigation, route }) {
 
         // If host, create earnings record
         if (isHost) {
-          const booking = await bookingApi.getBooking(bookingId);
-
-          if (booking) {
-            const pricePerHour = booking.mentor_profiles?.price_per_hour || 0;
+          try {
+            const { data: mp } = await supabase
+              .from('mentor_profiles')
+              .select('price_per_hour')
+              .eq('id', profile.id)
+              .single();
+            const pricePerHour = mp?.price_per_hour || 0;
             console.log(`💰 Creating earnings record: mentorId=${profile.id}, amount=${pricePerHour}`);
             await earningsApi.createEarning({
               mentorId: profile.id,
@@ -178,6 +186,8 @@ export default function VideoCallScreen({ navigation, route }) {
               amount: pricePerHour,
             });
             console.log(`✅ Earnings record created`);
+          } catch (earningsErr) {
+            console.warn('⚠️ Earnings record skipped:', earningsErr);
           }
         }
 
@@ -265,7 +275,6 @@ export default function VideoCallScreen({ navigation, route }) {
         <MeetingConsumer onMeetingLeft={handleMeetingLeft}>
           {() => (
             <MeetingContainer
-              webcamEnabled={true}
               meetingType="ONE_TO_ONE"
               onParticipantCountChange={setParticipantCount}
               isHost={isHost}

@@ -19,20 +19,25 @@ async function ensureChannel() {
 
 export async function requestNotificationPermission() {
   const settings = await notifee.requestPermission();
-  const granted =
+  return (
     settings.authorizationStatus === AuthorizationStatus.AUTHORIZED ||
-    settings.authorizationStatus === AuthorizationStatus.PROVISIONAL;
+    settings.authorizationStatus === AuthorizationStatus.PROVISIONAL
+  );
+}
 
-  // On Android, disable battery optimization so scheduled reminders
-  // fire even when the app is killed.
-  if (Platform.OS === 'android') {
-    const batteryOptimizationEnabled = await notifee.isBatteryOptimizationEnabled();
-    if (batteryOptimizationEnabled) {
+// Call this ONCE ever on first app launch
+export async function requestBatteryOptimizationExemption() {
+  if (Platform.OS !== 'android') return;
+  try {
+    const AsyncStorage = require('@react-native-async-storage/async-storage').default;
+    const asked = await AsyncStorage.getItem('battery_opt_asked');
+    if (asked) return;
+    const enabled = await notifee.isBatteryOptimizationEnabled();
+    if (enabled) {
+      await AsyncStorage.setItem('battery_opt_asked', 'true');
       await notifee.openBatteryOptimizationSettings();
     }
-  }
-
-  return granted;
+  } catch (_) {}
 }
 
 /**

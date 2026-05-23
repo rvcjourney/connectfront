@@ -750,6 +750,7 @@ export default function MentorProfileScreen({ navigation, route }) {
 
   const avatarUrl = mentor?.profiles?.avatar_url;
   const name = mentor?.profiles?.name || paramMentorName || 'Mentor';
+  const username = mentor?.profiles?.username || null;
   const specialization = mentor?.specialization || 'Not specified';
   const bio = mentor?.bio || 'No bio provided yet.';
   const rating = mentor?.rating ?? 0;
@@ -891,6 +892,9 @@ export default function MentorProfileScreen({ navigation, route }) {
                 <MaterialIcons name="verified" size={18} color={VERIFIED_BLUE} />
               )}
             </View>
+            {username ? (
+              <Text style={styles.usernameHandle}>@{username}</Text>
+            ) : null}
             <Text style={styles.titleGold}>{specialization}</Text>
 
             {/* Bio */}
@@ -1274,6 +1278,13 @@ const styles = StyleSheet.create({
     color: C.text.primary,
     letterSpacing: -0.4,
     flexShrink: 1,
+  },
+  usernameHandle: {
+    fontSize: 13,
+    color: PURPLE_LINK,
+    fontWeight: '500',
+    marginTop: 2,
+    letterSpacing: 0.2,
   },
   titleGold: {
     marginTop: 2,

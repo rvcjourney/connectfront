@@ -137,6 +137,9 @@ export default function UnifiedSettingsScreen({ navigation }) {
             </View>
             <View style={styles.profileMeta}>
               <Text style={styles.profileName}>{profile?.name || 'User'}</Text>
+              {profile?.username ? (
+                <Text style={styles.profileUsername}>@{profile.username}</Text>
+              ) : null}
               <Text style={styles.profileEmail}>{profile?.email}</Text>
               <View style={styles.badge}>
                 <MaterialIcons name="workspace-premium" size={12} color={UNIFIED_THEME.colors.accent.primary} />
@@ -372,6 +375,12 @@ const styles = StyleSheet.create({
     ...UNIFIED_THEME.typography.bodyLg,
     color: UNIFIED_THEME.colors.text.primary,
     fontWeight: '700',
+    marginBottom: UNIFIED_THEME.spacing.xs,
+  },
+  profileUsername: {
+    ...UNIFIED_THEME.typography.bodySm,
+    color: UNIFIED_THEME.colors.accent.primary,
+    fontWeight: '500',
     marginBottom: UNIFIED_THEME.spacing.xs,
   },
   profileEmail: {

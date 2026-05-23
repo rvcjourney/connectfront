@@ -62,6 +62,7 @@ export default function OneToOneMeetingViewer({ isHost }) {
     end,
     changeWebcam,
     toggleWebcam,
+    getWebcams,
     toggleMic,
     presenterId,
     localScreenShareOn,
@@ -91,6 +92,7 @@ export default function OneToOneMeetingViewer({ isHost }) {
   const pendingRecordingRequestRef = useRef(null);
   const recordingTimerRef = useRef(null);
   const recordingStartedAtRef = useRef(null);
+  const frontCameraIdRef = useRef(null);
 
   const participantIds = [...participants.keys()];
   const localParticipantId = meeting?.localParticipant?.id;
@@ -113,6 +115,20 @@ export default function OneToOneMeetingViewer({ isHost }) {
   useEffect(() => {
     localParticipantIdRef.current = localParticipantId;
   }, [localParticipantId]);
+
+  useEffect(() => {
+    const fetchFrontCamera = async () => {
+      try {
+        const cams = await getWebcams?.();
+        if (!cams?.length) return;
+        const front = cams.find(c =>
+          c.label?.toLowerCase().includes('front') || c.facingMode === 'user'
+        ) || cams[0];
+        frontCameraIdRef.current = front?.deviceId ?? null;
+      } catch (_) {}
+    };
+    fetchFrontCamera();
+  }, []);
 
   const formatDuration = (seconds) => {
     const mins = Math.floor(seconds / 60)
@@ -671,7 +687,12 @@ export default function OneToOneMeetingViewer({ isHost }) {
           }}
           backgroundColor={!localWebcamOn ? colors.primary[100] : "transparent"}
           onPress={() => {
-            toggleWebcam();
+            if (!localWebcamOn && frontCameraIdRef.current) {
+              toggleWebcam();
+              setTimeout(() => changeWebcam(frontCameraIdRef.current), 300);
+            } else {
+              toggleWebcam();
+            }
           }}
           Icon={() => {
             return localWebcamOn ? (

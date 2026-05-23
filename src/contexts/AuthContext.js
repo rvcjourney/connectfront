@@ -1,6 +1,7 @@
 import { createContext, useState, useEffect } from 'react';
 import { Alert } from 'react-native';
 import { supabase } from '../lib/supabase';
+import { registerFcmToken } from '../utils/fcmToken';
 
 export const AuthContext = createContext();
 
@@ -140,6 +141,7 @@ export const AuthProvider = ({ children }) => {
         }
         console.log('✅ Profile loaded:', data.name, data.role);
         setProfile(data);
+        registerFcmToken(userId);
       }
       setLoading(false);
     } catch (error) {

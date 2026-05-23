@@ -7,7 +7,7 @@ export const profileApi = {
     try {
       const { data, error } = await supabase
         .from('profiles')
-        .select('id, name, avatar_url, email, role')
+        .select('id, name, avatar_url, email, role, username')
         .eq('id', userId)
         .single();
 
@@ -18,13 +18,14 @@ export const profileApi = {
     }
   },
 
-  updateProfile: async ({ userId, name, avatarUrl }) => {
+  updateProfile: async ({ userId, name, avatarUrl, username }) => {
     try {
       const { data, error } = await supabase
         .from('profiles')
         .update({
           ...(name && { name }),
           ...(avatarUrl && { avatar_url: avatarUrl }),
+          ...(username && { username }),
         })
         .eq('id', userId)
         .select()

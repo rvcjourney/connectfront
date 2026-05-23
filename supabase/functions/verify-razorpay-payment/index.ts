@@ -12,6 +12,35 @@ import { serve }        from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { crypto }       from 'https://deno.land/std@0.168.0/crypto/mod.ts';
 
+// ── Inline FCM helper ─────────────────────────────────────────────────────────
+function base64url(s: string) {
+  return btoa(s).replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
+}
+async function getFcmAccessToken(sa: { project_id: string; client_email: string; private_key: string }) {
+  const now = Math.floor(Date.now() / 1000);
+  const h = base64url(JSON.stringify({ alg: 'RS256', typ: 'JWT' }));
+  const p = base64url(JSON.stringify({ iss: sa.client_email, scope: 'https://www.googleapis.com/auth/firebase.messaging', aud: 'https://oauth2.googleapis.com/token', iat: now, exp: now + 3600 }));
+  const sigInput = `${h}.${p}`;
+  const keyBuf = Uint8Array.from(atob(sa.private_key.replace(/-----BEGIN PRIVATE KEY-----|-----END PRIVATE KEY-----|\n/g, '')), c => c.charCodeAt(0));
+  const key = await crypto.subtle.importKey('pkcs8', keyBuf, { name: 'RSASSA-PKCS1-v1_5', hash: 'SHA-256' }, false, ['sign']);
+  const sig = await crypto.subtle.sign('RSASSA-PKCS1-v1_5', key, new TextEncoder().encode(sigInput));
+  const jwt = `${sigInput}.${base64url(String.fromCharCode(...new Uint8Array(sig)))}`;
+  const res = await fetch('https://oauth2.googleapis.com/token', { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: new URLSearchParams({ grant_type: 'urn:ietf:params:oauth:grant-type:jwt-bearer', assertion: jwt }) });
+  return (await res.json()).access_token as string;
+}
+async function sendFcmNotification({ token, title, body, data = {} }: { token: string; title: string; body: string; data?: Record<string, string> }) {
+  const saRaw = Deno.env.get('FIREBASE_SERVICE_ACCOUNT');
+  if (!saRaw) return;
+  const sa = JSON.parse(saRaw);
+  const accessToken = await getFcmAccessToken(sa);
+  await fetch(`https://fcm.googleapis.com/v1/projects/${sa.project_id}/messages:send`, { method: 'POST', headers: { 'Authorization': `Bearer ${accessToken}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ message: { token, notification: { title, body }, data, android: { priority: 'HIGH', notification: { channel_id: 'session_reminders', sound: 'default' } } } }) });
+}
+async function getFcmToken(supabase: ReturnType<typeof createClient>, userId: string): Promise<string | null> {
+  const { data } = await supabase.from('profiles').select('fcm_token').eq('id', userId).single();
+  return (data as { fcm_token?: string } | null)?.fcm_token ?? null;
+}
+// ─────────────────────────────────────────────────────────────────────────────
+
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers':
@@ -128,6 +157,25 @@ serve(async (req) => {
       amount:     mentorAmount,
       status:     'pending',
     });
+
+    // ── 8. Notify mentor of new booking ──────────────────────────────────────
+    try {
+      const [mentorToken, learnerProfile] = await Promise.all([
+        getFcmToken(supabase, mentorId),
+        supabase.from('profiles').select('name').eq('id', learnerId).single(),
+      ]);
+      const learnerName = (learnerProfile.data as { name?: string } | null)?.name || 'A learner';
+      if (mentorToken) {
+        await sendFcmNotification({
+          token: mentorToken,
+          title: '📅 New session booked',
+          body:  `${learnerName} has booked a session with you.`,
+          data:  { bookingId: booking.id, type: 'new_booking' },
+        });
+      }
+    } catch (notifErr) {
+      console.warn('Mentor FCM notify failed (non-fatal):', notifErr);
+    }
 
     return new Response(
       JSON.stringify({ success: true, bookingId: booking.id }),

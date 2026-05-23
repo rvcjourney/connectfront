@@ -1,6 +1,15 @@
 import { supabase } from '../lib/supabase';
 import { getSupabaseErrorMessage } from '../lib/supabaseErrorHandler';
 
+function generateUsername(email) {
+  const prefix = email.split('@')[0]
+    .toLowerCase()
+    .replace(/[^a-z0-9]/g, '')
+    .substring(0, 15);
+  const suffix = Math.random().toString(36).substring(2, 6);
+  return `${prefix}_${suffix}`;
+}
+
 export const authApi = {
   signUp: async ({ email, password, name, role }) => {
     try {
@@ -18,6 +27,7 @@ export const authApi = {
       const userId = authData.user.id;
 
       // Create profile with created_at timestamp
+      const username = generateUsername(email);
       const { data: profileData, error: profileError } = await supabase
         .from('profiles')
         .insert([
@@ -26,6 +36,7 @@ export const authApi = {
             email,
             name,
             role,
+            username,
             created_at: new Date().toISOString(),
           },
         ])

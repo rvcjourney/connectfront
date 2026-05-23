@@ -1,4 +1,4 @@
-import { supabase } from '../lib/supabase';
+import { supabase, SUPABASE_URL, SUPABASE_ANON_KEY } from '../lib/supabase';
 import { getSupabaseErrorMessage } from '../lib/supabaseErrorHandler';
 import { cancelSessionReminder } from '../utils/sessionReminder';
 import { recordingsApi } from './recordingsApi';
@@ -69,8 +69,7 @@ export const bookingApi = {
         .select(`
           *,
           profiles!learner_id ( name, avatar_url ),
-          availability_slots ( date, start_time, end_time ),
-          mentor_profiles ( price_per_hour )
+          availability_slots ( date, start_time, end_time )
         `)
         .eq('id', bookingId)
         .single();
@@ -318,6 +317,24 @@ export const bookingApi = {
         }
       }
 
+      // Notify learner of status change (fire-and-forget)
+      const notifyUrl = `${SUPABASE_URL}/functions/v1/notify-booking-status`;
+      console.log('📣 Calling notify-booking-status:', notifyUrl, { bookingId, status });
+      fetch(notifyUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+          'apikey': SUPABASE_ANON_KEY,
+        },
+        body: JSON.stringify({ bookingId, status }),
+      })
+        .then(async res => {
+          const text = await res.text();
+          console.log('📣 notify-booking-status response:', res.status, text);
+        })
+        .catch(err => console.warn('📣 notify-booking-status fetch error:', err));
+
       return data;
     } catch (error) {
       throw new Error(getSupabaseErrorMessage(error));
@@ -326,18 +343,11 @@ export const bookingApi = {
 
   setMeetingId: async ({ bookingId, meetingId }) => {
     try {
-      const { data: row, error } = await supabase
+      const { error } = await supabase
         .from('bookings')
-        .select('mentor_id, learner_id')
-        .eq('id', bookingId)
-        .single();
+        .update({ meeting_id: meetingId })
+        .eq('id', bookingId);
       if (error) throw error;
-      await recordingsApi.upsertSessionForBooking({
-        bookingId,
-        mentorId: row.mentor_id,
-        learnerId: row.learner_id,
-        meetingId,
-      });
     } catch (error) {
       throw new Error(getSupabaseErrorMessage(error));
     }
@@ -345,8 +355,12 @@ export const bookingApi = {
 
   clearMeetingId: async bookingId => {
     try {
-      await recordingsApi.clearMeetingForBooking(bookingId);
-      console.log('✅ Meeting ID cleared on recording row — meeting abandoned');
+      const { error } = await supabase
+        .from('bookings')
+        .update({ meeting_id: null })
+        .eq('id', bookingId);
+      if (error) throw error;
+      console.log('✅ Meeting ID cleared');
     } catch (error) {
       throw new Error(getSupabaseErrorMessage(error));
     }

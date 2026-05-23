@@ -199,7 +199,8 @@ export const mentorApi = {
           id,
           name,
           email,
-          avatar_url
+          avatar_url,
+          username
         )
       `;
 
@@ -214,7 +215,7 @@ export const mentorApi = {
         supabase
           .from('profiles')
           .select('id')
-          .ilike('name', `%${term}%`),
+          .or(`name.ilike.%${term}%,username.ilike.%${term}%`),
       ]);
 
       if (fieldRes.error) throw fieldRes.error;

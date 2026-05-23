@@ -11,11 +11,6 @@ import { UNIFIED_THEME } from '../unifiedTheme';
 
 const T = UNIFIED_THEME;
 
-const ICON_SLOT = 44;
-
-/**
- * Search field — aligned text, focus ring, stable trailing slot (no layout jump on clear).
- */
 export const SearchBar = ({
   value,
   onChangeText,
@@ -29,25 +24,17 @@ export const SearchBar = ({
   const text = value ?? '';
 
   return (
-    <View
-      style={[
-        styles.container,
-        focused ? styles.containerFocused : null,
-        containerStyle,
-      ]}
-    >
-      <View style={styles.iconLead} pointerEvents="none">
-        <MaterialIcons
-          name="search"
-          size={22}
-          color={focused ? T.colors.accent.secondary : T.colors.text.muted}
-        />
-      </View>
-
+    <View style={[styles.wrapper, focused && styles.wrapperFocused, containerStyle]}>
+      <MaterialIcons
+        name="search"
+        size={20}
+        color={focused ? '#A78BFA' : '#8888a8'}
+        style={styles.icon}
+      />
       <TextInput
         style={styles.input}
         placeholder={placeholder}
-        placeholderTextColor={T.colors.text.muted}
+        placeholderTextColor="#666680"
         value={text}
         onChangeText={onChangeText}
         onFocus={() => setFocused(true)}
@@ -59,95 +46,56 @@ export const SearchBar = ({
         autoFocus={autoFocus}
         editable={editable}
         underlineColorAndroid="transparent"
-        selectionColor={T.colors.accent.secondary}
+        selectionColor="#7C3AED"
       />
-
-      <View style={styles.iconTrail}>
-        {text.length > 0 ? (
-          <TouchableOpacity
-            onPress={() => onChangeText('')}
-            style={styles.clearInner}
-            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-            accessibilityRole="button"
-            accessibilityLabel="Clear search"
-          >
-            <View style={styles.clearChip}>
-              <MaterialIcons name="close" size={18} color={T.colors.text.primary} />
-            </View>
-          </TouchableOpacity>
-        ) : null}
-      </View>
+      {text.length > 0 && (
+        <TouchableOpacity
+          onPress={() => onChangeText('')}
+          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          style={styles.clearBtn}
+        >
+          <MaterialIcons name="cancel" size={18} color="#666680" />
+        </TouchableOpacity>
+      )}
     </View>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
+  wrapper: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: T.colors.component.input,
-    borderRadius: T.borderRadius.lg,
+    backgroundColor: 'rgba(255,255,255,0.07)',
+    borderRadius: 14,
     borderWidth: 1,
-    borderColor: T.colors.border.light,
-    marginBottom: T.spacing.lg,
-    minHeight: 50,
-    paddingHorizontal: 2,
+    borderColor: 'rgba(255,255,255,0.1)',
+    paddingHorizontal: 14,
+    height: 52,
     ...Platform.select({
-      ios: {
-        shadowColor: 'rgba(0,0,0,0.2)',
-        shadowOffset: { width: 0, height: 1 },
-        shadowOpacity: 0.12,
-        shadowRadius: 3,
-      },
-      android: { elevation: 2 },
+      android: { elevation: 0 },
     }),
   },
-  containerFocused: {
-    borderColor: T.colors.border.default,
-    backgroundColor: T.colors.component.card,
-    ...Platform.select({
-      ios: {
-        shadowColor: T.colors.accent.secondary,
-        shadowOpacity: 0.2,
-        shadowRadius: 8,
-      },
-      android: { elevation: 4 },
-    }),
+  wrapperFocused: {
+    backgroundColor: 'rgba(124,58,237,0.1)',
+    borderColor: 'rgba(124,58,237,0.5)',
   },
-  iconLead: {
-    width: ICON_SLOT,
-    minHeight: 48,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  iconTrail: {
-    width: ICON_SLOT,
-    minHeight: 48,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  clearInner: {
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  clearChip: {
-    width: 30,
-    height: 30,
-    borderRadius: 15,
-    backgroundColor: 'rgba(255,255,255,0.1)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: T.colors.border.light,
+  icon: {
+    marginRight: 10,
   },
   input: {
     flex: 1,
-    minWidth: 0,
-    paddingVertical: Platform.OS === 'android' ? 10 : 12,
-    paddingRight: T.spacing.xs,
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '400',
+    backgroundColor: 'transparent',
+    paddingVertical: 0,
     margin: 0,
-    ...T.typography.bodyMd,
-    color: T.colors.text.primary,
+    includeFontPadding: false,
     ...(Platform.OS === 'android' ? { textAlignVertical: 'center' } : {}),
+  },
+  clearBtn: {
+    marginLeft: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 });

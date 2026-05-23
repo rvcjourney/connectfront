@@ -53,9 +53,14 @@ const CATEGORY_ICONS_FALLBACK = {
   others:       'auto-awesome',
 };
 
+function normalizeMaterialIcon(icon = '') {
+  // MaterialIcons expects lowercase with hyphens: "account_balance" → "account-balance"
+  return icon.trim().toLowerCase().replace(/_/g, '-').replace(/\s+/g, '-');
+}
+
 function getCategoryIcon(category = '', dbIconMap = {}) {
   const name = category.toLowerCase().trim();
-  if (dbIconMap[name]) return dbIconMap[name];
+  if (dbIconMap[name]) return normalizeMaterialIcon(dbIconMap[name]);
   for (const [k, v] of Object.entries(CATEGORY_ICONS_FALLBACK)) {
     if (name.includes(k)) return v;
   }
@@ -184,7 +189,7 @@ export default function LearnerHomeScreen({ navigation }) {
     setSearchLoading(true);
     searchDebounce.current = setTimeout(async () => {
       try {
-        const results = await mentorApi.searchMentors(text);
+        const results = await mentorApi.searchMentors(text.replace(/^@/, ''));
         const withoutSelf = results.filter(m => m.id !== profile?.id);
         setSearchResults(withoutSelf);
       } catch {
@@ -297,7 +302,7 @@ export default function LearnerHomeScreen({ navigation }) {
         <SearchBar
           value={searchQuery}
           onChangeText={handleSearchChange}
-          placeholder="Search by name, skill, or category…"
+          placeholder="Search by name, @username or skill…"
           containerStyle={styles.searchBarInner}
         />
       </View>
