@@ -138,7 +138,8 @@ export const bookingApi = {
         `)
         .eq('learner_id', learnerId)
         .in('status', ['completed', 'cancelled', 'rejected'])
-        .order('created_at', { ascending: false })
+        .order('date', { referencedTable: 'availability_slots', ascending: false })
+        .order('start_time', { referencedTable: 'availability_slots', ascending: false })
         .range(from, to);
 
       if (error) throw error;
@@ -204,7 +205,8 @@ export const bookingApi = {
         `)
         .eq('mentor_id', mentorId)
         .in('status', ['completed', 'cancelled', 'rejected'])
-        .order('created_at', { ascending: false })
+        .order('date', { referencedTable: 'availability_slots', ascending: false })
+        .order('start_time', { referencedTable: 'availability_slots', ascending: false })
         .range(from, to);
 
       if (error) throw error;

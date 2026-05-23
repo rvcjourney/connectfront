@@ -94,6 +94,7 @@ export default function MentorCallsScreen({ navigation }) {
   const [upcomingAll, setUpcomingAll] = useState([]);
   const [upcomingShown, setUpcomingShown] = useState(PAGE_SIZE);
   const [history, setHistory] = useState([]);
+  const [historyShown, setHistoryShown] = useState(PAGE_SIZE);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [historyPage, setHistoryPage] = useState(0);
@@ -108,6 +109,7 @@ export default function MentorCallsScreen({ navigation }) {
     try {
       if (!silent) setLoading(true);
       setUpcomingShown(PAGE_SIZE);
+      setHistoryShown(PAGE_SIZE);
 
       const [upcomingData, historyData] = await Promise.all([
         bookingApi.getUpcomingBookingsByMentor(profile.id),
@@ -121,8 +123,13 @@ export default function MentorCallsScreen({ navigation }) {
         .filter(b => isSessionPast(b))
         .map(b => ({ ...b, isExpired: true }));
 
+      const merged = [...expiredNorm, ...historyNorm].sort((a, b) => {
+        const da = `${a.availability_slots?.date ?? ''} ${a.availability_slots?.start_time ?? ''}`;
+        const db = `${b.availability_slots?.date ?? ''} ${b.availability_slots?.start_time ?? ''}`;
+        return db.localeCompare(da);
+      });
       setUpcomingAll(upcomingNorm);
-      setHistory([...expiredNorm, ...historyNorm]);
+      setHistory(merged);
       setHistoryPage(1);
       setHasMoreHistory(historyNorm.length === PAGE_SIZE);
 
@@ -184,7 +191,12 @@ export default function MentorCallsScreen({ navigation }) {
   );
 
   const loadMoreHistory = useCallback(async () => {
-    if (loadingMore || !hasMoreHistory || !profile?.id) return;
+    if (loadingMore || !profile?.id) return;
+    if (historyShown < history.length) {
+      setHistoryShown(prev => prev + PAGE_SIZE);
+      return;
+    }
+    if (!hasMoreHistory) return;
     try {
       setLoadingMore(true);
       const data = await bookingApi.getBookingHistoryByMentor(
@@ -194,6 +206,7 @@ export default function MentorCallsScreen({ navigation }) {
       );
       const newItems = (data || []).map(normalize);
       setHistory(prev => [...prev, ...newItems]);
+      setHistoryShown(prev => prev + PAGE_SIZE);
       setHistoryPage(p => p + 1);
       setHasMoreHistory(newItems.length === PAGE_SIZE);
     } catch {
@@ -201,7 +214,7 @@ export default function MentorCallsScreen({ navigation }) {
     } finally {
       setLoadingMore(false);
     }
-  }, [loadingMore, hasMoreHistory, profile?.id, historyPage]);
+  }, [loadingMore, hasMoreHistory, historyShown, history.length, profile?.id, historyPage]);
 
   const loadMoreUpcoming = () => {
     setUpcomingShown(prev => prev + PAGE_SIZE);
@@ -272,6 +285,9 @@ export default function MentorCallsScreen({ navigation }) {
       }
     }
 
+    const visibleHistory = history.slice(0, historyShown);
+    const hasMoreHistoryToShow = historyShown < history.length || hasMoreHistory;
+
     listData.push({
       type: 'section',
       key: 'hist_hdr',
@@ -279,15 +295,15 @@ export default function MentorCallsScreen({ navigation }) {
       title: 'History',
       count: history.length,
     });
-    if (!history.length && !loadingMore) {
+    if (!visibleHistory.length && !loadingMore) {
       listData.push({ type: 'empty_slot', key: 'hist_empty', icon: 'inbox' });
     } else {
-      history.forEach(b =>
+      visibleHistory.forEach(b =>
         listData.push({ type: 'booking', key: `h-${b.id}`, item: b, isUpcoming: false }),
       );
     }
 
-    if (hasMoreHistory) {
+    if (hasMoreHistoryToShow) {
       listData.push({ type: 'load_more', key: 'more' });
     }
   }

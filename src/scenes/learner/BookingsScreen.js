@@ -137,6 +137,7 @@ export default function LearnerBookingsScreen({ navigation }) {
   const [upcomingAll, setUpcomingAll] = useState([]);
   const [upcomingShown, setUpcomingShown] = useState(PAGE_SIZE);
   const [history, setHistory] = useState([]);
+  const [historyShown, setHistoryShown] = useState(PAGE_SIZE);
   const [reviewedIds, setReviewedIds] = useState(new Set());
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -155,6 +156,7 @@ export default function LearnerBookingsScreen({ navigation }) {
       setHistoryPage(0);
       setHasMoreHistory(true);
       setUpcomingShown(PAGE_SIZE);
+      setHistoryShown(PAGE_SIZE);
 
       const [upcomingData, historyData] = await Promise.all([
         bookingApi.getUpcomingBookingsByLearner(profile.id),
@@ -180,8 +182,13 @@ export default function LearnerBookingsScreen({ navigation }) {
       const expiredNorm  = allUpcoming.filter(b => isSessionPast(b))
         .map(b => ({ ...b, isExpired: true }));
 
+      const merged = [...expiredNorm, ...historyNorm].sort((a, b) => {
+        const da = `${a.availability_slots?.date ?? ''} ${a.availability_slots?.start_time ?? ''}`;
+        const db = `${b.availability_slots?.date ?? ''} ${b.availability_slots?.start_time ?? ''}`;
+        return db.localeCompare(da);
+      });
       setUpcomingAll(upcomingNorm);
-      setHistory([...expiredNorm, ...historyNorm]);
+      setHistory(merged);
       setHistoryPage(1);
       setHasMoreHistory(historyNorm.length === PAGE_SIZE);
 
@@ -206,6 +213,12 @@ export default function LearnerBookingsScreen({ navigation }) {
   };
 
   const loadMoreHistory = useCallback(async () => {
+    // If there are in-memory items not yet shown, just reveal them
+    if (historyShown < history.length) {
+      setHistoryShown(prev => prev + PAGE_SIZE);
+      return;
+    }
+    // Otherwise fetch next page from server
     if (loadingMore || !hasMoreHistory || !profile?.id) return;
     try {
       setLoadingMore(true);
@@ -216,6 +229,7 @@ export default function LearnerBookingsScreen({ navigation }) {
       }));
 
       setHistory(prev => [...prev, ...newItems]);
+      setHistoryShown(prev => prev + PAGE_SIZE);
       setHistoryPage(p => p + 1);
       setHasMoreHistory(newItems.length === PAGE_SIZE);
 
@@ -236,7 +250,7 @@ export default function LearnerBookingsScreen({ navigation }) {
     } finally {
       setLoadingMore(false);
     }
-  }, [loadingMore, hasMoreHistory, profile?.id, historyPage, reviewedIds]);
+  }, [historyShown, history.length, loadingMore, hasMoreHistory, profile?.id, historyPage, reviewedIds]);
 
   const loadMoreUpcoming = () => {
     setUpcomingShown(prev => prev + PAGE_SIZE);
@@ -328,14 +342,17 @@ export default function LearnerBookingsScreen({ navigation }) {
       }
     }
 
+    const visibleHistory = history.slice(0, historyShown);
+    const hasMoreHistoryToShow = historyShown < history.length || hasMoreHistory;
+
     listData.push({ type: 'section_header', key: 'history_header', title: 'Session History', subtitle: 'A record of your past sessions.', count: history.length });
-    if (history.length === 0 && !loadingMore) {
+    if (visibleHistory.length === 0 && !loadingMore) {
       listData.push({ type: 'empty_section', key: 'history_empty', icon: 'history', text: 'No past sessions yet' });
     } else {
-      history.forEach(b => listData.push({ type: 'booking', key: b.id, item: b, isUpcoming: false }));
+      visibleHistory.forEach(b => listData.push({ type: 'booking', key: b.id, item: b, isUpcoming: false }));
     }
 
-    if (hasMoreHistory) {
+    if (hasMoreHistoryToShow) {
       listData.push({ type: 'load_more', key: 'load_more' });
     }
   }

@@ -365,7 +365,7 @@ export default function TransactionHistoryScreen({ navigation }) {
   );
 
   return (
-    <SafeScreen scrollable={false} padding={0}>
+    <SafeScreen scrollable={false} padding={0} hasBottomTabs={false}>
       <View style={styles.root}>
         {/* Header */}
         <View style={styles.header}>
