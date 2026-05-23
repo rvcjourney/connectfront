@@ -24,7 +24,11 @@ import {
   normalizeRecordingUrl,
   isTokenEndpointConfigured,
 } from '../../api/api';
-import { playbackUrlFromBooking, pickRecordingRow } from '../../api/recordingsApi';
+import {
+  playbackUrlFromBooking,
+  pickRecordingRow,
+  recordingsApi,
+} from '../../api/recordingsApi';
 import { SCREEN_NAMES } from '../../navigators/screenNames';
 
 const T = UNIFIED_THEME;
@@ -53,7 +57,7 @@ async function enrichBookingsWithRecordings(bookings, token) {
 
       const rec = pickRecordingRow(booking);
       const meetingId = rec?.meeting_id;
-      if (!token || !meetingId || booking?.status !== 'completed') {
+      if (!token || !meetingId) {
         return [];
       }
 
@@ -61,6 +65,18 @@ async function enrichBookingsWithRecordings(bookings, token) {
         meetingId,
         token,
       });
+
+      if (urls.length > 0) {
+        try {
+          await recordingsApi.updateRecordingUrls({
+            bookingId: booking.id,
+            recordingUrl: urls[0],
+            recordingPlaybackUrl: urls[0],
+          });
+        } catch (err) {
+          console.warn('Could not persist recording URL:', err?.message);
+        }
+      }
 
       return urls.map((recordingUrl, idx) => ({
         ...booking,

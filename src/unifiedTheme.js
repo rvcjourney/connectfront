@@ -6,44 +6,61 @@
 export const UNIFIED_THEME = {
   colors: {
     primary: {
-      void: '#020014',
-      dark: '#06061f',
-      light: '#0c0c28',
-      nebula: '#140a32',
-      gradient: ['#020014', '#0a0628', '#120a38', '#082040', '#040818'],
+      void: '#000008',
+      dark: '#02010c',
+      light: '#050514',
+      nebula: '#0a0518',
+      gradient: ['#000008', '#040210', '#08061c', '#041020', '#020208'],
     },
 
     cosmic: {
       nebulaHaze: [
-        'rgba(124, 58, 237, 0.22)',
-        'rgba(14, 165, 233, 0.12)',
-        'rgba(236, 72, 153, 0.08)',
-        'rgba(124, 58, 237, 0.18)',
+        'rgba(124, 58, 237, 0.14)',
+        'rgba(14, 165, 233, 0.07)',
+        'rgba(236, 72, 153, 0.04)',
+        'rgba(124, 58, 237, 0.1)',
       ],
       nebulaLocations: [0, 0.35, 0.62, 1],
       /** Same stops as CosmicBackground + bottom tab sky */
       mainGradientLocations: [0, 0.28, 0.52, 0.78, 1],
-      hazeOpacity: 0.85,
+      hazeOpacity: 0.72,
     },
 
-    /** Bottom tab bar — cosmic glass + accents (capsule or full-width bar) */
+    /** Bottom tab bar — cosmic glass + accents (floating capsule) */
     tabBar: {
-      outerRadius: 24,
+      outerRadius: 26,
       glassGradient: [
-        'rgba(244, 244, 255, 0.08)',
-        'rgba(167, 139, 250, 0.14)',
-        'rgba(94, 234, 212, 0.09)',
+        'rgba(2, 2, 12, 0.98)',
+        'rgba(6, 5, 22, 0.97)',
+        'rgba(2, 12, 28, 0.98)',
       ],
+      glassBorder: 'rgba(167, 139, 250, 0.22)',
+      activeIndicatorGradient: ['#f0d875', '#5eead4'],
       activePillGradient: [
-        'rgba(167, 139, 250, 0.32)',
-        'rgba(94, 234, 212, 0.16)',
+        'rgba(124, 58, 237, 0.38)',
+        'rgba(94, 234, 212, 0.22)',
+        'rgba(240, 216, 117, 0.12)',
+      ],
+      iconRingGradient: [
+        'rgba(240, 216, 117, 0.55)',
+        'rgba(94, 234, 212, 0.35)',
+        'rgba(167, 139, 250, 0.4)',
       ],
       rimBorder: 'rgba(94, 234, 212, 0.12)',
       labelShadow: 'rgba(240, 216, 117, 0.4)',
       iconSize: 23,
-      iconSizeFocused: 26,
+      iconSizeFocused: 25,
+      floating: {
+        horizontalInset: 16,
+        bottomGap: 12,
+        barMinHeight: 64,
+        /** Scroll padding reserve (bar + FAB overflow; safe area added separately) */
+        contentReserve: 115,
+      },
+      uploadFabSize: 52,
+      uploadFabLift: 22,
       /** Full-width bar: base tint on top of sky gradients */
-      flatBarBase: 'rgba(6, 6, 31, 0.94)',
+      flatBarBase: 'rgba(2, 2, 14, 0.97)',
       /** Top edge shimmer (horizontal) */
       flatBarEdge: [
         'rgba(94, 234, 212, 0.45)',
@@ -75,20 +92,20 @@ export const UNIFIED_THEME = {
     },
 
     text: {
-      primary: '#f4f4ff',
-      secondary: '#c4c4e0',
-      muted: '#9090b8',
-      disabled: '#5c5c78',
-      onAccent: '#0a0520',
+      primary: '#f0f0fc',
+      secondary: '#b8b8d4',
+      muted: '#8888a8',
+      disabled: '#545470',
+      onAccent: '#060412',
     },
 
     component: {
-      card: 'rgba(255, 255, 255, 0.07)',
-      input: 'rgba(255, 255, 255, 0.06)',
+      card: 'rgba(255, 255, 255, 0.04)',
+      input: 'rgba(255, 255, 255, 0.032)',
       button: '#a78bfa',
-      buttonSecondary: 'rgba(167, 139, 250, 0.2)',
-      overlay: 'rgba(2, 0, 20, 0.82)',
-      disabled: 'rgba(255, 255, 255, 0.04)',
+      buttonSecondary: 'rgba(167, 139, 250, 0.16)',
+      overlay: 'rgba(0, 0, 6, 0.92)',
+      disabled: 'rgba(255, 255, 255, 0.025)',
     },
 
     border: {

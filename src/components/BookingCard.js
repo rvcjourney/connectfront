@@ -9,7 +9,7 @@ import {
 } from 'react-native';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import { UNIFIED_THEME } from '../unifiedTheme';
-import { formatDate, formatTime } from '../utils/dateHelpers';
+import { formatDate, formatTime, formatDateForDisplay } from '../utils/dateHelpers';
 
 const T = UNIFIED_THEME.colors;
 
@@ -20,6 +20,9 @@ const STATUS_COLORS = {
   cancelled: T.text.muted,
   booked: T.accent.success,
   failed: T.text.muted,
+  expired: T.text.muted,
+  live: T.accent.secondary,
+  done: T.accent.success,
 };
 
 const STATUS_ICONS = {
@@ -29,6 +32,9 @@ const STATUS_ICONS = {
   cancelled: 'cancel',
   booked: 'event-available',
   failed: 'error',
+  expired: 'history-toggle-off',
+  live: 'fiber-manual-record',
+  done: 'done-all',
 };
 
 /**
@@ -38,6 +44,7 @@ export const BookingCard = ({
   booking,
   isMentor = false,
   showLearnerInfo = false,
+  compact = false,
   onPressJoin,
   onPressCancel,
   onPressRecording = null,
@@ -63,13 +70,21 @@ export const BookingCard = ({
   const avatarUrl = otherUser.avatar;
   const name = otherUser.name;
 
-  const rawStatus = (statusLabel || booking.status || 'pending').toLowerCase();
+  const rawStatus = (statusLabel || booking.status || 'pending')
+    .toLowerCase()
+    .replace(/\s+/g, '');
   const displayStatus = statusLabel || booking.status || 'pending';
   const statusColor = STATUS_COLORS[rawStatus] || T.text.secondary;
   const statusIcon = STATUS_ICONS[rawStatus] || 'help';
 
   const date = booking.availability_slots?.date;
   const time = booking.availability_slots?.start_time;
+  const dateLabel =
+    date && time
+      ? compact
+        ? `${formatDateForDisplay(date)} · ${formatTime(time)}`
+        : `${formatDate(date)} · ${formatTime(time)}`
+      : null;
 
   const canJoin =
     onPressJoin && (booking.status === 'pending' || booking.status === 'confirmed');
@@ -82,95 +97,129 @@ export const BookingCard = ({
       ? displayStatus.charAt(0).toUpperCase() + displayStatus.slice(1)
       : displayStatus;
 
+  const hasActions = canJoin || canCancel || canViewRecording || onPressRate;
+
   return (
-    <View style={[styles.card, { borderLeftColor: statusColor }]}>
+    <View
+      style={[
+        styles.card,
+        compact && styles.cardCompact,
+        { borderLeftColor: statusColor },
+      ]}
+    >
       <View style={styles.topRow}>
         {avatarUrl ? (
-          <Image source={{ uri: avatarUrl }} style={styles.avatar} />
+          <Image
+            source={{ uri: avatarUrl }}
+            style={[styles.avatar, compact && styles.avatarCompact]}
+          />
         ) : (
-          <View style={[styles.avatar, styles.avatarPlaceholder]}>
-            <MaterialIcons name="person" size={22} color={T.accent.secondary} />
+          <View
+            style={[
+              styles.avatar,
+              styles.avatarPlaceholder,
+              compact && styles.avatarCompact,
+            ]}
+          >
+            <MaterialIcons
+              name="person"
+              size={compact ? 20 : 22}
+              color={T.accent.secondary}
+            />
           </View>
         )}
 
         <View style={styles.main}>
-          <Text style={styles.name} numberOfLines={1}>
+          <Text style={[styles.name, compact && styles.nameCompact]} numberOfLines={1}>
             {name}
           </Text>
-          <View style={styles.metaRow}>
-            <MaterialIcons name="event" size={14} color={T.text.muted} />
-            <Text style={styles.dateTime}>
-              {date && time
-                ? `${formatDate(date)} · ${formatTime(time)}`
-                : 'Date pending'}
-            </Text>
-          </View>
+          {dateLabel ? (
+            <View style={styles.metaRow}>
+              <MaterialIcons name="schedule" size={13} color={T.text.muted} />
+              <Text style={styles.dateTime} numberOfLines={1}>
+                {dateLabel}
+              </Text>
+            </View>
+          ) : (
+            <View style={styles.metaRow}>
+              <MaterialIcons name="event-busy" size={13} color={T.text.muted} />
+              <Text style={styles.dateTime}>—</Text>
+            </View>
+          )}
         </View>
 
-        <View style={styles.statusBlock}>
-          <MaterialIcons name={statusIcon} size={16} color={statusColor} />
-          <Text style={[styles.statusText, { color: statusColor }]} numberOfLines={1}>
+        <View style={[styles.statusPill, { borderColor: `${statusColor}44` }]}>
+          <MaterialIcons name={statusIcon} size={14} color={statusColor} />
+          <Text
+            style={[styles.statusText, compact && styles.statusTextCompact, { color: statusColor }]}
+            numberOfLines={1}
+          >
             {statusTitle}
           </Text>
         </View>
       </View>
 
-      {booking.message && isMentor ? (
+      {booking.message && isMentor && !compact ? (
         <View style={styles.goalStrip}>
-          <View style={styles.goalAccent} />
-          <View style={styles.goalBody}>
-            <View style={styles.goalLabelRow}>
-              <MaterialIcons name="menu-book" size={14} color={T.accent.secondary} />
-              <Text style={styles.goalLabel}>Learning goal</Text>
-            </View>
-            <Text style={styles.goalText}>{booking.message}</Text>
-          </View>
+          <MaterialIcons name="chat-bubble-outline" size={14} color={T.accent.secondary} />
+          <Text style={styles.goalText} numberOfLines={2}>
+            {booking.message}
+          </Text>
         </View>
       ) : null}
 
-      <View style={styles.actions}>
-        {canJoin && onPressJoin ? (
-          <TouchableOpacity
-            style={styles.joinBtn}
-            onPress={onPressJoin}
-            activeOpacity={0.85}
-          >
-            <MaterialIcons name="videocam" size={18} color={T.accent.success} />
-            <Text style={styles.joinBtnText}>
-              {isMentor ? 'Start call' : 'Join call'}
-            </Text>
-          </TouchableOpacity>
-        ) : null}
-        {canCancel && onPressCancel ? (
-          <TouchableOpacity
-            style={styles.cancelBtn}
-            onPress={onPressCancel}
-            activeOpacity={0.85}
-          >
-            <Text style={styles.cancelBtnText}>Cancel</Text>
-          </TouchableOpacity>
-        ) : null}
-        {canViewRecording ? (
-          <TouchableOpacity
-            style={styles.recordingBtn}
-            onPress={onPressRecording}
-            activeOpacity={0.85}
-          >
-            <MaterialIcons name="play-circle-filled" size={18} color={T.accent.secondary} />
-            <Text style={styles.recordingBtnText}>View recording</Text>
-          </TouchableOpacity>
-        ) : null}
-        {onPressRate ? (
-          <TouchableOpacity
-            style={styles.rateBtn}
-            onPress={onPressRate}
-            activeOpacity={0.85}
-          >
-            <MaterialIcons name="star-outline" size={18} color={T.accent.warning} />
-            <Text style={styles.rateBtnText}>Rate session</Text>
-          </TouchableOpacity>
-        ) : null}
-      </View>
+      {hasActions ? (
+        <View style={[styles.actions, compact && styles.actionsCompact]}>
+          {canJoin && onPressJoin ? (
+            <TouchableOpacity
+              style={[styles.joinBtn, compact && styles.actionBtnCompact]}
+              onPress={onPressJoin}
+              activeOpacity={0.85}
+            >
+              <MaterialIcons name="videocam" size={20} color={T.accent.success} />
+              {compact ? (
+                <Text style={styles.joinBtnTextCompact}>Start</Text>
+              ) : (
+                <Text style={styles.joinBtnText}>{isMentor ? 'Start' : 'Join'}</Text>
+              )}
+            </TouchableOpacity>
+          ) : null}
+          {canCancel && onPressCancel ? (
+            <TouchableOpacity
+              style={[styles.cancelBtn, compact && styles.actionBtnCompact]}
+              onPress={onPressCancel}
+              activeOpacity={0.85}
+            >
+              <MaterialIcons name="close" size={18} color={T.text.secondary} />
+              {!compact ? <Text style={styles.cancelBtnText}>Cancel</Text> : null}
+            </TouchableOpacity>
+          ) : null}
+          {canViewRecording ? (
+            <TouchableOpacity
+              style={[styles.recordingBtn, compact && styles.actionBtnCompact]}
+              onPress={onPressRecording}
+              activeOpacity={0.85}
+            >
+              <MaterialIcons name="play-circle-filled" size={20} color={T.accent.secondary} />
+              {compact ? (
+                <Text style={styles.recordingBtnTextCompact}>Replay</Text>
+              ) : (
+                <Text style={styles.recordingBtnText}>Replay</Text>
+              )}
+            </TouchableOpacity>
+          ) : null}
+          {onPressRate ? (
+            <TouchableOpacity
+              style={[styles.rateBtn, compact && styles.actionBtnCompact]}
+              onPress={onPressRate}
+              activeOpacity={0.85}
+            >
+              <MaterialIcons name="star-outline" size={18} color={T.accent.warning} />
+              {!compact ? <Text style={styles.rateBtnText}>Rate</Text> : null}
+            </TouchableOpacity>
+          ) : null}
+        </View>
+      ) : null}
     </View>
   );
 };
@@ -178,7 +227,7 @@ export const BookingCard = ({
 const styles = StyleSheet.create({
   card: {
     backgroundColor: T.component.card,
-    borderRadius: UNIFIED_THEME.borderRadius.sm,
+    borderRadius: UNIFIED_THEME.borderRadius.md,
     padding: UNIFIED_THEME.spacing.md,
     borderWidth: 1,
     borderColor: T.border.light,
@@ -187,6 +236,10 @@ const styles = StyleSheet.create({
       ios: UNIFIED_THEME.shadows.small,
       android: { elevation: 2 },
     }),
+  },
+  cardCompact: {
+    padding: UNIFIED_THEME.spacing.sm + 2,
+    borderRadius: UNIFIED_THEME.borderRadius.sm,
   },
   topRow: {
     flexDirection: 'row',
@@ -199,6 +252,10 @@ const styles = StyleSheet.create({
     borderRadius: UNIFIED_THEME.borderRadius.sm,
     borderWidth: 1,
     borderColor: T.border.light,
+  },
+  avatarCompact: {
+    width: 44,
+    height: 44,
   },
   avatarPlaceholder: {
     backgroundColor: T.component.input,
@@ -215,6 +272,10 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     marginBottom: 4,
   },
+  nameCompact: {
+    fontSize: 14,
+    marginBottom: 2,
+  },
   metaRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -225,57 +286,60 @@ const styles = StyleSheet.create({
     color: T.text.muted,
     flex: 1,
   },
-  statusBlock: {
-    alignItems: 'flex-end',
-    maxWidth: '32%',
-    gap: 2,
+  statusPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 5,
+    borderRadius: UNIFIED_THEME.borderRadius.round,
+    borderWidth: 1,
+    backgroundColor: 'rgba(255,255,255,0.04)',
+    maxWidth: '36%',
   },
   statusText: {
     ...UNIFIED_THEME.typography.labelSm,
     fontWeight: '700',
-    textAlign: 'right',
+  },
+  statusTextCompact: {
+    fontSize: 10,
+    letterSpacing: 0.2,
   },
   goalStrip: {
     flexDirection: 'row',
-    marginTop: UNIFIED_THEME.spacing.md,
+    alignItems: 'flex-start',
+    gap: UNIFIED_THEME.spacing.sm,
+    marginTop: UNIFIED_THEME.spacing.sm,
+    paddingTop: UNIFIED_THEME.spacing.sm,
     borderTopWidth: StyleSheet.hairlineWidth,
     borderTopColor: T.border.light,
-    paddingTop: UNIFIED_THEME.spacing.md,
   },
-  goalAccent: {
-    width: 3,
-    alignSelf: 'stretch',
-    minHeight: 40,
-    backgroundColor: T.accent.secondary,
-    borderRadius: 1,
-    marginRight: UNIFIED_THEME.spacing.sm,
-    opacity: 0.85,
-  },
-  goalBody: {
-    flex: 1,
-    minWidth: 0,
-  },
-  goalLabelRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    marginBottom: UNIFIED_THEME.spacing.xs,
-  },
-  goalLabel: {
-    ...UNIFIED_THEME.typography.labelSm,
-    color: T.text.secondary,
-    fontWeight: '700',
+  goalStripCompact: {
+    marginTop: UNIFIED_THEME.spacing.xs,
+    paddingTop: UNIFIED_THEME.spacing.xs,
   },
   goalText: {
     ...UNIFIED_THEME.typography.bodySm,
-    color: T.text.primary,
-    lineHeight: 20,
+    color: T.text.secondary,
+    lineHeight: 18,
+    flex: 1,
+    minWidth: 0,
   },
   actions: {
+    flexDirection: 'row',
     marginTop: UNIFIED_THEME.spacing.md,
     gap: UNIFIED_THEME.spacing.sm,
   },
+  actionsCompact: {
+    marginTop: UNIFIED_THEME.spacing.sm,
+  },
+  actionBtnCompact: {
+    flex: 1,
+    minHeight: 40,
+    justifyContent: 'center',
+  },
   joinBtn: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
@@ -292,8 +356,22 @@ const styles = StyleSheet.create({
     color: T.accent.success,
     fontWeight: '800',
   },
+  joinBtnTextCompact: {
+    ...UNIFIED_THEME.typography.labelSm,
+    color: T.accent.success,
+    fontWeight: '800',
+  },
+  recordingBtnTextCompact: {
+    ...UNIFIED_THEME.typography.labelSm,
+    color: T.accent.secondary,
+    fontWeight: '800',
+  },
   cancelBtn: {
+    flex: 1,
+    flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
     paddingVertical: UNIFIED_THEME.spacing.sm,
     borderRadius: UNIFIED_THEME.borderRadius.sm,
     borderWidth: 1,
@@ -306,6 +384,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   recordingBtn: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
@@ -323,12 +402,14 @@ const styles = StyleSheet.create({
     fontWeight: '800',
   },
   rateBtn: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
     gap: 6,
     paddingHorizontal: 14,
     paddingVertical: 8,
-    borderRadius: 8,
+    borderRadius: UNIFIED_THEME.borderRadius.sm,
     backgroundColor: 'rgba(251,191,36,0.1)',
     borderWidth: 1,
     borderColor: UNIFIED_THEME.colors.accent.warning,
