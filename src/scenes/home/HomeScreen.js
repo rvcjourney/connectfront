@@ -13,6 +13,7 @@ import {
   useWindowDimensions,
   Image,
   RefreshControl,
+  ActivityIndicator,
 } from 'react-native';
 import Video from 'react-native-video';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
@@ -94,9 +95,31 @@ function VideoTileCard({ item, accent, onPress }) {
 }
 
 // ─── Hero slider ─────────────────────────────────────────────────────────────
-const SLIDE_H = 275;
+const SLIDE_H = 200;
+const SLIDE_GAP = T.spacing.md;
+const SLIDE_SIDE = T.spacing.lg;
+const AUTO_PLAY_MS = 5000;
 
-const FALLBACK_SLIDES = [];
+const FALLBACK_SLIDES = [
+  {
+    id: 'fallback-1',
+    title: 'Expert mentors',
+    subtitle: 'Live 1-on-1 video sessions',
+    image: require('../../assets/images/logo.png'),
+  },
+  {
+    id: 'fallback-2',
+    title: 'Learn & grow',
+    subtitle: 'Verified mentors · Secure payments',
+    image: require('../../assets/images/logo.png'),
+  },
+  {
+    id: 'fallback-3',
+    title: 'Connectiqo',
+    subtitle: 'Connect · Learn · Grow',
+    image: require('../../assets/images/logo.png'),
+  },
+];
 
 // ─── Skeleton ─────────────────────────────────────────────────────────────────
 function useShimmer() {
@@ -124,7 +147,15 @@ function SkeletonBox({ style }) {
 function HomeSkeleton({ screenWidth }) {
   return (
     <>
-      <SkeletonBox style={{ width: screenWidth, height: SLIDE_H, borderRadius: 0 }} />
+      <SkeletonBox
+        style={{
+          width: screenWidth - SLIDE_SIDE * 2,
+          height: SLIDE_H,
+          borderRadius: T.borderRadius.lg,
+          marginHorizontal: SLIDE_SIDE,
+          marginBottom: T.spacing.md,
+        }}
+      />
       <View style={{ paddingHorizontal: T.spacing.lg }}>
         <SkeletonBox style={{ height: 70, borderRadius: 14, marginTop: T.spacing.lg, marginBottom: T.spacing.lg }} />
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: T.spacing.md }}>
@@ -141,55 +172,191 @@ function HomeSkeleton({ screenWidth }) {
   );
 }
 
-function HeroSlide({ slide, slideWidth }) {
-  const source = slide.image_url
-    ? { uri: slide.image_url }
-    : slide.image;
+function HeroSlide({ slide, slideWidth, isRemote }) {
+  const [imgLoading, setImgLoading] = useState(!!slide.image_url);
+  const source = slide.image_url ? { uri: slide.image_url } : slide.image;
+
   return (
-    <View style={{ width: slideWidth, height: SLIDE_H, overflow: 'hidden' }}>
-      <Image
-        source={source}
-        style={{ width: slideWidth, height: SLIDE_H }}
-        resizeMode="contain"
+    <View style={[styles.heroSlide, { width: slideWidth }]}>
+      {isRemote ? (
+        <Image
+          source={source}
+          style={styles.heroSlideImage}
+          resizeMode="cover"
+          onLoadStart={() => setImgLoading(true)}
+          onLoadEnd={() => setImgLoading(false)}
+          onError={() => setImgLoading(false)}
+        />
+      ) : (
+        <View style={styles.heroSlideFallbackBg}>
+          <Image source={source} style={styles.heroSlideLogo} resizeMode="contain" />
+        </View>
+      )}
+
+      {imgLoading ? (
+        <View style={styles.heroSlideLoader}>
+          <ActivityIndicator size="small" color={C.accent.secondary} />
+        </View>
+      ) : null}
+
+      <LinearGradient
+        colors={['transparent', 'rgba(1,0,14,0.55)', 'rgba(1,0,14,0.92)']}
+        locations={[0.35, 0.72, 1]}
+        style={StyleSheet.absoluteFill}
+        pointerEvents="none"
       />
+
+      {(slide.title || slide.subtitle) ? (
+        <View style={styles.heroSlideCaption} pointerEvents="none">
+          {slide.title ? (
+            <Text style={styles.heroSlideTitle} numberOfLines={1}>{slide.title}</Text>
+          ) : null}
+          {slide.subtitle ? (
+            <Text style={styles.heroSlideSub} numberOfLines={2}>{slide.subtitle}</Text>
+          ) : null}
+        </View>
+      ) : null}
     </View>
   );
 }
 
-function HeroSlider({ slideWidth, slides }) {
-  const [slideIndex, setSlideIndex] = useState(0);
-  const listRef = useRef(null);
+function HeroPagination({ count, activeIndex, onSelect }) {
+  if (count <= 1) return null;
+  return (
+    <View style={styles.heroDots} accessibilityRole="tablist">
+      {Array.from({ length: count }).map((_, i) => {
+        const active = i === activeIndex;
+        return (
+          <TouchableOpacity
+            key={i}
+            onPress={() => onSelect(i)}
+            style={styles.heroDotHit}
+            activeOpacity={0.85}
+            accessibilityRole="tab"
+            accessibilityState={{ selected: active }}
+            accessibilityLabel={`Banner ${i + 1} of ${count}`}
+          >
+            {active ? (
+              <LinearGradient
+                colors={TB.topNavActiveWash}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={styles.heroDotActive}
+              />
+            ) : (
+              <View style={styles.heroDot} />
+            )}
+          </TouchableOpacity>
+        );
+      })}
+    </View>
+  );
+}
 
-  useEffect(() => {
-    if (!slides.length) return;
-    const timer = setInterval(() => {
-      setSlideIndex(prev => {
+function HeroSlider({ screenWidth, slides }) {
+  const [activeIndex, setActiveIndex] = useState(0);
+  const listRef = useRef(null);
+  const userDragging = useRef(false);
+  const autoTimer = useRef(null);
+
+  const slideWidth = screenWidth - SLIDE_SIDE * 2;
+  const snapInterval = slideWidth + SLIDE_GAP;
+
+  const scrollToIndex = useCallback((index, animated = true) => {
+    const safe = Math.max(0, Math.min(index, slides.length - 1));
+    listRef.current?.scrollToOffset({
+      offset: safe * snapInterval,
+      animated,
+    });
+    setActiveIndex(safe);
+  }, [slides.length, snapInterval]);
+
+  const clearAutoPlay = useCallback(() => {
+    if (autoTimer.current) {
+      clearInterval(autoTimer.current);
+      autoTimer.current = null;
+    }
+  }, []);
+
+  const startAutoPlay = useCallback(() => {
+    clearAutoPlay();
+    if (slides.length <= 1) return;
+    autoTimer.current = setInterval(() => {
+      if (userDragging.current) return;
+      setActiveIndex(prev => {
         const next = (prev + 1) % slides.length;
-        listRef.current?.scrollToIndex({ index: next, animated: true });
+        listRef.current?.scrollToOffset({
+          offset: next * snapInterval,
+          animated: true,
+        });
         return next;
       });
-    }, 4500);
-    return () => clearInterval(timer);
-  }, [slides.length]);
+    }, AUTO_PLAY_MS);
+  }, [clearAutoPlay, slides.length, snapInterval]);
+
+  useEffect(() => {
+    startAutoPlay();
+    return clearAutoPlay;
+  }, [startAutoPlay, clearAutoPlay]);
+
+  useEffect(() => {
+    setActiveIndex(0);
+    listRef.current?.scrollToOffset({ offset: 0, animated: false });
+  }, [slides.length, snapInterval]);
+
+  if (!slides.length) return null;
 
   return (
-    <View>
+    <View style={styles.heroSliderWrap}>
       <FlatList
         ref={listRef}
         data={slides}
-        keyExtractor={s => s.id}
+        keyExtractor={s => String(s.id)}
         horizontal
-        pagingEnabled
+        nestedScrollEnabled
         showsHorizontalScrollIndicator={false}
+        decelerationRate="fast"
+        snapToInterval={snapInterval}
+        snapToAlignment="start"
+        disableIntervalMomentum
+        bounces={slides.length > 1}
         scrollEventThrottle={16}
-        getItemLayout={(_, i) => ({ length: slideWidth, offset: slideWidth * i, index: i })}
+        contentContainerStyle={{
+          paddingHorizontal: SLIDE_SIDE,
+          gap: SLIDE_GAP,
+        }}
+        getItemLayout={(_, i) => ({
+          length: snapInterval,
+          offset: snapInterval * i,
+          index: i,
+        })}
+        onScrollBeginDrag={() => {
+          userDragging.current = true;
+          clearAutoPlay();
+        }}
+        onScrollEndDrag={() => {
+          userDragging.current = false;
+          startAutoPlay();
+        }}
         onMomentumScrollEnd={e => {
-          const i = Math.round(e.nativeEvent.contentOffset.x / slideWidth);
-          setSlideIndex(i);
+          const i = Math.round(e.nativeEvent.contentOffset.x / snapInterval);
+          setActiveIndex(Math.max(0, Math.min(i, slides.length - 1)));
+        }}
+        onScrollToIndexFailed={({ index }) => {
+          setTimeout(() => scrollToIndex(index, false), 50);
         }}
         renderItem={({ item }) => (
-          <HeroSlide slide={item} slideWidth={slideWidth} />
+          <HeroSlide
+            slide={item}
+            slideWidth={slideWidth}
+            isRemote={!!item.image_url}
+          />
         )}
+      />
+      <HeroPagination
+        count={slides.length}
+        activeIndex={activeIndex}
+        onSelect={scrollToIndex}
       />
     </View>
   );
@@ -290,7 +457,14 @@ export default function HomeScreen() {
   return (
     <SafeScreen scrollable={false} padding={0} hasBottomTabs={false}>
       <ScrollView
-        contentContainerStyle={[styles.page, { paddingTop: insets.top + T.spacing.lg }]}
+        contentContainerStyle={[
+          styles.page,
+          {
+            paddingTop: insets.top + T.spacing.lg,
+            paddingBottom:
+              insets.bottom + (TB.floating?.contentReserve ?? 78) + T.spacing.lg,
+          },
+        ]}
         showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl
@@ -303,30 +477,38 @@ export default function HomeScreen() {
       >
 
         {/* ── APP BAR ── */}
-        <Animated.View style={[styles.appBar, s0.style, { paddingHorizontal: T.spacing.lg }]}>
-          <Image
-            source={require('../../assets/images/logo.png')}
-            style={styles.logoMark}
-            resizeMode="contain"
-          />
-          <View style={{ flex: 1 }}>
-            <Text style={styles.appName}>Connectiqo</Text>
-            <Text style={styles.appTagline}>Connect · Learn · Grow</Text>
+        <Animated.View style={[styles.appBar, s0.style]}>
+          <View style={styles.logoTile}>
+            <Image
+              source={require('../../assets/images/logo.png')}
+              style={styles.logoMark}
+              resizeMode="contain"
+            />
+          </View>
+          <View style={styles.appBarTitles}>
+            <Text style={styles.appName} numberOfLines={1}>
+              Connectiqo
+            </Text>
+            <Text style={styles.appTagline} numberOfLines={1}>
+              Connect · Learn · Grow
+            </Text>
           </View>
           <TouchableOpacity
             style={styles.appBarBtn}
             onPress={() => navigation.navigate(SCREEN_NAMES.UnifiedSettings)}
             activeOpacity={0.75}
+            accessibilityRole="button"
+            accessibilityLabel="Settings"
           >
-            <MaterialIcons name="bolt" size={22} color={C.text.secondary} />
+            <MaterialIcons name="bolt" size={22} color={C.accent.primary} />
           </TouchableOpacity>
         </Animated.View>
 
         {!dataLoaded ? <HomeSkeleton screenWidth={width} /> : (
         <>
-        {/* ── HERO SLIDER — no horizontal padding, true full width ── */}
-        <Animated.View style={[s1.style]}>
-          <HeroSlider slideWidth={width} slides={heroSlides} />
+        {/* ── HERO SLIDER ── */}
+        <Animated.View style={[s1.style, styles.heroSection]}>
+          <HeroSlider screenWidth={width} slides={heroSlides} />
         </Animated.View>
 
         {/* ── padded wrapper for all content below the slider ── */}
@@ -492,42 +674,150 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   page: {
     flexGrow: 1,
-    paddingBottom: T.spacing.xxxl + 16,
   },
 
   // App bar
   appBar: {
     flexDirection: 'row',
     alignItems: 'center',
+    minHeight: 56,
+    paddingHorizontal: T.spacing.lg,
+    marginBottom: T.spacing.md,
     gap: T.spacing.md,
-    marginBottom: T.spacing.xs,
   },
-  logoMark: {
-    width: 48,
-    height: 48,
-    borderRadius: 14,
+  logoTile: {
+    width: 44,
+    height: 44,
+    borderRadius: T.borderRadius.md,
+    backgroundColor: C.component.card,
+    borderWidth: 1,
+    borderColor: C.border.light,
+    justifyContent: 'center',
+    alignItems: 'center',
     overflow: 'hidden',
   },
+  logoMark: {
+    width: 30,
+    height: 30,
+  },
+  appBarTitles: {
+    flex: 1,
+    minWidth: 0,
+    justifyContent: 'center',
+  },
   appName: {
-    fontSize: 20,
-    fontWeight: '800',
+    ...T.typography.headingSm,
     color: C.text.primary,
+    fontWeight: '800',
     letterSpacing: -0.3,
   },
   appTagline: {
-    fontSize: 10,
-    fontWeight: '700',
+    ...T.typography.bodyXs,
     color: C.accent.secondary,
-    letterSpacing: 1.8,
+    fontWeight: '700',
+    letterSpacing: 1.2,
     textTransform: 'uppercase',
-    marginTop: 1,
+    marginTop: 2,
+  },
+  appBarBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: C.component.card,
+    borderWidth: 1,
+    borderColor: C.border.light,
   },
 
-  appBarBtn: {
-    width: 38, height: 38, borderRadius: 19,
-    justifyContent: 'center', alignItems: 'center',
-    backgroundColor: C.component.card,
-    borderWidth: 1, borderColor: C.border.light,
+  heroSection: {
+    marginBottom: T.spacing.sm,
+  },
+  heroSliderWrap: {
+    marginBottom: T.spacing.xs,
+  },
+  heroSlide: {
+    height: SLIDE_H,
+    borderRadius: T.borderRadius.lg,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: C.border.light,
+    backgroundColor: C.primary.dark,
+    ...Platform.select({
+      ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.35, shadowRadius: 12 },
+      android: { elevation: 8 },
+    }),
+  },
+  heroSlideImage: {
+    ...StyleSheet.absoluteFillObject,
+    width: '100%',
+    height: '100%',
+  },
+  heroSlideFallbackBg: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: C.primary.nebula,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  heroSlideLogo: {
+    width: 72,
+    height: 72,
+    opacity: 0.9,
+  },
+  heroSlideLoader: {
+    ...StyleSheet.absoluteFillObject,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(1,0,14,0.35)',
+  },
+  heroSlideCaption: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    paddingHorizontal: T.spacing.md,
+    paddingBottom: T.spacing.md,
+    paddingTop: T.spacing.xl,
+  },
+  heroSlideTitle: {
+    ...T.typography.headingSm,
+    color: C.text.primary,
+    fontWeight: '800',
+    marginBottom: 4,
+  },
+  heroSlideSub: {
+    ...T.typography.bodySm,
+    color: C.text.secondary,
+    lineHeight: 18,
+  },
+  heroDots: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 8,
+    marginTop: T.spacing.md,
+    paddingHorizontal: SLIDE_SIDE,
+  },
+  heroDotHit: {
+    padding: 4,
+  },
+  heroDot: {
+    width: 7,
+    height: 7,
+    borderRadius: 4,
+    backgroundColor: 'rgba(255,255,255,0.22)',
+  },
+  heroDotActive: {
+    width: 22,
+    height: 7,
+    borderRadius: 4,
+    borderWidth: 1,
+    borderColor: C.border.light,
+  },
+  sectionDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
   },
   seeAll: {
     fontSize: 12, fontWeight: '700',

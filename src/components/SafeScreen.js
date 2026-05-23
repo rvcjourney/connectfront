@@ -19,8 +19,10 @@ export const SafeScreen = ({
 }) => {
   const insets = useSafeAreaInsets();
 
-  // Tab bar content ~54px + its own safe-area padding; don't double-count insets
-  const bottomTabHeight = hasBottomTabs ? 64 : 0;
+  // Floating capsule height + margins (safe area added separately below)
+  const bottomTabHeight = hasBottomTabs
+    ? (UNIFIED_THEME.colors.tabBar.floating?.contentReserve ?? 78)
+    : 0;
   const topPad = padding + (includeTopInset ? insets.top : 0);
 
   const paddingStyle = {

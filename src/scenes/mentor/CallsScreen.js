@@ -1,8 +1,14 @@
 import { SafeScreen } from '../../components/SafeScreen';
 import React, { useCallback, useRef, useState } from 'react';
 import {
-  View, Text, StyleSheet, FlatList, RefreshControl,
-  ActivityIndicator, TouchableOpacity, Platform,
+  View,
+  Text,
+  StyleSheet,
+  FlatList,
+  RefreshControl,
+  ActivityIndicator,
+  TouchableOpacity,
+  Platform,
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import Toast from 'react-native-simple-toast';
@@ -11,7 +17,6 @@ import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import { UNIFIED_THEME } from '../../unifiedTheme';
 import { LoadingOverlay } from '../../components/LoadingOverlay';
 import { BookingCard } from '../../components/BookingCard';
-import { SectionHeader } from '../../components/SectionHeader';
 import { useAuth } from '../../hooks/useAuth';
 import { bookingApi } from '../../api/bookingApi';
 import { normalizeRecordingUrl } from '../../api/api';
@@ -20,9 +25,20 @@ import { scheduleSessionReminder, requestNotificationPermission } from '../../ut
 import { SCREEN_NAMES } from '../../navigators/screenNames';
 
 const T = UNIFIED_THEME;
-const TB = T.colors.tabBar;
+const C = T.colors;
+const TB = C.tabBar;
 const PAGE_SIZE = 10;
 const SESSIONS_POLL_MS = 30_000;
+
+const STATUS_LABEL = {
+  expired: 'Expired',
+  completed: 'Done',
+  cancelled: 'Cancelled',
+  rejected: 'Rejected',
+  booked: 'Booked',
+  confirmed: 'Live',
+  pending: 'Pending',
+};
 
 const normalize = b => ({
   ...b,
@@ -33,9 +49,45 @@ const isSessionPast = b => {
   const date = b?.availability_slots?.date;
   const endTime = b?.availability_slots?.end_time;
   if (!date) return false;
-  const sessionEnd = new Date(`${date}T${endTime || '23:59:59'}`);
-  return sessionEnd < new Date();
+  return new Date(`${date}T${endTime || '23:59:59'}`) < new Date();
 };
+
+function StatChip({ icon, value, tint }) {
+  return (
+    <View style={styles.statChip}>
+      <View style={[styles.statIconWrap, { backgroundColor: `${tint}16` }]}>
+        <MaterialIcons name={icon} size={18} color={tint} />
+      </View>
+      <Text style={styles.statValue}>{value}</Text>
+    </View>
+  );
+}
+
+function SectionRow({ icon, title, count }) {
+  return (
+    <View style={styles.sectionRow}>
+      <View style={styles.sectionLeft}>
+        <View style={styles.sectionIcon}>
+          <MaterialIcons name={icon} size={15} color={C.accent.secondary} />
+        </View>
+        <Text style={styles.sectionTitle}>{title}</Text>
+      </View>
+      {count > 0 ? (
+        <View style={styles.sectionCount}>
+          <Text style={styles.sectionCountTxt}>{count}</Text>
+        </View>
+      ) : null}
+    </View>
+  );
+}
+
+function EmptyBlock({ icon }) {
+  return (
+    <View style={styles.emptyBlock}>
+      <MaterialIcons name={icon} size={26} color={C.text.muted} />
+    </View>
+  );
+}
 
 export default function MentorCallsScreen({ navigation }) {
   const { profile } = useAuth();
@@ -51,7 +103,6 @@ export default function MentorCallsScreen({ navigation }) {
 
   const loadInitial = useCallback(async (opts = {}) => {
     const silent = opts.silent === true;
-    const quietErrors = opts.quietErrors === true;
     if (!profile?.id) return;
     try {
       if (!silent) setLoading(true);
@@ -63,33 +114,30 @@ export default function MentorCallsScreen({ navigation }) {
 
       const allUpcoming = (upcomingData || []).map(normalize);
       const historyNorm = (historyData || []).map(normalize);
-
-      // Split: past date+time sessions move to history even if status is still pending/confirmed
       const upcomingNorm = allUpcoming.filter(b => !isSessionPast(b));
-      const expiredNorm  = allUpcoming.filter(b => isSessionPast(b))
+      const expiredNorm = allUpcoming
+        .filter(b => isSessionPast(b))
         .map(b => ({ ...b, isExpired: true }));
 
       setUpcoming(upcomingNorm);
-      // Expired sessions prepended so they appear at top of history
       setHistory([...expiredNorm, ...historyNorm]);
       setHistoryPage(1);
       setHasMoreHistory(historyNorm.length === PAGE_SIZE);
 
-      // Schedule reminders for upcoming confirmed bookings
       await requestNotificationPermission();
       await Promise.all(
         upcomingNorm.map(b =>
           scheduleSessionReminder({
-            bookingId:   b.id,
+            bookingId: b.id,
             sessionDate: b.availability_slots?.date,
             sessionTime: b.availability_slots?.start_time,
-            mentorName:  b.profiles?.name || 'Learner',
-            isMentor:    true,
+            mentorName: b.profiles?.name || 'Learner',
+            isMentor: true,
           }).catch(() => {}),
         ),
       );
-    } catch (error) {
-      if (!quietErrors) Toast.show('Failed to load sessions');
+    } catch {
+      if (!opts.quietErrors) Toast.show('Could not load');
     } finally {
       if (!silent) setLoading(false);
     }
@@ -101,36 +149,33 @@ export default function MentorCallsScreen({ navigation }) {
       const data = await bookingApi.getUpcomingBookingsByMentor(profile.id);
       const all = (data || []).map(normalize);
       const stillUpcoming = all.filter(b => !isSessionPast(b));
-      const nowExpired    = all.filter(b => isSessionPast(b)).map(b => ({ ...b, isExpired: true }));
+      const nowExpired = all
+        .filter(b => isSessionPast(b))
+        .map(b => ({ ...b, isExpired: true }));
       setUpcoming(stillUpcoming);
-      // Merge newly expired into history without duplicating
       if (nowExpired.length > 0) {
         setHistory(prev => {
-          const existingIds = new Set(prev.map(b => b.id));
-          const fresh = nowExpired.filter(b => !existingIds.has(b.id));
-          return fresh.length > 0 ? [...fresh, ...prev] : prev;
+          const ids = new Set(prev.map(b => b.id));
+          const fresh = nowExpired.filter(b => !ids.has(b.id));
+          return fresh.length ? [...fresh, ...prev] : prev;
         });
       }
-    } catch { /* silent poll */ }
+    } catch { /* poll */ }
   }, [profile?.id]);
 
   useFocusEffect(
     useCallback(() => {
       if (!profile?.id) return undefined;
-
       if (lastProfileIdRef.current !== profile.id) {
         lastProfileIdRef.current = profile.id;
         sessionsLoaderShownRef.current = false;
       }
-
-      const silent = sessionsLoaderShownRef.current;
-      if (silent) {
+      if (sessionsLoaderShownRef.current) {
         refreshUpcoming();
       } else {
         loadInitial({ silent: false });
         sessionsLoaderShownRef.current = true;
       }
-
       const pollId = setInterval(refreshUpcoming, SESSIONS_POLL_MS);
       return () => clearInterval(pollId);
     }, [profile?.id, loadInitial, refreshUpcoming]),
@@ -140,13 +185,17 @@ export default function MentorCallsScreen({ navigation }) {
     if (loadingMore || !hasMoreHistory || !profile?.id) return;
     try {
       setLoadingMore(true);
-      const data = await bookingApi.getBookingHistoryByMentor(profile.id, historyPage, PAGE_SIZE);
+      const data = await bookingApi.getBookingHistoryByMentor(
+        profile.id,
+        historyPage,
+        PAGE_SIZE,
+      );
       const newItems = (data || []).map(normalize);
       setHistory(prev => [...prev, ...newItems]);
       setHistoryPage(p => p + 1);
       setHasMoreHistory(newItems.length === PAGE_SIZE);
     } catch {
-      Toast.show('Failed to load more');
+      Toast.show('Could not load more');
     } finally {
       setLoadingMore(false);
     }
@@ -154,7 +203,7 @@ export default function MentorCallsScreen({ navigation }) {
 
   const handleRefresh = async () => {
     setRefreshing(true);
-    await loadInitial({ silent: true });
+    await loadInitial({ silent: true, quietErrors: true });
     setRefreshing(false);
   };
 
@@ -164,150 +213,133 @@ export default function MentorCallsScreen({ navigation }) {
 
   const handleOpenRecording = rawUrl => {
     const url = normalizeRecordingUrl(rawUrl);
-    if (!url) { Toast.show('Recording link is unavailable'); return; }
+    if (!url) {
+      Toast.show('No recording');
+      return;
+    }
     navigation.navigate(SCREEN_NAMES.RecordingPlayer, { recordingUrl: url });
   };
 
+  const statusKey = item =>
+    item.isExpired ? 'expired' : (item.status || 'booked').toLowerCase();
+
   const renderBooking = (item, isUpcoming) => (
     <BookingCard
-      key={item.id}
       booking={item}
-      isMentor={true}
-      showLearnerInfo={true}
+      isMentor
+      compact
+      showLearnerInfo
       onPressJoin={isUpcoming ? () => handleJoinCall(item) : null}
       onPressCancel={null}
-      onPressRecording={item.recordingUrl ? () => handleOpenRecording(item.recordingUrl) : null}
-      statusLabel={
-        item.isExpired
-          ? 'Expired'
-          : item.status === 'completed'
-          ? 'Completed'
-          : item.status === 'cancelled'
-          ? 'Cancelled'
-          : item.status === 'rejected'
-          ? 'Rejected'
-          : 'Booked'
+      onPressRecording={
+        item.recordingUrl ? () => handleOpenRecording(item.recordingUrl) : null
       }
+      statusLabel={STATUS_LABEL[statusKey(item)] || STATUS_LABEL.booked}
     />
   );
 
   const completedCount = history.filter(b => b.status === 'completed').length;
   const fullyEmpty = upcoming.length === 0 && history.length === 0 && !loading;
 
-  // Build FlatList sections
-  const listData = [];
-
-  listData.push({ type: 'hero', key: 'hero' });
+  const listData = [{ type: 'stats', key: 'stats' }];
 
   if (fullyEmpty) {
     listData.push({ type: 'empty', key: 'empty' });
   } else {
-    listData.push({ type: 'section_header', key: 'upcoming_hdr', title: 'Upcoming sessions', subtitle: 'Start your sessions at their scheduled time.', count: upcoming.length });
-    if (upcoming.length === 0) {
-      listData.push({ type: 'empty_section', key: 'upcoming_empty', icon: 'inbox', text: 'Nothing scheduled yet.' });
+    listData.push({
+      type: 'section',
+      key: 'up_hdr',
+      icon: 'event-available',
+      title: 'Upcoming',
+      count: upcoming.length,
+    });
+    if (!upcoming.length) {
+      listData.push({ type: 'empty_slot', key: 'up_empty', icon: 'event-busy' });
     } else {
-      upcoming.forEach(b => listData.push({ type: 'booking', key: b.id, item: b, isUpcoming: true }));
+      upcoming.forEach(b =>
+        listData.push({ type: 'booking', key: `u-${b.id}`, item: b, isUpcoming: true }),
+      );
     }
 
-    listData.push({ type: 'section_header', key: 'history_hdr', title: 'Session history', subtitle: 'A record of your past sessions.', count: history.length });
-    if (history.length === 0 && !loadingMore) {
-      listData.push({ type: 'empty_section', key: 'history_empty', icon: 'history', text: 'No past sessions in this list.' });
+    listData.push({
+      type: 'section',
+      key: 'hist_hdr',
+      icon: 'history',
+      title: 'History',
+      count: history.length,
+    });
+    if (!history.length && !loadingMore) {
+      listData.push({ type: 'empty_slot', key: 'hist_empty', icon: 'inbox' });
     } else {
-      history.forEach(b => listData.push({ type: 'booking', key: b.id, item: b, isUpcoming: false }));
+      history.forEach(b =>
+        listData.push({ type: 'booking', key: `h-${b.id}`, item: b, isUpcoming: false }),
+      );
     }
 
     if (hasMoreHistory) {
-      listData.push({ type: 'load_more', key: 'load_more' });
+      listData.push({ type: 'load_more', key: 'more' });
     }
   }
 
   const renderItem = ({ item }) => {
     switch (item.type) {
-      case 'hero':
+      case 'stats':
         return (
-          <View style={styles.hero} testID="mentor-calls-hero">
+          <View style={styles.statsBar}>
             <LinearGradient
               colors={TB.flatBarEdge}
               locations={[0, 0.4, 0.7, 1]}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 0 }}
-              style={styles.heroBeam}
+              style={styles.statsBeam}
               pointerEvents="none"
             />
-            <LinearGradient
-              colors={['rgba(94, 234, 212, 0.1)', 'rgba(167, 139, 250, 0.1)', 'rgba(2, 0, 20, 0.65)']}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={StyleSheet.absoluteFill}
-              pointerEvents="none"
-            />
-            <View style={styles.heroIconTile}>
-              <MaterialIcons name="video-call" size={24} color={T.colors.accent.secondary} />
-            </View>
-            <Text style={styles.eyebrow}>Sessions</Text>
-            <Text style={styles.pageTitle}>Mentor call center</Text>
-            <Text style={styles.pageSubtitle}>
-              Manage upcoming calls, session history, and recordings from one place.
-            </Text>
-            <View style={styles.heroStatsRow}>
-              <View style={styles.heroStatCard}>
-                <Text style={styles.heroStatValue}>{upcoming.length}</Text>
-                <Text style={styles.heroStatLabel}>Upcoming</Text>
-              </View>
-              <View style={styles.heroStatCard}>
-                <Text style={styles.heroStatValue}>{completedCount}</Text>
-                <Text style={styles.heroStatLabel}>Completed</Text>
-              </View>
-              <View style={styles.heroStatCard}>
-                <Text style={styles.heroStatValue}>{history.length}</Text>
-                <Text style={styles.heroStatLabel}>History</Text>
-              </View>
-            </View>
+            <StatChip icon="schedule" value={upcoming.length} tint={C.accent.secondary} />
+            <View style={styles.statDivider} />
+            <StatChip icon="check-circle" value={completedCount} tint={C.accent.success} />
+            <View style={styles.statDivider} />
+            <StatChip icon="history" value={history.length} tint={C.accent.primary} />
           </View>
         );
 
-      case 'section_header':
+      case 'section':
         return (
-          <View style={styles.sectionTop}>
-            <SectionHeader title={item.title} subtitle={item.subtitle} count={item.count} />
+          <View style={styles.sectionWrap}>
+            <SectionRow icon={item.icon} title={item.title} count={item.count} />
           </View>
         );
 
-      case 'empty_section':
-        return (
-          <View style={[styles.emptyInline, styles.sectionItem]}>
-            <MaterialIcons name={item.icon} size={20} color={T.colors.text.muted} />
-            <Text style={styles.emptyInlineText}>{item.text}</Text>
-          </View>
-        );
+      case 'empty_slot':
+        return <EmptyBlock icon={item.icon} />;
 
       case 'booking':
-        return <View style={styles.sectionItem}>{renderBooking(item.item, item.isUpcoming)}</View>;
+        return (
+          <View style={styles.cardWrap}>
+            {renderBooking(item.item, item.isUpcoming)}
+          </View>
+        );
 
       case 'load_more':
         return (
-          <TouchableOpacity style={styles.loadMoreBtn} onPress={loadMoreHistory} activeOpacity={0.7}>
+          <TouchableOpacity
+            style={styles.loadMore}
+            onPress={loadMoreHistory}
+            activeOpacity={0.75}
+          >
             {loadingMore ? (
-              <ActivityIndicator size="small" color={T.colors.accent.secondary} />
+              <ActivityIndicator size="small" color={C.accent.secondary} />
             ) : (
-              <>
-                <MaterialIcons name="expand-more" size={20} color={T.colors.accent.secondary} />
-                <Text style={styles.loadMoreTxt}>Load more history</Text>
-              </>
+              <MaterialIcons name="expand-more" size={26} color={C.accent.secondary} />
             )}
           </TouchableOpacity>
         );
 
       case 'empty':
         return (
-          <View style={styles.emptyHero}>
-            <View style={styles.emptyHeroIcon}>
-              <MaterialIcons name="video-call" size={32} color={T.colors.accent.secondary} />
+          <View style={styles.emptyMain}>
+            <View style={styles.emptyRing}>
+              <MaterialIcons name="video-call" size={34} color={C.accent.secondary} />
             </View>
-            <Text style={styles.emptyHeroTitle}>No sessions yet</Text>
-            <Text style={styles.emptyHeroSub}>
-              When learners book you, upcoming sessions appear here with a start call action.
-            </Text>
           </View>
         );
 
@@ -319,9 +351,9 @@ export default function MentorCallsScreen({ navigation }) {
   return (
     <SafeScreen scrollable={false} padding={0} hasBottomTabs={false} includeTopInset={false}>
       <FlatList
-        style={{ flex: 1 }}
+        style={styles.list}
         data={listData}
-        keyExtractor={item => item.key}
+        keyExtractor={entry => entry.key}
         renderItem={renderItem}
         contentContainerStyle={styles.listContent}
         showsVerticalScrollIndicator={false}
@@ -329,181 +361,151 @@ export default function MentorCallsScreen({ navigation }) {
           <RefreshControl
             refreshing={refreshing}
             onRefresh={handleRefresh}
-            tintColor={T.colors.accent.secondary}
+            tintColor={C.accent.secondary}
           />
         }
       />
-      <LoadingOverlay visible={loading && !refreshing} message="Loading sessions…" />
+      <LoadingOverlay visible={loading && !refreshing} message="" />
     </SafeScreen>
   );
 }
 
 const styles = StyleSheet.create({
+  list: { flex: 1 },
   listContent: {
     padding: T.spacing.lg,
     paddingBottom: T.spacing.xxxl,
   },
-  hero: {
-    borderRadius: T.borderRadius.sm,
-    overflow: 'hidden',
-    padding: T.spacing.lg,
-    marginBottom: T.spacing.lg,
+  statsBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderRadius: T.borderRadius.md,
     borderWidth: 1,
-    borderColor: T.colors.border.light,
-    borderLeftWidth: 3,
-    borderLeftColor: T.colors.accent.secondary,
-    backgroundColor: T.colors.primary.dark,
+    borderColor: C.border.light,
+    backgroundColor: C.component.card,
+    paddingVertical: T.spacing.md,
+    paddingHorizontal: T.spacing.sm,
+    marginBottom: T.spacing.lg,
+    overflow: 'hidden',
     ...Platform.select({
       ios: T.shadows.small,
       android: { elevation: 3 },
     }),
   },
-  heroBeam: {
+  statsBeam: {
     position: 'absolute',
     left: 0,
     right: 0,
     top: 0,
     height: 2,
     opacity: 0.9,
-    zIndex: 1,
   },
-  heroIconTile: {
-    width: 48,
-    height: 48,
-    borderRadius: T.borderRadius.sm,
-    backgroundColor: T.colors.component.input,
-    borderWidth: 1,
-    borderColor: T.colors.border.light,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: T.spacing.md,
-    zIndex: 1,
-  },
-  eyebrow: {
-    ...T.typography.labelSm,
-    color: T.colors.accent.secondary,
-    letterSpacing: 1,
-    textTransform: 'uppercase',
-    marginBottom: T.spacing.xs,
-    fontWeight: '700',
-    zIndex: 1,
-  },
-  pageTitle: {
-    ...T.typography.headingMd,
-    color: T.colors.text.primary,
-    fontWeight: '800',
-    marginBottom: T.spacing.sm,
-    zIndex: 1,
-  },
-  pageSubtitle: {
-    ...T.typography.bodyMd,
-    color: T.colors.text.muted,
-    lineHeight: 22,
-    marginBottom: T.spacing.md,
-    zIndex: 1,
-  },
-  heroStatsRow: {
-    flexDirection: 'row',
-    gap: T.spacing.sm,
-    zIndex: 1,
-  },
-  heroStatCard: {
+  statChip: {
     flex: 1,
     alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: T.spacing.sm + 2,
-    borderRadius: T.borderRadius.sm,
-    borderWidth: 1,
-    borderColor: T.colors.border.light,
-    backgroundColor: 'rgba(255,255,255,0.04)',
+    gap: 6,
   },
-  heroStatValue: {
-    ...T.typography.labelLg,
-    color: T.colors.text.primary,
-    fontWeight: '800',
-  },
-  heroStatLabel: {
-    ...T.typography.labelSm,
-    color: T.colors.text.muted,
-    marginTop: 2,
-  },
-  sectionTop: {
-    marginTop: T.spacing.md,
-    marginBottom: T.spacing.sm,
-  },
-  sectionItem: {
-    marginBottom: T.spacing.md,
-  },
-  emptyInline: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: T.spacing.sm,
-    backgroundColor: T.colors.component.card,
-    borderRadius: T.borderRadius.sm,
-    paddingVertical: T.spacing.lg,
-    paddingHorizontal: T.spacing.md,
-    borderWidth: 1,
-    borderColor: T.colors.border.light,
-    borderLeftWidth: 3,
-    borderLeftColor: T.colors.border.default,
-  },
-  emptyInlineText: {
-    ...T.typography.bodySm,
-    color: T.colors.text.muted,
-    flex: 1,
-    lineHeight: 20,
-  },
-  loadMoreBtn: {
-    flexDirection: 'row',
+  statIconWrap: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     alignItems: 'center',
     justifyContent: 'center',
-    gap: T.spacing.sm,
-    paddingVertical: T.spacing.md,
-    marginTop: T.spacing.sm,
-    marginBottom: T.spacing.lg,
-    borderRadius: T.borderRadius.lg,
     borderWidth: 1,
-    borderColor: T.colors.border.light,
-    backgroundColor: T.colors.component.card,
+    borderColor: C.border.light,
   },
-  loadMoreTxt: {
-    ...T.typography.bodySm,
-    color: T.colors.accent.secondary,
-  },
-  emptyHero: {
-    alignItems: 'center',
-    paddingVertical: T.spacing.xxxl,
-    paddingHorizontal: T.spacing.lg,
-    borderWidth: 1,
-    borderColor: T.colors.border.light,
-    borderRadius: T.borderRadius.sm,
-    backgroundColor: T.colors.component.card,
-    borderLeftWidth: 3,
-    borderLeftColor: T.colors.accent.secondary,
-    marginBottom: T.spacing.lg,
-  },
-  emptyHeroIcon: {
-    width: 64,
-    height: 64,
-    borderRadius: T.borderRadius.sm,
-    backgroundColor: T.colors.component.input,
-    borderWidth: 1,
-    borderColor: T.colors.border.light,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: T.spacing.md,
-  },
-  emptyHeroTitle: {
+  statValue: {
     ...T.typography.headingSm,
-    color: T.colors.text.primary,
+    color: C.text.primary,
+    fontWeight: '800',
+  },
+  statDivider: {
+    width: StyleSheet.hairlineWidth,
+    height: 38,
+    backgroundColor: C.border.light,
+    opacity: 0.45,
+  },
+  sectionWrap: {
+    marginTop: T.spacing.sm,
+    marginBottom: T.spacing.xs,
+  },
+  sectionRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  sectionLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: T.spacing.sm,
+  },
+  sectionIcon: {
+    width: 28,
+    height: 28,
+    borderRadius: 8,
+    backgroundColor: 'rgba(94, 234, 212, 0.08)',
+    borderWidth: 1,
+    borderColor: 'rgba(94, 234, 212, 0.18)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  sectionTitle: {
+    ...T.typography.labelMd,
+    color: C.text.primary,
     fontWeight: '700',
   },
-  emptyHeroSub: {
-    ...T.typography.bodyMd,
-    color: T.colors.text.muted,
-    textAlign: 'center',
-    marginTop: T.spacing.sm,
-    lineHeight: 22,
-    maxWidth: 300,
+  sectionCount: {
+    minWidth: 26,
+    height: 26,
+    borderRadius: 13,
+    paddingHorizontal: 8,
+    backgroundColor: C.component.buttonSecondary,
+    borderWidth: 1,
+    borderColor: C.border.light,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  sectionCountTxt: {
+    ...T.typography.labelSm,
+    color: C.accent.secondary,
+    fontWeight: '800',
+  },
+  cardWrap: {
+    marginBottom: T.spacing.sm,
+  },
+  emptyBlock: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: T.spacing.xl,
+    marginBottom: T.spacing.sm,
+    borderRadius: T.borderRadius.md,
+    borderWidth: 1,
+    borderColor: C.border.light,
+    backgroundColor: C.component.card,
+  },
+  loadMore: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: T.spacing.md,
+    marginTop: T.spacing.xs,
+    marginBottom: T.spacing.lg,
+    borderRadius: T.borderRadius.md,
+    borderWidth: 1,
+    borderColor: C.border.light,
+    backgroundColor: C.component.card,
+  },
+  emptyMain: {
+    alignItems: 'center',
+    paddingVertical: T.spacing.xxxl * 1.25,
+  },
+  emptyRing: {
+    width: 76,
+    height: 76,
+    borderRadius: 38,
+    borderWidth: 1,
+    borderColor: C.border.light,
+    backgroundColor: C.component.card,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 });

@@ -34,7 +34,7 @@ const T = UNIFIED_THEME;
 const C = T.colors;
 
 /** Design reference: deep navy canvas */
-const SCREEN_BG = '#050510';
+const SCREEN_BG = '#030308';
 const PURPLE_LINK = '#a78bfa';
 const GOLD = '#f0d875';
 const TEAL = '#2dd4bf';
@@ -46,9 +46,6 @@ const TAG_VISIBLE = 3;
 
 const SCREEN_W = Dimensions.get('window').width;
 const RAIL_CARD_W = Math.min(138, Math.round(SCREEN_W * 0.36));
-
-const COVER_IMAGE_URI =
-  'https://images.unsplash.com/photo-1523240795612-9a054b0db644?auto=format&fit=crop&w=1400&q=80';
 
 function formatSlotDateLabel(dateStr) {
   if (!dateStr || typeof dateStr !== 'string') return '';
@@ -760,7 +757,7 @@ export default function MentorProfileScreen({ navigation, route }) {
   const videoStat = videos.length;
   const unlockPrice = mentor?.unlock_price || 299;
   const showSubscribeCta = hasLockedVideos && !libraryUnlocked && !isOwnProfile;
-  const heroCoverUri = coverFromParams || mentor?.cover_image_url || COVER_IMAGE_URI;
+  const heroCoverUri = (coverFromParams || mentor?.cover_image_url || '').trim() || null;
 
   if (!mentorId) {
     return (
@@ -820,17 +817,27 @@ export default function MentorProfileScreen({ navigation, route }) {
       <View style={styles.root}>
         <View style={styles.mainColumn}>
           <View style={[styles.hero, { height: compactHero }]}>
-            <ImageBackground
-              source={{ uri: heroCoverUri }}
-              style={StyleSheet.absoluteFill}
-              resizeMode="cover"
-            >
+            {heroCoverUri ? (
+              <ImageBackground
+                source={{ uri: heroCoverUri }}
+                style={StyleSheet.absoluteFill}
+                resizeMode="cover"
+              >
+                <LinearGradient
+                  colors={['rgba(5,5,16,0.02)', 'rgba(5,5,16,0.28)', 'rgba(5,5,16,0.78)']}
+                  locations={[0, 0.42, 1]}
+                  style={StyleSheet.absoluteFill}
+                />
+              </ImageBackground>
+            ) : (
               <LinearGradient
-                colors={['rgba(5,5,16,0.02)', 'rgba(5,5,16,0.28)', 'rgba(5,5,16,0.78)']}
-                locations={[0, 0.42, 1]}
+                colors={[C.primary.nebula, C.primary.dark, SCREEN_BG]}
+                locations={[0, 0.45, 1]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
                 style={StyleSheet.absoluteFill}
               />
-            </ImageBackground>
+            )}
             <View style={[styles.heroTopBar, { paddingTop: Math.max(6, insets.top - 6) }]}>
               <View style={styles.heroBarActions}>
                 {!isOwnProfile && (

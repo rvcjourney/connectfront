@@ -143,14 +143,14 @@ export default function VideoCallScreen({ navigation, route }) {
           const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
           let recordingUrl = null;
 
-          for (let attempt = 1; attempt <= 5; attempt += 1) {
+          for (let attempt = 1; attempt <= 8; attempt += 1) {
             recordingUrl = await fetchRecordingUrl({
               meetingId: callParams.meetingId,
               token: callParams.token,
             });
             if (recordingUrl) break;
             // Recording file may take some time after session end to become available.
-            await sleep(4000);
+            await sleep(attempt <= 3 ? 4000 : 8000);
           }
 
           if (recordingUrl) {

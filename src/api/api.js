@@ -2,6 +2,7 @@ import { REACT_APP_AUTH_URL, AUTH_URL, VIDEO_SDK_AUTH_URL } from "@env";
 import ApiErrorHandler from "../utils/apiErrorHandler";
 
 const API_BASE_URL = "https://api.videosdk.live/v2";
+const MEETING_RECORDINGS_V1_URL = "https://api.videosdk.live/v1/meeting-recordings";
 const VIDEO_SDK_CDN_BASE = "https://cdn.videosdk.live/";
 const API_AUTH_URL = (
   REACT_APP_AUTH_URL ||
@@ -246,6 +247,74 @@ const pickRecordingUrlFromObject = (obj) => {
   );
 };
 
+/** Cloud composite recordings are often only listed on the v1 meeting-recordings API. */
+const fetchMeetingRecordingsV1 = async ({ meetingId, token }) => {
+  try {
+    if (!meetingId || !token) return [];
+
+    const url = `${MEETING_RECORDINGS_V1_URL}?meetingId=${encodeURIComponent(meetingId)}`;
+    const response = await fetch(url, {
+      method: "GET",
+      headers: { Authorization: token },
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    }
+
+    const result = await response.json();
+    return Array.isArray(result?.data) ? result.data : [];
+  } catch (error) {
+    ApiErrorHandler.logError("fetchMeetingRecordingsV1", error);
+    return [];
+  }
+};
+
+const collectUrlsFromV1Recordings = (items, pushUrl) => {
+  (items || []).forEach((item) => {
+    pushUrl(pickRecordingUrlFromObject(item?.file));
+    pushUrl(pickRecordingUrlFromObject(item));
+  });
+};
+
+const collectUrlsFromSessions = async (sessions, token, pushUrl) => {
+  const sortedSessions = [...(sessions || [])].sort((a, b) => {
+    const aTime = new Date(a?.end || a?.start || 0).getTime();
+    const bTime = new Date(b?.end || b?.start || 0).getTime();
+    return bTime - aTime;
+  });
+
+  for (const session of sortedSessions) {
+    const recordingLog = Array.isArray(session?.recordingLog)
+      ? session.recordingLog
+      : [];
+
+    pushUrl(pickRecordingUrlFromObject(session.recording));
+    pushUrl(pickRecordingUrlFromObject(session.recordings));
+
+    for (let i = recordingLog.length - 1; i >= 0; i -= 1) {
+      const recordingId = recordingLog[i]?.recordingId;
+      if (!recordingId) continue;
+
+      const recording = await fetchRecordingById({ recordingId, token });
+      pushUrl(pickRecordingUrlFromObject(recording?.file));
+      pushUrl(pickRecordingUrlFromObject(recording));
+    }
+
+    if (Array.isArray(session.recordings)) {
+      session.recordings.forEach((item) =>
+        pushUrl(pickRecordingUrlFromObject(item))
+      );
+    }
+
+    if (Array.isArray(session.files)) {
+      session.files.forEach((item) =>
+        pushUrl(pickRecordingUrlFromObject(item))
+      );
+    }
+  }
+};
+
 export const normalizeRecordingUrl = (url) => {
   if (!url || typeof url !== "string") return null;
   const trimmed = url.trim();
@@ -261,57 +330,8 @@ export const normalizeRecordingUrl = (url) => {
 
 export const fetchRecordingUrl = async ({ meetingId, token }) => {
   try {
-    if (!meetingId || !token) return null;
-
-    const sessions = await fetchSessionsByRoom({ meetingId, token });
-    if (!sessions.length) return null;
-
-    const sortedSessions = [...sessions].sort((a, b) => {
-      const aTime = new Date(a?.end || a?.start || 0).getTime();
-      const bTime = new Date(b?.end || b?.start || 0).getTime();
-      return bTime - aTime;
-    });
-
-    for (const session of sortedSessions) {
-      const recordingLog = Array.isArray(session?.recordingLog)
-        ? session.recordingLog
-        : [];
-
-      // 1) Try direct URLs if the session payload already has them.
-      const fromDirect =
-        pickRecordingUrlFromObject(session.recording) ||
-        pickRecordingUrlFromObject(session.recordings);
-      if (fromDirect) return normalizeRecordingUrl(fromDirect);
-
-      // 2) Use recording IDs from recordingLog and fetch details.
-      for (let i = recordingLog.length - 1; i >= 0; i -= 1) {
-        const recordingId = recordingLog[i]?.recordingId;
-        if (!recordingId) continue;
-
-        const recording = await fetchRecordingById({ recordingId, token });
-        const url =
-          pickRecordingUrlFromObject(recording?.file) ||
-          pickRecordingUrlFromObject(recording);
-        if (url) return normalizeRecordingUrl(url);
-      }
-
-      // 3) Legacy fallback fields.
-      if (Array.isArray(session.recordings) && session.recordings.length > 0) {
-        for (const item of session.recordings) {
-          const url = pickRecordingUrlFromObject(item);
-          if (url) return normalizeRecordingUrl(url);
-        }
-      }
-
-      if (Array.isArray(session.files) && session.files.length > 0) {
-        for (const item of session.files) {
-          const url = pickRecordingUrlFromObject(item);
-          if (url) return normalizeRecordingUrl(url);
-        }
-      }
-    }
-
-    return null;
+    const urls = await fetchRecordingUrls({ meetingId, token });
+    return urls[0] || null;
   } catch (error) {
     ApiErrorHandler.logError("fetchRecordingUrl", error);
     return null;
@@ -322,15 +342,6 @@ export const fetchRecordingUrls = async ({ meetingId, token }) => {
   try {
     if (!meetingId || !token) return [];
 
-    const sessions = await fetchSessionsByRoom({ meetingId, token });
-    if (!sessions.length) return [];
-
-    const sortedSessions = [...sessions].sort((a, b) => {
-      const aTime = new Date(a?.end || a?.start || 0).getTime();
-      const bTime = new Date(b?.end || b?.start || 0).getTime();
-      return bTime - aTime;
-    });
-
     const urls = [];
     const seen = new Set();
     const pushUrl = (rawUrl) => {
@@ -340,34 +351,12 @@ export const fetchRecordingUrls = async ({ meetingId, token }) => {
       urls.push(normalized);
     };
 
-    for (const session of sortedSessions) {
-      const recordingLog = Array.isArray(session?.recordingLog)
-        ? session.recordingLog
-        : [];
+    const sessions = await fetchSessionsByRoom({ meetingId, token });
+    await collectUrlsFromSessions(sessions, token, pushUrl);
 
-      pushUrl(pickRecordingUrlFromObject(session.recording));
-      pushUrl(pickRecordingUrlFromObject(session.recordings));
-
-      for (let i = recordingLog.length - 1; i >= 0; i -= 1) {
-        const recordingId = recordingLog[i]?.recordingId;
-        if (!recordingId) continue;
-
-        const recording = await fetchRecordingById({ recordingId, token });
-        pushUrl(pickRecordingUrlFromObject(recording?.file));
-        pushUrl(pickRecordingUrlFromObject(recording));
-      }
-
-      if (Array.isArray(session.recordings)) {
-        session.recordings.forEach((item) =>
-          pushUrl(pickRecordingUrlFromObject(item))
-        );
-      }
-
-      if (Array.isArray(session.files)) {
-        session.files.forEach((item) =>
-          pushUrl(pickRecordingUrlFromObject(item))
-        );
-      }
+    if (!urls.length) {
+      const v1Items = await fetchMeetingRecordingsV1({ meetingId, token });
+      collectUrlsFromV1Recordings(v1Items, pushUrl);
     }
 
     return urls;

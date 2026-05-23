@@ -18,6 +18,7 @@ import WalletScreen from '../scenes/settings/WalletScreen';
 import ReviewScreen from '../scenes/shared/ReviewScreen';
 import CategoryMentorsScreen from '../scenes/learner/CategoryMentorsScreen';
 import MentorVideosScreen from '../scenes/mentor/MentorVideosScreen';
+import LearnerVideosScreen from '../scenes/learner/VideosScreen';
 import PayoutSetupScreen from '../scenes/settings/PayoutSetupScreen';
 import ConnectivityScreen from '../scenes/settings/ConnectivityScreen';
 import MentorStatsScreen from '../scenes/mentor/MentorStatsScreen';
@@ -96,6 +97,10 @@ export const RootNavigator = () => {
             <RootStack.Screen
               name={SCREEN_NAMES.MentorVideos}
               component={MentorVideosScreen}
+            />
+            <RootStack.Screen
+              name={SCREEN_NAMES.MentorVideoFeed}
+              component={LearnerVideosScreen}
             />
             <RootStack.Screen
               name={SCREEN_NAMES.PayoutSetup}

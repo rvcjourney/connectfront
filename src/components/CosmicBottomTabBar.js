@@ -14,13 +14,135 @@ import { UNIFIED_THEME } from '../unifiedTheme';
 const C = UNIFIED_THEME.colors;
 const S = UNIFIED_THEME.spacing;
 const TB = C.tabBar;
+const FAB_SIZE = TB.uploadFabSize ?? 52;
+const FAB_LIFT = TB.uploadFabLift ?? 22;
+
+/** Fixed row geometry — all tabs share the same slots */
+const INDICATOR_H = 7;
+const ICON_SLOT_H = TB.iconSizeFocused + 2;
+const LABEL_H = 16;
+const TAB_ROW_H = INDICATOR_H + ICON_SLOT_H + LABEL_H + 4;
+
+function resolveLabel(route, options, focused) {
+  const raw =
+    options.tabBarLabel !== undefined
+      ? options.tabBarLabel
+      : options.title !== undefined
+        ? options.title
+        : route.name;
+  if (typeof raw === 'string') return raw;
+  if (typeof raw === 'function') {
+    return raw({ focused, color: '', position: 'below-icon' });
+  }
+  return route.name;
+}
+
+function TabIndicator({ active }) {
+  return (
+    <View style={styles.indicatorRow}>
+      {active ? (
+        <LinearGradient
+          colors={TB.activeIndicatorGradient}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 0 }}
+          style={styles.activeIndicator}
+        />
+      ) : (
+        <View style={styles.activeIndicatorGhost} />
+      )}
+    </View>
+  );
+}
+
+function UploadFabVisual() {
+  return (
+    <View style={styles.fabOuterRing}>
+      <LinearGradient
+        colors={TB.iconRingGradient}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={styles.fabRingGrad}
+      >
+        <LinearGradient
+          colors={[C.accent.primary, C.accent.secondary]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.fabCircle}
+        >
+          <MaterialIcons name="file-upload" size={22} color={C.text.onAccent} />
+        </LinearGradient>
+      </LinearGradient>
+    </View>
+  );
+}
+
+function TabColumn({
+  isFocused,
+  onPress,
+  onLongPress,
+  accessibilityLabel,
+  testID,
+  label,
+  color,
+  icon,
+  isUpload,
+}) {
+  return (
+    <TouchableOpacity
+      accessibilityRole="button"
+      accessibilityState={isFocused ? { selected: true } : {}}
+      accessibilityLabel={accessibilityLabel}
+      testID={testID}
+      onPress={onPress}
+      onLongPress={onLongPress}
+      style={[styles.tabColumn, isUpload && styles.tabColumnUpload]}
+      activeOpacity={0.82}
+    >
+      <TabIndicator active={isFocused} />
+      <View style={[styles.iconSlot, isUpload && styles.iconSlotUpload]}>
+        {icon}
+      </View>
+      {typeof label === 'string' ? (
+        <Text
+          style={[styles.label, { color }, isFocused && styles.labelFocused]}
+          numberOfLines={1}
+        >
+          {label}
+        </Text>
+      ) : (
+        <View style={styles.labelSlot}>{label}</View>
+      )}
+    </TouchableOpacity>
+  );
+}
 
 /**
- * Bottom tabs: full-width strip — CosmicBackground-matched sky + nebula glass bar
- * (flat layout, no floating capsule).
+ * Bottom tabs: cosmic sky + glass bar; center upload FAB floats above the strip.
  */
 export function CosmicBottomTabBar({ state, descriptors, navigation }) {
   const insets = useSafeAreaInsets();
+  const bottomPad = Math.max(insets.bottom, 8);
+
+  const activeColor = C.accent.primary;
+  const inactiveColor = C.text.secondary;
+
+  const makeHandlers = (route, index) => {
+    const isFocused = state.index === index;
+    const onPress = () => {
+      const event = navigation.emit({
+        type: 'tabPress',
+        target: route.key,
+        canPreventDefault: true,
+      });
+      if (!isFocused && !event.defaultPrevented) {
+        navigation.navigate(route.name);
+      }
+    };
+    const onLongPress = () => {
+      navigation.emit({ type: 'tabLongPress', target: route.key });
+    };
+    return { isFocused, onPress, onLongPress };
+  };
 
   return (
     <View style={styles.tabRoot} pointerEvents="box-none">
@@ -41,10 +163,7 @@ export function CosmicBottomTabBar({ state, descriptors, navigation }) {
       />
 
       <View
-        style={[
-          styles.barWrap,
-          { paddingBottom: Math.max(insets.bottom, 10) },
-        ]}
+        style={[styles.barWrap, { paddingBottom: bottomPad }]}
         pointerEvents="box-none"
       >
         <View style={styles.barTint} pointerEvents="none">
@@ -65,129 +184,46 @@ export function CosmicBottomTabBar({ state, descriptors, navigation }) {
           pointerEvents="none"
         />
 
-        <View style={styles.bar}>
+        <View style={styles.barRow}>
           {state.routes.map((route, index) => {
             const { options } = descriptors[route.key];
-            const raw =
-              options.tabBarLabel !== undefined
-                ? options.tabBarLabel
-                : options.title !== undefined
-                  ? options.title
-                  : route.name;
-            const label =
-              typeof raw === 'string'
-                ? raw
-                : typeof raw === 'function'
-                  ? raw({
-                      focused: state.index === index,
-                      color: '',
-                      position: 'below-icon',
-                    })
-                  : route.name;
-
-            const isFocused = state.index === index;
-
-            const onPress = () => {
-              const event = navigation.emit({
-                type: 'tabPress',
-                target: route.key,
-                canPreventDefault: true,
-              });
-              if (!isFocused && !event.defaultPrevented) {
-                navigation.navigate(route.name);
-              }
-            };
-
-            const onLongPress = () => {
-              navigation.emit({
-                type: 'tabLongPress',
-                target: route.key,
-              });
-            };
-
-            const activeColor = C.accent.primary;
-            const inactiveColor = C.text.secondary;
+            const { isFocused, onPress, onLongPress } = makeHandlers(
+              route,
+              index,
+            );
             const color = isFocused ? activeColor : inactiveColor;
-            const Icon = options.tabBarIcon;
-            const isSpecial = options.tabBarSpecial;
+            const label = resolveLabel(route, options, isFocused);
+            const isUpload = !!options.tabBarSpecial;
 
-            // ── Special center Upload button ──────────────────────────────
-            if (isSpecial) {
-              return (
-                <TouchableOpacity
-                  key={route.key}
-                  accessibilityRole="button"
-                  accessibilityState={isFocused ? { selected: true } : {}}
-                  onPress={onPress}
-                  onLongPress={onLongPress}
-                  style={styles.uploadHit}
-                  activeOpacity={0.85}
-                >
-                  <View style={styles.uploadRing}>
-                    <LinearGradient
-                      colors={[C.accent.primary, C.accent.secondary]}
-                      start={{ x: 0, y: 0 }}
-                      end={{ x: 1, y: 1 }}
-                      style={styles.uploadCircle}
-                    >
-                      <MaterialIcons name="file-upload" size={18} color="#fff" />
-                    </LinearGradient>
-                  </View>
-                  <Text style={[styles.label, { color: isFocused ? activeColor : inactiveColor, marginTop: 4 }]} numberOfLines={1}>
-                    {label}
-                  </Text>
-                </TouchableOpacity>
-              );
-            }
+            const Icon = options.tabBarIcon;
+            const icon = isUpload ? (
+              <View style={styles.fabFloatWrap} pointerEvents="none">
+                <UploadFabVisual />
+              </View>
+            ) : Icon ? (
+              Icon({
+                focused: isFocused,
+                color,
+                size: isFocused ? TB.iconSizeFocused : TB.iconSize,
+              })
+            ) : null;
 
             return (
-              <TouchableOpacity
+              <TabColumn
                 key={route.key}
-                accessibilityRole="button"
-                accessibilityState={isFocused ? { selected: true } : {}}
-                accessibilityLabel={options.tabBarAccessibilityLabel}
-                testID={options.tabBarTestID}
+                isFocused={isFocused}
                 onPress={onPress}
                 onLongPress={onLongPress}
-                style={styles.tabHit}
-                activeOpacity={0.85}
-              >
-                <View style={styles.tabInner}>
-                  {isFocused ? (
-                    <LinearGradient
-                      colors={[C.accent.primary, C.accent.secondary]}
-                      start={{ x: 0, y: 0 }}
-                      end={{ x: 1, y: 0 }}
-                      // style={styles.activeIndicator}
-                    />
-                  ) : (
-                    <View style={styles.activeIndicatorSlot} />
-                  )}
-                  <View style={styles.tabContent}>
-                    {Icon ? (
-                      Icon({
-                        focused: isFocused,
-                        color,
-                        size: isFocused ? TB.iconSizeFocused : TB.iconSize,
-                      })
-                    ) : null}
-                    {typeof label === 'string' ? (
-                      <Text
-                        style={[
-                          styles.label,
-                          { color },
-                          isFocused && styles.labelFocused,
-                        ]}
-                        numberOfLines={1}
-                      >
-                        {label}
-                      </Text>
-                    ) : (
-                      <View style={styles.labelWrap}>{label}</View>
-                    )}
-                  </View>
-                </View>
-              </TouchableOpacity>
+                accessibilityLabel={
+                  options.tabBarAccessibilityLabel ??
+                  (typeof label === 'string' ? label : route.name)
+                }
+                testID={options.tabBarTestID}
+                label={label}
+                color={color}
+                icon={icon}
+                isUpload={isUpload}
+              />
             );
           })}
         </View>
@@ -196,11 +232,14 @@ export function CosmicBottomTabBar({ state, descriptors, navigation }) {
   );
 }
 
+const FAB_FLOAT_TOP =
+  (ICON_SLOT_H - FAB_SIZE) / 2 - FAB_LIFT;
+
 const styles = StyleSheet.create({
   tabRoot: {
     width: '100%',
     position: 'relative',
-    overflow: 'hidden',
+    overflow: 'visible',
     backgroundColor: C.primary.void,
   },
   tabRootHaze: {
@@ -209,23 +248,24 @@ const styles = StyleSheet.create({
   barWrap: {
     width: '100%',
     position: 'relative',
-    overflow: 'hidden',
+    overflow: 'visible',
     backgroundColor: TB.flatBarBase,
-    borderTopWidth: 1,
+    borderTopWidth: StyleSheet.hairlineWidth,
     borderTopColor: TB.rimBorder,
+    paddingTop: S.sm,
     ...Platform.select({
       ios: {
-        shadowColor: 'rgba(124, 58, 237, 0.4)',
-        shadowOffset: { width: 0, height: -6 },
-        shadowOpacity: 0.35,
-        shadowRadius: 14,
+        shadowColor: 'rgba(124, 58, 237, 0.35)',
+        shadowOffset: { width: 0, height: -4 },
+        shadowOpacity: 0.3,
+        shadowRadius: 12,
       },
-      android: { elevation: 14 },
+      android: { elevation: 12 },
     }),
   },
   barTint: {
     ...StyleSheet.absoluteFillObject,
-    opacity: 0.92,
+    opacity: 0.94,
   },
   topEdge: {
     position: 'absolute',
@@ -233,44 +273,57 @@ const styles = StyleSheet.create({
     right: 0,
     top: 0,
     height: 2,
-    opacity: 0.9,
+    opacity: 0.95,
   },
-  bar: {
+  barRow: {
     flexDirection: 'row',
-    alignItems: 'stretch',
-    paddingTop: S.sm + 4,
-    minHeight: 54,
+    alignItems: 'flex-start',
+    height: TAB_ROW_H,
+    overflow: 'visible',
   },
-  tabHit: {
+  tabColumn: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'flex-start',
+    minWidth: 0,
+    paddingHorizontal: 2,
   },
-  tabInner: {
+  tabColumnUpload: {
+    overflow: 'visible',
+    zIndex: 10,
+  },
+  indicatorRow: {
+    height: INDICATOR_H,
     width: '100%',
     alignItems: 'center',
-    minHeight: 48,
-  },
-  activeIndicatorSlot: {
-    height: 3,
-    marginBottom: 3,
+    justifyContent: 'flex-end',
   },
   activeIndicator: {
-    width: 32,
+    width: 28,
     height: 3,
     borderRadius: 2,
-    marginBottom: 3,
   },
-  tabContent: {
+  activeIndicatorGhost: {
+    width: 28,
+    height: 3,
+    opacity: 0,
+  },
+  iconSlot: {
+    height: ICON_SLOT_H,
+    width: '100%',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: S.xs,
-    paddingBottom: 2,
+  },
+  iconSlotUpload: {
+    overflow: 'visible',
   },
   label: {
     ...UNIFIED_THEME.typography.labelSm,
+    height: LABEL_H,
+    lineHeight: LABEL_H,
+    textAlign: 'center',
     letterSpacing: 0.2,
-    marginTop: 1,
+    width: '100%',
   },
   labelFocused: {
     fontWeight: '800',
@@ -278,37 +331,44 @@ const styles = StyleSheet.create({
     textShadowOffset: { width: 0, height: 0 },
     textShadowRadius: 8,
   },
-  labelWrap: {
-    marginTop: 1,
-  },
-  uploadHit: {
-    flex: 1,
+  labelSlot: {
+    height: LABEL_H,
+    justifyContent: 'center',
     alignItems: 'center',
-    justifyContent: 'flex-start',
-    paddingTop: 0,
   },
-  uploadRing: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
+  fabFloatWrap: {
+    position: 'absolute',
+    top: FAB_FLOAT_TOP,
+    alignSelf: 'center',
+    width: FAB_SIZE + 6,
+    height: FAB_SIZE + 6,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  fabOuterRing: {
+    width: FAB_SIZE + 6,
+    height: FAB_SIZE + 6,
+    borderRadius: (FAB_SIZE + 6) / 2,
     padding: 2,
-    backgroundColor: 'rgba(124,58,237,0.25)',
-    borderWidth: 1.5,
-    borderColor: 'rgba(124,58,237,0.55)',
-    marginTop: -10,
+    backgroundColor: TB.flatBarBase,
     ...Platform.select({
       ios: {
         shadowColor: C.accent.primary,
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.55,
-        shadowRadius: 10,
+        shadowOffset: { width: 0, height: 6 },
+        shadowOpacity: 0.5,
+        shadowRadius: 14,
       },
-      android: { elevation: 12 },
+      android: { elevation: 16 },
     }),
   },
-  uploadCircle: {
+  fabRingGrad: {
     flex: 1,
-    borderRadius: 26,
+    borderRadius: (FAB_SIZE + 2) / 2,
+    padding: 2,
+  },
+  fabCircle: {
+    flex: 1,
+    borderRadius: FAB_SIZE / 2,
     alignItems: 'center',
     justifyContent: 'center',
   },
