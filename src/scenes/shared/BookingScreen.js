@@ -21,6 +21,7 @@ import { profileApi } from '../../api/profileApi';
 import { scheduleSessionReminder, requestNotificationPermission } from '../../utils/sessionReminder';
 import { calculateFees } from '../../utils/feeCalculator';
 import { useAuth } from '../../hooks/useAuth';
+import { SCREEN_NAMES } from '../../navigators/screenNames';
 
 const T = UNIFIED_THEME;
 
@@ -140,7 +141,10 @@ export default function BookingScreen({ navigation, route }) {
 
   useEffect(() => {
     const slots = mentorAvailability[selectedDate] || [];
-    setTimeSlotsForDate(slots.filter(s => !s.is_booked));
+    const available = slots
+      .filter(s => !s.is_booked)
+      .sort((a, b) => a.start_time.localeCompare(b.start_time));
+    setTimeSlotsForDate(available);
     setSelectedTime(null);
   }, [selectedDate, mentorAvailability]);
 
@@ -230,7 +234,10 @@ export default function BookingScreen({ navigation, route }) {
       }
 
       Toast.show('Booking confirmed! Payment successful.');
-      navigation.goBack();
+      navigation.navigate(SCREEN_NAMES.RootUnifiedTabs, {
+        screen: SCREEN_NAMES.LearnerSection,
+        params: { screen: SCREEN_NAMES.LearnerBookings },
+      });
     } catch (err) {
       // Razorpay cancellation returns a specific error code
       if (err?.code === 'PAYMENT_CANCELLED' || err?.description === 'Payment cancelled') {

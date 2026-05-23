@@ -17,6 +17,7 @@ import { LoadingOverlay } from '../../components/LoadingOverlay';
 import { UNIFIED_THEME } from '../../unifiedTheme';
 import { useAuth } from '../../hooks/useAuth';
 import { earningsApi } from '../../api/earningsApi';
+import { paymentApi } from '../../api/paymentApi';
 import { formatCurrency } from '../../utils/formatCurrency';
 import { formatDate } from '../../utils/dateHelpers';
 
@@ -92,7 +93,8 @@ export default function MentorEarningsScreen() {
   const [totalEarnings, setTotalEarnings] = useState(0);
   const [periodEarnings, setPeriodEarnings] = useState([]);
   const [chartData, setChartData] = useState(null);
-  const [recentEarnings, setRecentEarnings] = useState([]);
+  const [allEarnings, setAllEarnings] = useState([]);
+  const [shownCount, setShownCount] = useState(6);
   const [loading, setLoading] = useState(true);
   const [periodLoading, setPeriodLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
@@ -117,17 +119,18 @@ export default function MentorEarningsScreen() {
         : activePeriod === 'month' ? earningsApi.getEarningsByMonth(profile.id)
         : earningsApi.getEarningsByYear(profile.id);
 
-      const [total, data, all] = await Promise.all([
-        earningsApi.getTotalEarnings(profile.id),
+      const [wallet, data, all] = await Promise.all([
+        paymentApi.getWallet(profile.id),
         periodFetch,
         earningsApi.getEarningsByMentor(profile.id),
       ]);
 
       hasLoadedRef.current = true;
-      setTotalEarnings(total || 0);
+      setTotalEarnings(wallet?.total_earned || 0);
       setPeriodEarnings(data || []);
       setTotalPayouts((all || []).length);
-      setRecentEarnings((all || []).slice(0, 10));
+      setAllEarnings(all || []);
+      setShownCount(6);
 
       // Build full period grid (fill missing slots with 0)
       let labels = [];
@@ -241,26 +244,30 @@ export default function MentorEarningsScreen() {
         {/* ── Recent Activity ── */}
         <Text style={styles.sectionTitle}>Recent Activity</Text>
         <View style={styles.txnCard}>
-          {recentEarnings.length > 0 ? (
-            recentEarnings.map((item, index) => (
-              <View
-                key={item.id || index}
-                style={[styles.txnRow, index === recentEarnings.length - 1 && { borderBottomWidth: 0 }]}
-              >
-                <View style={styles.txnIcon}>
-                  <MaterialIcons name="trending-up" size={18} color={T.colors.accent.success} />
+          {allEarnings.length > 0 ? (
+            allEarnings.slice(0, shownCount).map((item, index) => {
+              const visibleCount = Math.min(shownCount, allEarnings.length);
+              const isLast = index === visibleCount - 1 && shownCount >= allEarnings.length;
+              return (
+                <View
+                  key={item.id || index}
+                  style={[styles.txnRow, isLast && { borderBottomWidth: 0 }]}
+                >
+                  <View style={styles.txnIcon}>
+                    <MaterialIcons name="trending-up" size={18} color={T.colors.accent.success} />
+                  </View>
+                  <View style={styles.txnInfo}>
+                    <Text style={styles.txnDate}>{item.created_at ? formatDate(item.created_at) : '—'}</Text>
+                    <Text style={styles.txnSub} numberOfLines={1}>
+                      {item.source === 'video_subscription'
+                        ? 'Video subscription'
+                        : item.bookings?.profiles?.name || `Session #${item.booking_id?.slice(0, 8) || '—'}`}
+                    </Text>
+                  </View>
+                  <Text style={styles.txnAmt}>+{formatCurrency(item.amount)}</Text>
                 </View>
-                <View style={styles.txnInfo}>
-                  <Text style={styles.txnDate}>{item.created_at ? formatDate(item.created_at) : '—'}</Text>
-                  <Text style={styles.txnSub} numberOfLines={1}>
-                    {item.source === 'video_subscription'
-                      ? 'Video subscription'
-                      : item.bookings?.profiles?.name || `Session #${item.booking_id?.slice(0, 8) || '—'}`}
-                  </Text>
-                </View>
-                <Text style={styles.txnAmt}>+{formatCurrency(item.amount)}</Text>
-              </View>
-            ))
+              );
+            })
           ) : (
             <View style={styles.emptyTxn}>
               <MaterialIcons name="receipt-long" size={28} color={T.colors.text.muted} />
@@ -268,6 +275,16 @@ export default function MentorEarningsScreen() {
             </View>
           )}
         </View>
+        {shownCount < allEarnings.length && (
+          <TouchableOpacity
+            style={styles.loadMoreBtn}
+            onPress={() => setShownCount(prev => prev + 6)}
+            activeOpacity={0.7}
+          >
+            <MaterialIcons name="expand-more" size={20} color={T.colors.accent.secondary} />
+            <Text style={styles.loadMoreTxt}>Load more</Text>
+          </TouchableOpacity>
+        )}
       </ScrollView>
 
       <LoadingOverlay visible={loading} message="Loading earnings..." />
@@ -411,4 +428,18 @@ const styles = StyleSheet.create({
   txnSub: { fontSize: 12, color: T.colors.text.secondary, fontWeight: '500' },
   txnAmt: { fontSize: 15, color: T.colors.accent.success, fontWeight: '800' },
   emptyTxn: { alignItems: 'center', paddingVertical: T.spacing.xl, gap: T.spacing.sm },
+  loadMoreBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: T.spacing.sm,
+    paddingVertical: T.spacing.md,
+    marginTop: -T.spacing.sm,
+    marginBottom: T.spacing.lg,
+    borderRadius: T.borderRadius.lg,
+    borderWidth: 1,
+    borderColor: T.colors.border.light,
+    backgroundColor: T.colors.component.card,
+  },
+  loadMoreTxt: { fontSize: 13, color: T.colors.accent.secondary, fontWeight: '600' },
 });

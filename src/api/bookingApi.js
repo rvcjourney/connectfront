@@ -112,11 +112,15 @@ export const bookingApi = {
           availability_slots (date, start_time, end_time)
         `)
         .eq('learner_id', learnerId)
-        .in('status', ['pending', 'confirmed'])
-        .order('created_at', { ascending: false });
+        .in('status', ['pending', 'confirmed']);
 
       if (error) throw error;
-      return attachRecordings(data || []);
+      const sorted = (data || []).sort((a, b) => {
+        const da = `${a.availability_slots?.date ?? ''} ${a.availability_slots?.start_time ?? ''}`;
+        const db = `${b.availability_slots?.date ?? ''} ${b.availability_slots?.start_time ?? ''}`;
+        return da.localeCompare(db);
+      });
+      return attachRecordings(sorted);
     } catch (error) {
       throw new Error(getSupabaseErrorMessage(error));
     }
@@ -174,11 +178,15 @@ export const bookingApi = {
           availability_slots (date, start_time, end_time)
         `)
         .eq('mentor_id', mentorId)
-        .in('status', ['pending', 'confirmed'])
-        .order('created_at', { ascending: false });
+        .in('status', ['pending', 'confirmed']);
 
       if (error) throw error;
-      return attachRecordings(data || []);
+      const sorted = (data || []).sort((a, b) => {
+        const da = `${a.availability_slots?.date ?? ''} ${a.availability_slots?.start_time ?? ''}`;
+        const db = `${b.availability_slots?.date ?? ''} ${b.availability_slots?.start_time ?? ''}`;
+        return da.localeCompare(db);
+      });
+      return attachRecordings(sorted);
     } catch (error) {
       throw new Error(getSupabaseErrorMessage(error));
     }

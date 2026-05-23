@@ -27,7 +27,7 @@ import { SCREEN_NAMES } from '../../navigators/screenNames';
 const T = UNIFIED_THEME;
 const C = T.colors;
 const TB = C.tabBar;
-const PAGE_SIZE = 10;
+const PAGE_SIZE = 6;
 const SESSIONS_POLL_MS = 30_000;
 
 const STATUS_LABEL = {
@@ -91,7 +91,8 @@ function EmptyBlock({ icon }) {
 
 export default function MentorCallsScreen({ navigation }) {
   const { profile } = useAuth();
-  const [upcoming, setUpcoming] = useState([]);
+  const [upcomingAll, setUpcomingAll] = useState([]);
+  const [upcomingShown, setUpcomingShown] = useState(PAGE_SIZE);
   const [history, setHistory] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -106,6 +107,7 @@ export default function MentorCallsScreen({ navigation }) {
     if (!profile?.id) return;
     try {
       if (!silent) setLoading(true);
+      setUpcomingShown(PAGE_SIZE);
 
       const [upcomingData, historyData] = await Promise.all([
         bookingApi.getUpcomingBookingsByMentor(profile.id),
@@ -119,7 +121,7 @@ export default function MentorCallsScreen({ navigation }) {
         .filter(b => isSessionPast(b))
         .map(b => ({ ...b, isExpired: true }));
 
-      setUpcoming(upcomingNorm);
+      setUpcomingAll(upcomingNorm);
       setHistory([...expiredNorm, ...historyNorm]);
       setHistoryPage(1);
       setHasMoreHistory(historyNorm.length === PAGE_SIZE);
@@ -152,7 +154,7 @@ export default function MentorCallsScreen({ navigation }) {
       const nowExpired = all
         .filter(b => isSessionPast(b))
         .map(b => ({ ...b, isExpired: true }));
-      setUpcoming(stillUpcoming);
+      setUpcomingAll(stillUpcoming);
       if (nowExpired.length > 0) {
         setHistory(prev => {
           const ids = new Set(prev.map(b => b.id));
@@ -201,6 +203,10 @@ export default function MentorCallsScreen({ navigation }) {
     }
   }, [loadingMore, hasMoreHistory, profile?.id, historyPage]);
 
+  const loadMoreUpcoming = () => {
+    setUpcomingShown(prev => prev + PAGE_SIZE);
+  };
+
   const handleRefresh = async () => {
     setRefreshing(true);
     await loadInitial({ silent: true, quietErrors: true });
@@ -238,8 +244,10 @@ export default function MentorCallsScreen({ navigation }) {
     />
   );
 
+  const visibleUpcoming = upcomingAll.slice(0, upcomingShown);
+  const hasMoreUpcoming = upcomingAll.length > upcomingShown;
   const completedCount = history.filter(b => b.status === 'completed').length;
-  const fullyEmpty = upcoming.length === 0 && history.length === 0 && !loading;
+  const fullyEmpty = upcomingAll.length === 0 && history.length === 0 && !loading;
 
   const listData = [{ type: 'stats', key: 'stats' }];
 
@@ -251,14 +259,17 @@ export default function MentorCallsScreen({ navigation }) {
       key: 'up_hdr',
       icon: 'event-available',
       title: 'Upcoming',
-      count: upcoming.length,
+      count: upcomingAll.length,
     });
-    if (!upcoming.length) {
+    if (!upcomingAll.length) {
       listData.push({ type: 'empty_slot', key: 'up_empty', icon: 'event-busy' });
     } else {
-      upcoming.forEach(b =>
+      visibleUpcoming.forEach(b =>
         listData.push({ type: 'booking', key: `u-${b.id}`, item: b, isUpcoming: true }),
       );
+      if (hasMoreUpcoming) {
+        listData.push({ type: 'load_more_upcoming', key: 'more_upcoming' });
+      }
     }
 
     listData.push({
@@ -294,7 +305,7 @@ export default function MentorCallsScreen({ navigation }) {
               style={styles.statsBeam}
               pointerEvents="none"
             />
-            <StatChip icon="schedule" value={upcoming.length} tint={C.accent.secondary} />
+            <StatChip icon="schedule" value={upcomingAll.length} tint={C.accent.secondary} />
             <View style={styles.statDivider} />
             <StatChip icon="check-circle" value={completedCount} tint={C.accent.success} />
             <View style={styles.statDivider} />
@@ -317,6 +328,17 @@ export default function MentorCallsScreen({ navigation }) {
           <View style={styles.cardWrap}>
             {renderBooking(item.item, item.isUpcoming)}
           </View>
+        );
+
+      case 'load_more_upcoming':
+        return (
+          <TouchableOpacity
+            style={styles.loadMore}
+            onPress={loadMoreUpcoming}
+            activeOpacity={0.75}
+          >
+            <MaterialIcons name="expand-more" size={26} color={C.accent.secondary} />
+          </TouchableOpacity>
         );
 
       case 'load_more':

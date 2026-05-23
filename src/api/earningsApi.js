@@ -18,6 +18,7 @@ export const earningsApi = {
           )
         `)
         .eq('mentor_id', mentorId)
+        .neq('status', 'pending')
         .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -42,6 +43,7 @@ export const earningsApi = {
         .from('earnings')
         .select('amount, created_at')
         .eq('mentor_id', mentorId)
+        .neq('status', 'pending')
         .gte('created_at', startStr)
         .lt('created_at', endStr);
 
@@ -75,6 +77,7 @@ export const earningsApi = {
         .from('earnings')
         .select('amount, created_at')
         .eq('mentor_id', mentorId)
+        .neq('status', 'pending')
         .gte('created_at', monthStart)
         .lt('created_at', monthEnd);
 
@@ -105,6 +108,7 @@ export const earningsApi = {
         .from('earnings')
         .select('amount, created_at')
         .eq('mentor_id', mentorId)
+        .neq('status', 'pending')
         .gte('created_at', yearStart)
         .lt('created_at', yearEnd);
 

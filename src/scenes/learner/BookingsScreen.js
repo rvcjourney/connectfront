@@ -130,11 +130,12 @@ const sk = StyleSheet.create({
 });
 
 const T = UNIFIED_THEME;
-const PAGE_SIZE = 10;
+const PAGE_SIZE = 6;
 
 export default function LearnerBookingsScreen({ navigation }) {
   const { profile } = useAuth();
-  const [upcoming, setUpcoming] = useState([]);
+  const [upcomingAll, setUpcomingAll] = useState([]);
+  const [upcomingShown, setUpcomingShown] = useState(PAGE_SIZE);
   const [history, setHistory] = useState([]);
   const [reviewedIds, setReviewedIds] = useState(new Set());
   const [loading, setLoading] = useState(true);
@@ -153,6 +154,7 @@ export default function LearnerBookingsScreen({ navigation }) {
       setLoading(true);
       setHistoryPage(0);
       setHasMoreHistory(true);
+      setUpcomingShown(PAGE_SIZE);
 
       const [upcomingData, historyData] = await Promise.all([
         bookingApi.getUpcomingBookingsByLearner(profile.id),
@@ -178,7 +180,7 @@ export default function LearnerBookingsScreen({ navigation }) {
       const expiredNorm  = allUpcoming.filter(b => isSessionPast(b))
         .map(b => ({ ...b, isExpired: true }));
 
-      setUpcoming(upcomingNorm);
+      setUpcomingAll(upcomingNorm);
       setHistory([...expiredNorm, ...historyNorm]);
       setHistoryPage(1);
       setHasMoreHistory(historyNorm.length === PAGE_SIZE);
@@ -235,6 +237,10 @@ export default function LearnerBookingsScreen({ navigation }) {
       setLoadingMore(false);
     }
   }, [loadingMore, hasMoreHistory, profile?.id, historyPage, reviewedIds]);
+
+  const loadMoreUpcoming = () => {
+    setUpcomingShown(prev => prev + PAGE_SIZE);
+  };
 
   const handleRefresh = async () => {
     setRefreshing(true);
@@ -300,7 +306,9 @@ export default function LearnerBookingsScreen({ navigation }) {
     );
   };
 
-  const fullyEmpty = upcoming.length === 0 && history.length === 0 && !loading;
+  const visibleUpcoming = upcomingAll.slice(0, upcomingShown);
+  const hasMoreUpcoming = upcomingAll.length > upcomingShown;
+  const fullyEmpty = upcomingAll.length === 0 && history.length === 0 && !loading;
 
   // Build FlatList data: hero + upcoming section + history section + history items
   const listData = [];
@@ -310,11 +318,14 @@ export default function LearnerBookingsScreen({ navigation }) {
   if (fullyEmpty) {
     listData.push({ type: 'empty', key: 'empty' });
   } else {
-    listData.push({ type: 'section_header', key: 'upcoming_header', title: 'Upcoming Sessions', subtitle: 'Join sessions at their scheduled time.', count: upcoming.length });
-    if (upcoming.length === 0) {
+    listData.push({ type: 'section_header', key: 'upcoming_header', title: 'Upcoming Sessions', subtitle: 'Join sessions at their scheduled time.', count: upcomingAll.length });
+    if (upcomingAll.length === 0) {
       listData.push({ type: 'empty_section', key: 'upcoming_empty', icon: 'event-available', text: 'No upcoming sessions' });
     } else {
-      upcoming.forEach(b => listData.push({ type: 'booking', key: b.id, item: b, isUpcoming: true }));
+      visibleUpcoming.forEach(b => listData.push({ type: 'booking', key: b.id, item: b, isUpcoming: true }));
+      if (hasMoreUpcoming) {
+        listData.push({ type: 'load_more_upcoming', key: 'load_more_upcoming' });
+      }
     }
 
     listData.push({ type: 'section_header', key: 'history_header', title: 'Session History', subtitle: 'A record of your past sessions.', count: history.length });
@@ -371,6 +382,14 @@ export default function LearnerBookingsScreen({ navigation }) {
           <View style={styles.sectionItem}>
             {renderBooking(item.item, item.isUpcoming)}
           </View>
+        );
+
+      case 'load_more_upcoming':
+        return (
+          <TouchableOpacity style={styles.loadMoreBtn} onPress={loadMoreUpcoming} activeOpacity={0.7}>
+            <MaterialIcons name="expand-more" size={20} color={T.colors.accent.secondary} />
+            <Text style={styles.loadMoreTxt}>Load more upcoming</Text>
+          </TouchableOpacity>
         );
 
       case 'load_more':

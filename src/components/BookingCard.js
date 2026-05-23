@@ -159,8 +159,8 @@ export const BookingCard = ({
         </View>
       </View>
 
-      {booking.message && isMentor && !compact ? (
-        <View style={styles.goalStrip}>
+      {booking.message && isMentor ? (
+        <View style={[styles.goalStrip, compact && styles.goalStripCompact]}>
           <MaterialIcons name="chat-bubble-outline" size={14} color={T.accent.secondary} />
           <Text style={styles.goalText} numberOfLines={2}>
             {booking.message}

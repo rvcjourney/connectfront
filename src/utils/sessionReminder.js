@@ -3,6 +3,7 @@ import notifee, {
   AndroidImportance,
   AuthorizationStatus,
 } from '@notifee/react-native';
+import { Platform } from 'react-native';
 
 const CHANNEL_ID = 'session_reminders';
 const REMINDER_MINUTES = 15;
@@ -18,10 +19,20 @@ async function ensureChannel() {
 
 export async function requestNotificationPermission() {
   const settings = await notifee.requestPermission();
-  return (
+  const granted =
     settings.authorizationStatus === AuthorizationStatus.AUTHORIZED ||
-    settings.authorizationStatus === AuthorizationStatus.PROVISIONAL
-  );
+    settings.authorizationStatus === AuthorizationStatus.PROVISIONAL;
+
+  // On Android, disable battery optimization so scheduled reminders
+  // fire even when the app is killed.
+  if (Platform.OS === 'android') {
+    const batteryOptimizationEnabled = await notifee.isBatteryOptimizationEnabled();
+    if (batteryOptimizationEnabled) {
+      await notifee.openBatteryOptimizationSettings();
+    }
+  }
+
+  return granted;
 }
 
 /**
