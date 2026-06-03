@@ -7,7 +7,6 @@ import {
   RefreshControl,
   Platform,
 } from 'react-native';
-import LinearGradient from 'react-native-linear-gradient';
 import Toast from 'react-native-simple-toast';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import { SafeScreen } from '../../components/SafeScreen';
@@ -130,42 +129,6 @@ export default function BrowseMentorsScreen({ navigation }) {
         />
       }
     >
-      <View style={styles.hero}>
-        <LinearGradient
-          colors={S.heroGradient}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={StyleSheet.absoluteFill}
-        />
-        <View style={styles.heroIconRing}>
-          <LinearGradient
-            colors={B.premiumGradient}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-            style={styles.heroIconRingGrad}
-          >
-            <View style={styles.heroIconInner}>
-              <MaterialIcons name="travel-explore" size={28} color={PURPLE_LINK} />
-            </View>
-          </LinearGradient>
-        </View>
-        <Text style={styles.heroEyebrow}>Browse</Text>
-        <Text style={styles.heroTitle}>Discover mentors</Text>
-        <Text style={styles.heroSubtitle}>
-          Explore experts by category. Open a profile to book a session.
-        </Text>
-        <View style={styles.heroChipRow}>
-          <View style={styles.heroChip}>
-            <MaterialIcons name="verified" size={13} color={TEAL} />
-            <Text style={styles.heroChipText}>Verified profiles</Text>
-          </View>
-          <View style={[styles.heroChip, styles.heroChipAccent]}>
-            <MaterialIcons name="bolt" size={13} color={GOLD} />
-            <Text style={styles.heroChipText}>Quick booking</Text>
-          </View>
-        </View>
-      </View>
-
       <View style={styles.statsBar}>
         <StatSegment
           icon="category"
@@ -216,81 +179,6 @@ export default function BrowseMentorsScreen({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-  hero: {
-    borderRadius: 16,
-    overflow: 'hidden',
-    padding: T.spacing.lg,
-    marginBottom: T.spacing.md,
-    borderWidth: 1,
-    borderColor: 'rgba(167,139,250,0.22)',
-    backgroundColor: 'rgba(255,255,255,0.07)',
-    alignItems: 'flex-start',
-    ...Platform.select({ ios: T.shadows.medium, android: { elevation: 6 } }),
-  },
-  heroIconRing: {
-    marginBottom: T.spacing.sm,
-  },
-  heroIconRingGrad: {
-    padding: 2,
-    borderRadius: 22,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.35)',
-  },
-  heroIconInner: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: C.primary.void,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  heroEyebrow: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: PURPLE_LINK,
-    letterSpacing: 0.8,
-    textTransform: 'uppercase',
-    marginBottom: 4,
-  },
-  heroTitle: {
-    fontSize: 22,
-    fontWeight: '800',
-    color: C.text.primary,
-    letterSpacing: -0.4,
-    marginBottom: T.spacing.xs,
-  },
-  heroSubtitle: {
-    fontSize: 13,
-    color: C.text.secondary,
-    lineHeight: 20,
-    marginBottom: T.spacing.md,
-  },
-  heroChipRow: {
-    flexDirection: 'row',
-    gap: T.spacing.xs,
-    flexWrap: 'wrap',
-  },
-  heroChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    paddingVertical: 4,
-    paddingHorizontal: T.spacing.sm,
-    borderRadius: 999,
-    backgroundColor: 'rgba(255,255,255,0.08)',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.1)',
-  },
-  heroChipAccent: {
-    backgroundColor: S.accentGold,
-    borderColor: 'rgba(240,216,117,0.25)',
-  },
-  heroChipText: {
-    color: C.text.primary,
-    fontSize: 10,
-    fontWeight: '700',
-  },
-
   statsBar: {
     flexDirection: 'row',
     alignItems: 'stretch',

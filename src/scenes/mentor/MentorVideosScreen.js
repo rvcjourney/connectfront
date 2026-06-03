@@ -21,7 +21,6 @@ import { SafeScreen } from '../../components/SafeScreen';
 import CosmicButton from '../../components/CosmicButton';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import { launchImageLibrary } from 'react-native-image-picker';
-import { useNavigation } from '@react-navigation/native';
 import Toast from 'react-native-simple-toast';
 import LinearGradient from 'react-native-linear-gradient';
 import { UNIFIED_THEME } from '../../unifiedTheme';
@@ -29,8 +28,18 @@ import { useAuth } from '../../hooks/useAuth';
 import { videoApi } from '../../api/videoApi';
 
 const T = UNIFIED_THEME;
+const C = T.colors;
+const B = C.buttons;
+const S = C.surface;
 
-// ─── Video Player Modal ───────────────────────────────────────────────────────
+const PURPLE_LINK = B.nebulaGradient[0];
+const GOLD = C.accent.primary;
+const TEAL = C.accent.secondary;
+const PANEL_BG = '#161432';
+const INPUT_BG = '#0f0e2a';
+const SHEET_BG = '#0f0e2a';
+const GLASS_BORDER = 'rgba(167,139,250,0.22)';
+
 function VideoPlayerModal({ video, onClose }) {
   const videoRef = useRef(null);
   const [paused, setPaused] = useState(false);
@@ -63,7 +72,7 @@ function VideoPlayerModal({ video, onClose }) {
         )}
 
         {loading && !error && (
-          <ActivityIndicator style={playerStyles.loader} size="large" color={T.colors.accent.secondary} />
+          <ActivityIndicator style={playerStyles.loader} size="large" color={TEAL} />
         )}
 
         {error && (
@@ -144,11 +153,8 @@ function VideoCard({ video, onToggleFree, onDelete, onPlay, onEdit }) {
   return (
     <View style={styles.card}>
       <TouchableOpacity onPress={() => onPlay(video)} activeOpacity={0.8}>
-        <LinearGradient
-          colors={['rgba(124,58,237,0.18)', 'rgba(14,165,233,0.10)']}
-          style={styles.cardThumb}
-        >
-          <MaterialIcons name="play-circle-filled" size={36} color="rgba(255,255,255,0.7)" />
+        <LinearGradient colors={S.heroGradient} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.cardThumb}>
+          <MaterialIcons name="play-circle-filled" size={36} color={PURPLE_LINK} />
         </LinearGradient>
       </TouchableOpacity>
 
@@ -156,7 +162,7 @@ function VideoCard({ video, onToggleFree, onDelete, onPlay, onEdit }) {
         <View style={styles.cardTitleRow}>
           <Text style={[styles.cardTitle, { flex: 1 }]} numberOfLines={2}>{video.title}</Text>
           <TouchableOpacity onPress={() => onEdit(video)} style={styles.editBtn} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-            <MaterialIcons name="edit" size={18} color={T.colors.accent.secondary} />
+            <MaterialIcons name="edit" size={18} color={TEAL} />
           </TouchableOpacity>
         </View>
         {video.description ? (
@@ -166,13 +172,13 @@ function VideoCard({ video, onToggleFree, onDelete, onPlay, onEdit }) {
           <View style={styles.freeRow}>
             <Text style={styles.freeLabel}>{video.is_free ? 'Free' : 'Locked'}</Text>
             {toggling ? (
-              <ActivityIndicator size="small" color={T.colors.accent.secondary} style={{ marginLeft: 6 }} />
+              <ActivityIndicator size="small" color={TEAL} style={{ marginLeft: 6 }} />
             ) : (
               <Switch
                 value={video.is_free}
                 onValueChange={handleToggle}
-                trackColor={{ false: 'rgba(255,255,255,0.15)', true: T.colors.accent.secondary }}
-                thumbColor={video.is_free ? T.colors.accent.primary : 'rgba(255,255,255,0.6)'}
+                trackColor={{ false: 'rgba(255,255,255,0.15)', true: TEAL }}
+                thumbColor={video.is_free ? GOLD : 'rgba(255,255,255,0.6)'}
                 style={{ transform: [{ scaleX: 0.85 }, { scaleY: 0.85 }] }}
               />
             )}
@@ -247,7 +253,7 @@ function EditModal({ video, onClose, onSaved }) {
           <View style={styles.modalHandle} />
 
           <View style={styles.editModalHeader}>
-            <MaterialIcons name="edit" size={18} color={T.colors.accent.secondary} />
+            <MaterialIcons name="edit" size={18} color={PURPLE_LINK} />
             <Text style={styles.modalTitle}>Edit Video</Text>
           </View>
 
@@ -257,7 +263,7 @@ function EditModal({ video, onClose, onSaved }) {
             value={title}
             onChangeText={t => { setTitle(t); setErrorMsg(''); }}
             placeholder="Video title"
-            placeholderTextColor="rgba(255,255,255,0.3)"
+            placeholderTextColor={C.text.muted}
             maxLength={80}
           />
 
@@ -267,7 +273,7 @@ function EditModal({ video, onClose, onSaved }) {
             value={description}
             onChangeText={setDescription}
             placeholder="Optional description"
-            placeholderTextColor="rgba(255,255,255,0.3)"
+            placeholderTextColor={C.text.muted}
             multiline
             maxLength={200}
           />
@@ -277,8 +283,8 @@ function EditModal({ video, onClose, onSaved }) {
             <Switch
               value={isFree}
               onValueChange={setIsFree}
-              trackColor={{ false: 'rgba(255,255,255,0.15)', true: T.colors.accent.secondary }}
-              thumbColor={isFree ? T.colors.accent.primary : 'rgba(255,255,255,0.6)'}
+              trackColor={{ false: 'rgba(255,255,255,0.15)', true: TEAL }}
+              thumbColor={isFree ? GOLD : 'rgba(255,255,255,0.6)'}
             />
           </View>
 
@@ -425,11 +431,12 @@ function UploadModal({ visible, onClose, onUploaded }) {
         style={styles.modalOverlay}
       >
         <View style={styles.modalSheet}>
+          <View style={styles.modalHandle} />
           {/* Header */}
           <View style={styles.modalHeader}>
             <Text style={styles.modalTitle}>Upload Video</Text>
             <TouchableOpacity onPress={handleClose}>
-              <MaterialIcons name="close" size={22} color={T.colors.text.secondary} />
+              <MaterialIcons name="close" size={22} color={C.text.muted} />
             </TouchableOpacity>
           </View>
 
@@ -439,7 +446,7 @@ function UploadModal({ visible, onClose, onUploaded }) {
             <TextInput
               style={styles.input}
               placeholder="e.g. How to grow on Instagram"
-              placeholderTextColor={T.colors.text.muted}
+              placeholderTextColor={C.text.muted}
               value={title}
               onChangeText={setTitle}
               maxLength={80}
@@ -450,7 +457,7 @@ function UploadModal({ visible, onClose, onUploaded }) {
             <TextInput
               style={[styles.input, styles.inputMulti]}
               placeholder="Brief description of this video..."
-              placeholderTextColor={T.colors.text.muted}
+              placeholderTextColor={C.text.muted}
               value={description}
               onChangeText={setDescription}
               multiline
@@ -467,8 +474,8 @@ function UploadModal({ visible, onClose, onUploaded }) {
               <Switch
                 value={isFree}
                 onValueChange={setIsFree}
-                trackColor={{ false: 'rgba(255,255,255,0.15)', true: T.colors.accent.secondary }}
-                thumbColor={isFree ? T.colors.accent.primary : 'rgba(255,255,255,0.6)'}
+                trackColor={{ false: 'rgba(255,255,255,0.15)', true: TEAL }}
+                thumbColor={isFree ? GOLD : 'rgba(255,255,255,0.6)'}
               />
             </View>
 
@@ -477,9 +484,9 @@ function UploadModal({ visible, onClose, onUploaded }) {
               <MaterialIcons
                 name={pickedFile ? 'check-circle' : 'video-library'}
                 size={20}
-                color={pickedFile ? T.colors.accent.success : T.colors.accent.secondary}
+                color={pickedFile ? C.accent.success : TEAL}
               />
-              <Text style={[styles.pickBtnText, pickedFile && { color: T.colors.accent.success }]}>
+              <Text style={[styles.pickBtnText, pickedFile && { color: C.accent.success }]}>
                 {pickedFile
                   ? pickedFile.fileName || 'Video selected'
                   : 'Pick video from gallery'}
@@ -493,13 +500,13 @@ function UploadModal({ visible, onClose, onUploaded }) {
             ) : null}
 
             {/* Pick thumbnail */}
-            <TouchableOpacity style={[styles.pickBtn, { marginTop: 10, borderColor: 'rgba(167,139,250,0.2)', backgroundColor: 'rgba(167,139,250,0.06)' }]} onPress={pickThumbnail}>
+            <TouchableOpacity style={[styles.pickBtn, styles.pickBtnViolet]} onPress={pickThumbnail}>
               <MaterialIcons
                 name={pickedThumbnail ? 'check-circle' : 'image'}
                 size={20}
-                color={pickedThumbnail ? T.colors.accent.success : 'rgba(167,139,250,1)'}
+                color={pickedThumbnail ? C.accent.success : PURPLE_LINK}
               />
-              <Text style={[styles.pickBtnText, { color: pickedThumbnail ? T.colors.accent.success : 'rgba(167,139,250,1)' }]}>
+              <Text style={[styles.pickBtnText, styles.pickBtnTextViolet, pickedThumbnail && { color: C.accent.success }]}>
                 {pickedThumbnail ? pickedThumbnail.fileName || 'Thumbnail selected' : 'Pick thumbnail (optional)'}
               </Text>
             </TouchableOpacity>
@@ -549,7 +556,6 @@ function UploadModal({ visible, onClose, onUploaded }) {
 
 // ─── Main Screen ──────────────────────────────────────────────────────────────
 export default function MentorVideosScreen() {
-  const navigation = useNavigation();
   const { user } = useAuth();
   const [videos, setVideos] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -621,21 +627,10 @@ export default function MentorVideosScreen() {
   const freeCount = videos.filter(v => v.is_free).length;
 
   return (
-    <SafeScreen hasBottomTabs={false} scrollable={false} padding={0}>
-      {/* Top bar */}
-      <View style={styles.topBar}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
-          <MaterialIcons name="arrow-back" size={22} color={T.colors.text.primary} />
-        </TouchableOpacity>
-        <Text style={styles.topTitle}>My Videos</Text>
-        <TouchableOpacity style={styles.addBtn} onPress={() => setShowUpload(true)}>
-          <MaterialIcons name="add" size={22} color="#000" />
-        </TouchableOpacity>
-      </View>
-
+    <SafeScreen hasBottomTabs={false} scrollable={false} padding={T.spacing.lg}>
       {/* Unlock price card */}
       <View style={styles.priceCard}>
-        <MaterialIcons name="lock-open" size={18} color={T.colors.accent.primary} />
+        <MaterialIcons name="lock-open" size={18} color={GOLD} />
         <Text style={styles.priceLabel}>Library unlock price</Text>
         {editingPrice ? (
           <View style={styles.priceEditRow}>
@@ -655,9 +650,14 @@ export default function MentorVideosScreen() {
         ) : (
           <TouchableOpacity onPress={() => setEditingPrice(true)} style={styles.priceValueRow}>
             <Text style={styles.priceValue}>₹{unlockPrice}</Text>
-            <MaterialIcons name="edit" size={14} color={T.colors.text.muted} style={{ marginLeft: 4 }} />
+            <MaterialIcons name="edit" size={14} color={C.text.muted} style={{ marginLeft: 4 }} />
           </TouchableOpacity>
         )}
+        <TouchableOpacity style={styles.addBtn} onPress={() => setShowUpload(true)}>
+          <LinearGradient colors={B.nebulaGradient} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={styles.addBtnGrad}>
+            <MaterialIcons name="add" size={22} color={B.nebulaText} />
+          </LinearGradient>
+        </TouchableOpacity>
       </View>
 
       {/* Stats row */}
@@ -670,10 +670,10 @@ export default function MentorVideosScreen() {
       </View>
 
       {loading ? (
-        <ActivityIndicator color={T.colors.accent.secondary} style={{ marginTop: 40 }} />
+        <ActivityIndicator color={TEAL} style={{ marginTop: 40 }} />
       ) : videos.length === 0 ? (
         <View style={styles.emptyState}>
-          <MaterialIcons name="video-library" size={56} color="rgba(255,255,255,0.12)" />
+          <MaterialIcons name="video-library" size={48} color={PURPLE_LINK} />
           <Text style={styles.emptyText}>No videos yet</Text>
           <Text style={styles.emptyHint}>Tap + to upload your first video</Text>
         </View>
@@ -718,87 +718,69 @@ export default function MentorVideosScreen() {
 }
 
 const styles = StyleSheet.create({
-  topBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingTop: 16,
-    paddingBottom: 12,
-  },
-  backBtn: { padding: 4 },
-  topTitle: {
-    flex: 1,
-    fontSize: 18,
-    fontWeight: '700',
-    color: T.colors.text.primary,
-    marginLeft: 10,
-  },
-  addBtn: {
-    backgroundColor: T.colors.accent.primary,
-    width: 34,
-    height: 34,
-    borderRadius: 17,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-
   priceCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginHorizontal: 16,
-    marginBottom: 8,
-    backgroundColor: 'rgba(255,255,255,0.05)',
-    borderRadius: 12,
+    marginBottom: T.spacing.sm,
+    backgroundColor: PANEL_BG,
+    borderRadius: 14,
     paddingHorizontal: 14,
-    paddingVertical: 10,
+    paddingVertical: 12,
     gap: 8,
     borderWidth: 1,
-    borderColor: 'rgba(240,216,117,0.15)',
+    borderColor: 'rgba(240,216,117,0.25)',
   },
-  priceLabel: { flex: 1, color: T.colors.text.secondary, fontSize: 13 },
+  priceLabel: { flex: 1, color: C.text.secondary, fontSize: 13, fontWeight: '600' },
   priceValueRow: { flexDirection: 'row', alignItems: 'center' },
-  priceValue: { color: T.colors.accent.primary, fontSize: 15, fontWeight: '700' },
+  priceValue: { color: GOLD, fontSize: 15, fontWeight: '800' },
   priceEditRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  rupee: { color: T.colors.accent.primary, fontSize: 14, fontWeight: '700' },
+  rupee: { color: GOLD, fontSize: 14, fontWeight: '800' },
   priceInput: {
-    color: T.colors.text.primary,
+    color: C.text.primary,
     fontSize: 15,
-    fontWeight: '700',
+    fontWeight: '800',
     borderBottomWidth: 1,
-    borderBottomColor: T.colors.accent.primary,
+    borderBottomColor: GOLD,
     minWidth: 60,
     paddingVertical: 0,
     textAlign: 'right',
   },
   savePriceBtn: {
-    backgroundColor: T.colors.accent.secondary,
+    backgroundColor: TEAL,
     borderRadius: 8,
     paddingHorizontal: 10,
     paddingVertical: 4,
     marginLeft: 6,
   },
-  savePriceTxt: { color: '#000', fontSize: 12, fontWeight: '700' },
+  savePriceTxt: { color: C.primary.void, fontSize: 12, fontWeight: '800' },
+  addBtn: { borderRadius: 17, overflow: 'hidden' },
+  addBtnGrad: {
+    width: 34,
+    height: 34,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
 
   statsRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 18,
-    marginBottom: 12,
+    marginBottom: T.spacing.md,
     gap: 6,
+    paddingHorizontal: 2,
   },
-  statText: { color: T.colors.text.muted, fontSize: 12 },
-  statDot: { color: T.colors.text.muted, fontSize: 12 },
+  statText: { color: C.text.muted, fontSize: 12, fontWeight: '600' },
+  statDot: { color: 'rgba(255,255,255,0.25)', fontSize: 12 },
 
-  list: { paddingHorizontal: 16, paddingBottom: 24 },
+  list: { paddingBottom: 24 },
 
   card: {
     flexDirection: 'row',
-    backgroundColor: 'rgba(255,255,255,0.05)',
-    borderRadius: 14,
+    backgroundColor: PANEL_BG,
+    borderRadius: 16,
     marginBottom: 12,
     overflow: 'hidden',
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.08)',
+    borderColor: GLASS_BORDER,
   },
   cardThumb: {
     width: 90,
@@ -807,21 +789,30 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   cardInfo: { flex: 1, padding: 12 },
-  cardTitle: { color: T.colors.text.primary, fontSize: 14, fontWeight: '600', marginBottom: 4 },
-  cardDesc: { color: T.colors.text.muted, fontSize: 12, marginBottom: 8 },
+  cardTitle: { color: C.text.primary, fontSize: 14, fontWeight: '700', marginBottom: 4 },
+  cardDesc: { color: C.text.muted, fontSize: 12, marginBottom: 8 },
   cardFooter: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   freeRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  freeLabel: { color: T.colors.text.secondary, fontSize: 12 },
+  freeLabel: { color: C.text.secondary, fontSize: 12, fontWeight: '600' },
   deleteBtn: { padding: 4 },
 
-  emptyState: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 8, marginTop: 60 },
-  emptyText: { color: T.colors.text.secondary, fontSize: 16, fontWeight: '600' },
-  emptyHint: { color: T.colors.text.muted, fontSize: 13 },
+  emptyState: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    marginTop: 40,
+    padding: T.spacing.xxl,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: GLASS_BORDER,
+    backgroundColor: PANEL_BG,
+  },
+  emptyText: { color: C.text.primary, fontSize: 16, fontWeight: '800' },
+  emptyHint: { color: C.text.muted, fontSize: 13 },
 
-  // Modal
-  modalOverlay: { flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.6)' },
+  modalOverlay: { flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(3,3,8,0.75)' },
   modalSheet: {
-    backgroundColor: '#0e0e2a',
+    backgroundColor: SHEET_BG,
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     paddingHorizontal: 20,
@@ -829,7 +820,15 @@ const styles = StyleSheet.create({
     paddingBottom: 36,
     maxHeight: '90%',
     borderTopWidth: 1,
-    borderColor: 'rgba(255,255,255,0.08)',
+    borderColor: GLASS_BORDER,
+  },
+  modalHandle: {
+    width: 40,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    alignSelf: 'center',
+    marginBottom: 16,
   },
   modalHeader: {
     flexDirection: 'row',
@@ -837,18 +836,18 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 20,
   },
-  modalTitle: { color: T.colors.text.primary, fontSize: 17, fontWeight: '700' },
+  modalTitle: { color: C.text.primary, fontSize: 17, fontWeight: '800' },
 
-  inputLabel: { color: T.colors.text.secondary, fontSize: 13, marginBottom: 6, marginTop: 14 },
+  inputLabel: { color: PURPLE_LINK, fontSize: 11, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 6, marginTop: 14 },
   input: {
-    backgroundColor: 'rgba(255,255,255,0.06)',
-    borderRadius: 10,
+    backgroundColor: INPUT_BG,
+    borderRadius: 12,
     paddingHorizontal: 14,
     paddingVertical: 10,
-    color: T.colors.text.primary,
+    color: C.text.primary,
     fontSize: 14,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.1)',
+    borderColor: GLASS_BORDER,
   },
   inputMulti: { height: 72, textAlignVertical: 'top' },
 
@@ -859,55 +858,42 @@ const styles = StyleSheet.create({
     marginTop: 14,
     marginBottom: 4,
   },
-  toggleHint: { color: T.colors.text.muted, fontSize: 11, marginTop: 2 },
+  toggleHint: { color: C.text.muted, fontSize: 11, marginTop: 2 },
 
   pickBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
     marginTop: 18,
-    backgroundColor: 'rgba(94,234,212,0.08)',
+    backgroundColor: S.accentTeal,
     borderRadius: 12,
     paddingVertical: 14,
     paddingHorizontal: 16,
     borderWidth: 1,
-    borderColor: 'rgba(94,234,212,0.2)',
+    borderColor: 'rgba(94,234,212,0.25)',
     borderStyle: 'dashed',
   },
-  pickBtnText: { color: T.colors.accent.secondary, fontSize: 14, fontWeight: '500', flex: 1 },
-  fileSize: { color: T.colors.text.muted, fontSize: 11, marginTop: 6, textAlign: 'right' },
-
-  progressContainer: {
-    marginTop: 18,
-    gap: 6,
+  pickBtnText: { color: TEAL, fontSize: 14, fontWeight: '700', flex: 1 },
+  pickBtnViolet: {
+    marginTop: 10,
+    backgroundColor: S.accentViolet,
+    borderColor: 'rgba(167,139,250,0.35)',
   },
+  pickBtnTextViolet: { color: PURPLE_LINK },
+  fileSize: { color: C.text.muted, fontSize: 11, marginTop: 6, textAlign: 'right' },
+
+  progressContainer: { marginTop: 18, gap: 6 },
   progressTrack: {
     height: 6,
     backgroundColor: 'rgba(255,255,255,0.1)',
     borderRadius: 3,
     overflow: 'hidden',
   },
-  progressFill: {
-    height: '100%',
-    backgroundColor: T.colors.accent.secondary,
-    borderRadius: 3,
-  },
-  progressText: {
-    color: T.colors.accent.secondary,
-    fontSize: 12,
-    fontWeight: '700',
-    textAlign: 'right',
-  },
+  progressFill: { height: '100%', backgroundColor: TEAL, borderRadius: 3 },
+  progressText: { color: TEAL, fontSize: 12, fontWeight: '800', textAlign: 'right' },
 
-  cardTitleRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: 6,
-    marginBottom: 4,
-  },
-  editBtn: {
-    paddingTop: 2,
-  },
+  cardTitleRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 6, marginBottom: 4 },
+  editBtn: { paddingTop: 2 },
   switchRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -933,31 +919,22 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   errorBannerText: {
-    color: T.colors.accent.error,
+    color: C.accent.error,
     fontSize: 12,
     fontWeight: '600',
     flex: 1,
   },
-  savedBtn: {
-    backgroundColor: T.colors.accent.success,
-  },
-  savedRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
-  modalBackdrop: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.6)',
-  },
+  savedBtn: { backgroundColor: C.accent.success },
+  savedRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  modalBackdrop: { flex: 1, backgroundColor: 'rgba(3,3,8,0.75)' },
   fieldLabel: {
-    color: T.colors.text.secondary,
-    fontSize: 13,
+    color: PURPLE_LINK,
+    fontSize: 11,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+    letterSpacing: 0.8,
     marginBottom: 6,
     marginTop: 14,
   },
-  uploadBtn: {
-    marginTop: 16,
-    marginVertical: 0,
-  },
+  uploadBtn: { marginTop: 16, marginVertical: 0 },
 });

@@ -12,7 +12,6 @@ import {
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import Toast from 'react-native-simple-toast';
-import LinearGradient from 'react-native-linear-gradient';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import { UNIFIED_THEME } from '../../unifiedTheme';
 import { LoadingOverlay } from '../../components/LoadingOverlay';
@@ -57,36 +56,6 @@ const isSessionPast = b => {
   if (!date) return false;
   return new Date(`${date}T${endTime || '23:59:59'}`) < new Date();
 };
-
-function SessionsHero() {
-  return (
-    <View style={styles.hero}>
-      <LinearGradient
-        colors={S.heroGradient}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={StyleSheet.absoluteFill}
-      />
-      <View style={styles.heroIconRing}>
-        <LinearGradient
-          colors={B.premiumGradient}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={styles.heroIconRingGrad}
-        >
-          <View style={styles.heroIconInner}>
-            <MaterialIcons name="video-call" size={24} color={PURPLE_LINK} />
-          </View>
-        </LinearGradient>
-      </View>
-      <Text style={styles.heroEyebrow}>Mentor</Text>
-      <Text style={styles.heroTitle}>Sessions</Text>
-      <Text style={styles.heroSubtitle}>
-        Start calls on time and review your session history.
-      </Text>
-    </View>
-  );
-}
 
 function StatSegment({ icon, iconColor, value, label }) {
   return (
@@ -311,7 +280,7 @@ export default function MentorCallsScreen({ navigation }) {
   const completedCount = history.filter(b => b.status === 'completed').length;
   const fullyEmpty = upcomingAll.length === 0 && history.length === 0 && !loading;
 
-  const listData = [{ type: 'hero', key: 'hero' }, { type: 'stats', key: 'stats' }];
+  const listData = [{ type: 'stats', key: 'stats' }];
 
   if (fullyEmpty) {
     listData.push({ type: 'empty', key: 'empty' });
@@ -357,9 +326,6 @@ export default function MentorCallsScreen({ navigation }) {
 
   const renderItem = ({ item }) => {
     switch (item.type) {
-      case 'hero':
-        return <SessionsHero />;
-
       case 'stats':
         return (
           <View style={styles.statsBar}>
@@ -478,54 +444,6 @@ const styles = StyleSheet.create({
   listContent: {
     padding: T.spacing.lg,
     paddingBottom: T.spacing.xxxl,
-  },
-  hero: {
-    borderRadius: 16,
-    overflow: 'hidden',
-    padding: T.spacing.lg,
-    marginBottom: T.spacing.md,
-    borderWidth: 1,
-    borderColor: 'rgba(167,139,250,0.22)',
-    backgroundColor: 'rgba(255,255,255,0.07)',
-    alignItems: 'flex-start',
-    ...Platform.select({ ios: T.shadows.medium, android: { elevation: 6 } }),
-  },
-  heroIconRing: {
-    marginBottom: T.spacing.sm,
-  },
-  heroIconRingGrad: {
-    padding: 2,
-    borderRadius: 22,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.35)',
-  },
-  heroIconInner: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: C.primary.void,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  heroEyebrow: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: PURPLE_LINK,
-    letterSpacing: 0.8,
-    textTransform: 'uppercase',
-    marginBottom: 4,
-  },
-  heroTitle: {
-    fontSize: 22,
-    fontWeight: '800',
-    color: C.text.primary,
-    letterSpacing: -0.4,
-    marginBottom: T.spacing.xs,
-  },
-  heroSubtitle: {
-    fontSize: 13,
-    color: C.text.secondary,
-    lineHeight: 20,
   },
   statsBar: {
     flexDirection: 'row',

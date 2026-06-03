@@ -13,7 +13,6 @@ import {
   useWindowDimensions,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import LinearGradient from 'react-native-linear-gradient';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import Toast from 'react-native-simple-toast';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -195,31 +194,18 @@ export default function CategoryMentorsScreen({ route, navigation }) {
 
   const ListHeader = (
     <>
-      {/* ── Header card ── */}
-      <View style={styles.headerCard}>
-        <LinearGradient
-          colors={S.heroGradient}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={StyleSheet.absoluteFill}
-        />
-        <View style={styles.categoryBadge}>
-          <MaterialIcons name="category" size={14} color={PURPLE_LINK} />
-          <Text style={styles.categoryBadgeTxt}>Category</Text>
+      <Text style={styles.headerTitle}>{category}</Text>
+      <View style={styles.headerStats}>
+        <View style={styles.headerStat}>
+          <MaterialIcons name="people" size={15} color={TEAL} />
+          <Text style={styles.headerStatTxt}>
+            {totalCount}{hasMore ? '+' : ''} mentor{totalCount !== 1 ? 's' : ''}
+          </Text>
         </View>
-        <Text style={styles.headerTitle}>{category}</Text>
-        <View style={styles.headerStats}>
-          <View style={styles.headerStat}>
-            <MaterialIcons name="people" size={15} color={TEAL} />
-            <Text style={styles.headerStatTxt}>
-              {totalCount}{hasMore ? '+' : ''} mentor{totalCount !== 1 ? 's' : ''}
-            </Text>
-          </View>
-          <View style={styles.headerStatDot} />
-          <View style={styles.headerStat}>
-            <MaterialIcons name="sort" size={15} color={PURPLE_LINK} />
-            <Text style={styles.headerStatMuted}>{activeSortLabel}</Text>
-          </View>
+        <View style={styles.headerStatDot} />
+        <View style={styles.headerStat}>
+          <MaterialIcons name="sort" size={15} color={PURPLE_LINK} />
+          <Text style={styles.headerStatMuted}>{activeSortLabel}</Text>
         </View>
       </View>
 
@@ -360,47 +346,18 @@ const styles = StyleSheet.create({
     padding: T.spacing.lg,
     paddingBottom: T.spacing.xxxl,
   },
-  headerCard: {
-    borderRadius: 16,
-    overflow: 'hidden',
-    padding: T.spacing.lg,
-    marginBottom: T.spacing.md,
-    borderWidth: 1,
-    borderColor: 'rgba(167,139,250,0.22)',
-    backgroundColor: 'rgba(255,255,255,0.07)',
-    ...Platform.select({ ios: T.shadows.medium, android: { elevation: 6 } }),
-  },
-  categoryBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
-    alignSelf: 'flex-start',
-    paddingHorizontal: T.spacing.sm,
-    paddingVertical: 4,
-    borderRadius: 999,
-    backgroundColor: S.accentViolet,
-    borderWidth: 1,
-    borderColor: 'rgba(167,139,250,0.35)',
-    marginBottom: T.spacing.sm,
-  },
-  categoryBadgeTxt: {
-    fontSize: 10,
-    color: PURPLE_LINK,
-    fontWeight: '700',
-    textTransform: 'uppercase',
-    letterSpacing: 0.8,
-  },
   headerTitle: {
     fontSize: 22,
     color: C.text.primary,
     fontWeight: '800',
     letterSpacing: -0.4,
-    marginBottom: T.spacing.md,
+    marginBottom: T.spacing.sm,
   },
   headerStats: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: T.spacing.sm,
+    marginBottom: T.spacing.md,
   },
   headerStat: {
     flexDirection: 'row',

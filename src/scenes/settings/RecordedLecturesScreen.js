@@ -33,6 +33,12 @@ import { SCREEN_NAMES } from '../../navigators/screenNames';
 import { saveRecordingToGallery } from '../../utils/recordingActions';
 
 const T = UNIFIED_THEME;
+const C = T.colors;
+const B = C.buttons;
+
+const PURPLE_LINK = B.nebulaGradient[0];
+const PANEL_BG = '#161432';
+const INPUT_BG = '#0f0e2a';
 const TopTab = createMaterialTopTabNavigator();
 
 const TAB_MENTOR = 'RecordedLectures_MentorTab';
@@ -134,7 +140,7 @@ function MentorRecordingsTab() {
         </View>
       ) : (
         <View style={styles.empty}>
-          <MaterialIcons name="school" size={28} color={T.colors.text.muted} />
+          <MaterialIcons name="school" size={28} color={PURPLE_LINK} />
           <Text style={styles.emptyText}>No mentor recordings yet</Text>
         </View>
       )}
@@ -173,7 +179,7 @@ function LearnerRecordingsTab() {
         </View>
       ) : (
         <View style={styles.empty}>
-          <MaterialIcons name="menu-book" size={28} color={T.colors.text.muted} />
+          <MaterialIcons name="menu-book" size={28} color={PURPLE_LINK} />
           <Text style={styles.emptyText}>No learner recordings yet</Text>
         </View>
       )}
@@ -360,19 +366,24 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: T.spacing.md,
     paddingVertical: T.spacing.md,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: T.colors.border.light,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(167,139,250,0.22)',
+    backgroundColor: INPUT_BG,
   },
   backBtn: {
     width: 40,
     height: 40,
+    borderRadius: 20,
+    backgroundColor: PANEL_BG,
+    borderWidth: 1,
+    borderColor: 'rgba(167,139,250,0.22)',
     justifyContent: 'center',
-    alignItems: 'flex-start',
+    alignItems: 'center',
   },
   headerTitle: {
-    ...T.typography.bodyLg,
-    color: T.colors.text.primary,
-    fontWeight: '700',
+    fontSize: 17,
+    color: C.text.primary,
+    fontWeight: '800',
   },
   headerSpacer: { width: 40 },
   intro: {
@@ -417,10 +428,10 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingVertical: T.spacing.xxl,
     paddingHorizontal: T.spacing.lg,
-    backgroundColor: T.colors.component.input,
+    backgroundColor: PANEL_BG,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: T.colors.border.light,
+    borderColor: 'rgba(167,139,250,0.22)',
     gap: T.spacing.sm,
   },
   emptyText: {

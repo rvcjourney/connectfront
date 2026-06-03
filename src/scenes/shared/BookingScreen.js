@@ -39,8 +39,16 @@ import { useAuth } from '../../hooks/useAuth';
 import { SCREEN_NAMES } from '../../navigators/screenNames';
 
 const T = UNIFIED_THEME;
+const C = T.colors;
 const B = T.colors.buttons;
 const S = T.colors.surface;
+
+const PURPLE_LINK = B.nebulaGradient[0];
+const GOLD = C.accent.primary;
+const TEAL = C.accent.secondary;
+const PANEL_BG = '#161432';
+const INPUT_BG = '#0f0e2a';
+const GLASS_BORDER = 'rgba(167,139,250,0.22)';
 
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
   UIManager.setLayoutAnimationEnabledExperimental(true);
@@ -263,10 +271,10 @@ function TimeSlotChip({ slot, selected, onPress }) {
 
 const feeStyles = StyleSheet.create({
   row: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8 },
-  label: { ...T.typography.bodySm, color: T.colors.text.secondary },
-  amount: { ...T.typography.bodySm, color: T.colors.text.secondary },
-  bold: { fontWeight: '800', color: T.colors.text.primary, fontSize: 15 },
-  accent: { color: T.colors.accent.primary, fontSize: 17 },
+  label: { fontSize: 13, color: C.text.secondary },
+  amount: { fontSize: 13, color: C.text.secondary },
+  bold: { fontWeight: '800', color: C.text.primary, fontSize: 15 },
+  accent: { color: GOLD, fontSize: 17, fontWeight: '800' },
 });
 
 export default function BookingScreen({ navigation, route }) {
@@ -520,7 +528,7 @@ export default function BookingScreen({ navigation, route }) {
             <Text style={scheduleStyles.topBarTitle}>Book a session</Text>
             <Text style={scheduleStyles.topBarSub}>Secure your 1-on-1 slot</Text>
           </View>
-          <View style={styles.backBtn} />
+          <View style={scheduleStyles.topBarSide} />
         </View>
 
         <Animated.View style={{ opacity: headerFade, transform: [{ translateY: headerSlide }] }}>
@@ -643,7 +651,7 @@ export default function BookingScreen({ navigation, route }) {
         {timeSlotsForDate.length === 0 && selectedDate && !loading && (
           <FadeInSection show delay={0}>
             <View style={styles.emptyCard}>
-              <MaterialIcons name="event-busy" size={32} color={T.colors.text.muted} />
+              <MaterialIcons name="event-busy" size={32} color={PURPLE_LINK} />
               <Text style={styles.emptyTitle}>No slots this day</Text>
               <Text style={styles.emptySub}>Swipe the calendar to find another date</Text>
             </View>
@@ -652,7 +660,7 @@ export default function BookingScreen({ navigation, route }) {
 
         {Object.keys(mentorAvailability).length === 0 && !loading && (
           <View style={styles.emptyCard}>
-            <MaterialIcons name="sentiment-dissatisfied" size={36} color={T.colors.accent.secondary} />
+            <MaterialIcons name="sentiment-dissatisfied" size={36} color={TEAL} />
             <Text style={styles.emptyTitle}>No availability yet</Text>
             <Text style={styles.emptySub}>This mentor hasn't opened booking slots</Text>
           </View>
@@ -694,7 +702,7 @@ export default function BookingScreen({ navigation, route }) {
                   <Text style={styles.ticketLabel}>Session ticket</Text>
                   <Text style={styles.ticketMentor}>{mentorName}</Text>
                 </View>
-                <MaterialIcons name="confirmation-number" size={28} color={T.colors.accent.primary} />
+                <MaterialIcons name="confirmation-number" size={28} color={GOLD} />
               </View>
               <View style={styles.ticketPerforation}>
                 {Array.from({ length: 16 }).map((_, i) => (
@@ -787,247 +795,16 @@ export default function BookingScreen({ navigation, route }) {
 const styles = StyleSheet.create({
   screenRoot: { flex: 1 },
 
-  topBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: T.spacing.md,
-  },
   backBtn: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: T.colors.component.input,
+    backgroundColor: PANEL_BG,
     borderWidth: 1,
-    borderColor: T.colors.border.light,
+    borderColor: GLASS_BORDER,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  topBarTitle: {
-    ...T.typography.bodyLg,
-    color: T.colors.text.primary,
-    fontWeight: '800',
-    textAlign: 'center',
-  },
-  topBarCenter: { flex: 1, alignItems: 'center' },
-  topBarSub: {
-    fontSize: 11,
-    color: T.colors.text.muted,
-    marginTop: 2,
-  },
-
-  mentorBanner: {
-    borderRadius: 18,
-    borderWidth: 1,
-    borderColor: T.colors.border.light,
-    overflow: 'hidden',
-    marginBottom: T.spacing.md,
-    padding: T.spacing.lg,
-  },
-  mentorBannerRow: { flexDirection: 'row', alignItems: 'center', gap: T.spacing.md },
-  mentorBannerBody: { flex: 1, minWidth: 0 },
-  mentorBannerLabel: {
-    fontSize: 10,
-    fontWeight: '700',
-    color: T.colors.accent.secondary,
-    letterSpacing: 1,
-    textTransform: 'uppercase',
-  },
-  mentorBannerName: {
-    fontSize: 20,
-    fontWeight: '800',
-    color: T.colors.text.primary,
-    marginTop: 2,
-  },
-  mentorBannerMeta: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 8 },
-  metaPill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 20,
-    backgroundColor: 'rgba(255,255,255,0.06)',
-    borderWidth: 1,
-    borderColor: T.colors.border.light,
-  },
-  metaPillText: { fontSize: 11, fontWeight: '600', color: T.colors.text.secondary },
-
-  previewBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: T.spacing.sm,
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: T.colors.border.light,
-    paddingVertical: 10,
-    paddingHorizontal: T.spacing.md,
-    marginBottom: T.spacing.lg,
-    overflow: 'hidden',
-  },
-  previewScroll: { gap: 8, paddingRight: 8 },
-  previewChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 20,
-    backgroundColor: 'rgba(255,255,255,0.05)',
-    borderWidth: 1,
-    borderColor: T.colors.border.light,
-  },
-  previewChipReady: {
-    backgroundColor: 'rgba(52, 211, 153, 0.15)',
-    borderColor: B.successBorder,
-  },
-  previewChipText: { fontSize: 12, fontWeight: '700', color: T.colors.text.secondary, maxWidth: 140 },
-
-  sectionBlock: { marginBottom: T.spacing.lg },
-  sectionBlockHead: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: T.spacing.md,
-    marginBottom: T.spacing.md,
-  },
-  sectionStepBadge: {
-    width: 36,
-    height: 36,
-    borderRadius: 10,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-  },
-  sectionAccentGold: {
-    backgroundColor: 'rgba(240, 216, 117, 0.12)',
-    borderColor: B.goldOutlineBorder,
-  },
-  sectionAccentTeal: {
-    backgroundColor: 'rgba(94, 234, 212, 0.1)',
-    borderColor: B.outlineBorder,
-  },
-  sectionAccentViolet: {
-    backgroundColor: 'rgba(167, 139, 250, 0.12)',
-    borderColor: B.secondaryBorder,
-  },
-  sectionStepNum: { fontSize: 13, fontWeight: '900', color: T.colors.text.primary },
-  sectionBlockTitles: { flex: 1 },
-  sectionBlockTitle: { fontSize: 17, fontWeight: '800', color: T.colors.text.primary },
-  sectionBlockSub: { fontSize: 12, color: T.colors.text.muted, marginTop: 2 },
-
-  calendarPanel: {
-    backgroundColor: T.colors.component.input,
-    borderRadius: 16,
-    padding: T.spacing.md,
-    borderWidth: 1,
-    borderColor: T.colors.border.light,
-  },
-  monthPill: {
-    paddingHorizontal: T.spacing.lg,
-    paddingVertical: 8,
-    borderRadius: 20,
-    backgroundColor: T.colors.component.card,
-    borderWidth: 1,
-    borderColor: T.colors.border.light,
-  },
-
-  avatarRing: {
-    width: 52,
-    height: 52,
-    borderRadius: 26,
-    padding: 2,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  avatarInner: {
-    width: 46,
-    height: 46,
-    borderRadius: 23,
-    backgroundColor: T.colors.primary.dark,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  avatarText: { fontSize: 20, fontWeight: '800', color: T.colors.accent.primary },
-
-  monthHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: T.spacing.md,
-  },
-  monthNavBtn: {
-    width: 40,
-    height: 40,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: T.colors.border.light,
-    backgroundColor: T.colors.component.card,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  monthYear: {
-    fontSize: 16,
-    color: T.colors.text.primary,
-    fontWeight: '700',
-  },
-  dayHeadersRow: { flexDirection: 'row', marginBottom: T.spacing.sm },
-  dayHeader: {
-    flex: 1,
-    textAlign: 'center',
-    fontSize: 11,
-    color: T.colors.text.muted,
-    fontWeight: '700',
-  },
-  weekRow: {
-    flexDirection: 'row',
-    marginBottom: 6,
-    justifyContent: 'space-between',
-  },
-  emptyDay: { width: '13.2%', aspectRatio: 1 },
-  dayCellWrap: { width: '13.2%', aspectRatio: 1 },
-  dayButton: {
-    width: '100%',
-    aspectRatio: 1,
-    borderRadius: 12,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: T.colors.component.card,
-    borderWidth: 1,
-    borderColor: 'transparent',
-    opacity: 0.35,
-  },
-  dayButtonAvailable: {
-    opacity: 1,
-    borderColor: 'rgba(94, 234, 212, 0.25)',
-  },
-  dayButtonPast: { opacity: 0.2 },
-  dayButtonPressed: { opacity: 0.85 },
-  dayButtonSelected: {
-    width: '100%',
-    aspectRatio: 1,
-    borderRadius: 12,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: B.primaryBorder,
-  },
-  dayNumber: { fontSize: 14, color: T.colors.text.primary, fontWeight: '700' },
-  dayNumberSelected: { color: B.primaryText, fontWeight: '800' },
-  dayNumberDisabled: { color: T.colors.text.muted },
-  slotDot: {
-    position: 'absolute',
-    bottom: 3,
-    minWidth: 14,
-    height: 14,
-    borderRadius: 7,
-    backgroundColor: 'rgba(94, 234, 212, 0.2)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 3,
-  },
-  slotDotSelected: { backgroundColor: 'rgba(6, 4, 18, 0.35)' },
-  slotDotText: { fontSize: 8, fontWeight: '800', color: T.colors.accent.secondary },
-  slotDotTextSelected: { color: B.primaryText },
 
   timeScrollContent: {
     flexDirection: 'row',
@@ -1040,9 +817,9 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     paddingHorizontal: T.spacing.lg,
     borderRadius: 24,
-    backgroundColor: T.colors.component.card,
+    backgroundColor: PANEL_BG,
     borderWidth: 1,
-    borderColor: T.colors.border.light,
+    borderColor: GLASS_BORDER,
     marginRight: T.spacing.sm,
   },
   timeSlotHSelected: {
@@ -1059,7 +836,7 @@ const styles = StyleSheet.create({
   timeSlotText: {
     fontSize: 14,
     fontWeight: '700',
-    color: T.colors.text.secondary,
+    color: C.text.secondary,
   },
   timeSlotTextSelected: {
     fontSize: 14,
@@ -1076,25 +853,25 @@ const styles = StyleSheet.create({
   promptChip: {
     paddingHorizontal: 12,
     paddingVertical: 8,
-    borderRadius: 20,
-    backgroundColor: S.promptChip,
+    borderRadius: 999,
+    backgroundColor: S.accentGold,
     borderWidth: 1,
-    borderColor: B.primaryBorder,
+    borderColor: 'rgba(240,216,117,0.25)',
   },
   promptChipText: {
     fontSize: 12,
-    fontWeight: '600',
-    color: T.colors.accent.primary,
+    fontWeight: '700',
+    color: GOLD,
   },
 
   messageInput: {
-    backgroundColor: T.colors.component.card,
-    color: T.colors.text.primary,
+    backgroundColor: INPUT_BG,
+    color: C.text.primary,
     paddingHorizontal: T.spacing.md,
     paddingVertical: T.spacing.md,
-    borderRadius: 12,
+    borderRadius: 14,
     borderWidth: 1,
-    borderColor: T.colors.border.light,
+    borderColor: GLASS_BORDER,
     minHeight: 110,
     fontSize: 14,
     lineHeight: 22,
@@ -1109,19 +886,19 @@ const styles = StyleSheet.create({
   charHint: {
     flex: 1,
     fontSize: 11,
-    color: T.colors.text.muted,
+    color: C.text.muted,
   },
   charCount: {
     fontSize: 11,
-    color: T.colors.text.muted,
+    color: C.text.muted,
   },
 
   ticketCard: {
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: B.secondaryBorder,
+    borderColor: GLASS_BORDER,
     padding: T.spacing.lg,
-    backgroundColor: T.colors.component.input,
+    backgroundColor: PANEL_BG,
     overflow: 'hidden',
   },
   ticketTop: {
@@ -1133,14 +910,14 @@ const styles = StyleSheet.create({
   ticketLabel: {
     fontSize: 10,
     fontWeight: '700',
-    color: T.colors.text.muted,
+    color: PURPLE_LINK,
     letterSpacing: 1,
     textTransform: 'uppercase',
   },
   ticketMentor: {
     fontSize: 17,
     fontWeight: '800',
-    color: T.colors.text.primary,
+    color: C.text.primary,
     marginTop: 4,
   },
   ticketPerforation: {
@@ -1154,11 +931,11 @@ const styles = StyleSheet.create({
     width: 6,
     height: 6,
     borderRadius: 3,
-    backgroundColor: T.colors.border.light,
+    backgroundColor: 'rgba(167,139,250,0.25)',
   },
   feeDivider: {
     height: StyleSheet.hairlineWidth,
-    backgroundColor: T.colors.border.light,
+    backgroundColor: 'rgba(167,139,250,0.22)',
     marginVertical: T.spacing.md,
   },
   secureRow: {
@@ -1167,31 +944,21 @@ const styles = StyleSheet.create({
     gap: 6,
     marginTop: T.spacing.md,
   },
-  secureText: { ...T.typography.bodySm, color: T.colors.text.muted },
+  secureText: { fontSize: 13, color: C.text.muted },
 
   emptyCard: {
     alignItems: 'center',
     padding: T.spacing.xxl,
     marginBottom: T.spacing.md,
-    backgroundColor: T.colors.component.input,
+    backgroundColor: PANEL_BG,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: T.colors.border.light,
+    borderColor: GLASS_BORDER,
     gap: T.spacing.sm,
   },
-  emptyTitle: { fontSize: 15, fontWeight: '700', color: T.colors.text.primary },
-  emptySub: { ...T.typography.bodySm, color: T.colors.text.muted, textAlign: 'center' },
+  emptyTitle: { fontSize: 15, fontWeight: '800', color: C.text.primary },
+  emptySub: { fontSize: 13, color: C.text.muted, textAlign: 'center', lineHeight: 20 },
 
-  checkoutBar: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    bottom: 0,
-    borderTopWidth: 1,
-    borderTopColor: T.colors.border.light,
-    backgroundColor: S.checkoutBar,
-    overflow: 'visible',
-  },
   checkoutFooter: {
     paddingHorizontal: T.spacing.lg,
     paddingTop: T.spacing.md,
@@ -1205,17 +972,17 @@ const styles = StyleSheet.create({
   },
   checkoutTotalLabel: {
     fontSize: 12,
-    fontWeight: '600',
-    color: T.colors.text.muted,
+    fontWeight: '700',
+    color: C.text.muted,
   },
   checkoutTotalAmount: {
     fontSize: 22,
     fontWeight: '800',
-    color: T.colors.accent.primary,
+    color: GOLD,
   },
   checkoutHint: {
-    ...T.typography.bodySm,
-    color: T.colors.text.muted,
+    fontSize: 13,
+    color: C.text.muted,
     marginBottom: T.spacing.md,
   },
   checkoutPayBtn: {

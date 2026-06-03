@@ -26,28 +26,24 @@ export const UNIFIED_THEME = {
       hazeOpacity: 0.72,
     },
 
-    /** Bottom tab bar — cosmic glass + accents (floating capsule) */
+    /** Bottom tab bar — solid panel strip + gold/teal accents */
     tabBar: {
       outerRadius: 26,
-      glassGradient: [
-        'rgba(2, 2, 12, 0.98)',
-        'rgba(6, 5, 22, 0.97)',
-        'rgba(2, 12, 28, 0.98)',
-      ],
+      glassGradient: ['#0f0e2a', '#161432', '#12102a'],
       glassBorder: 'rgba(167, 139, 250, 0.22)',
       activeIndicatorGradient: ['#f0d875', '#5eead4'],
       activePillGradient: [
-        'rgba(124, 58, 237, 0.38)',
-        'rgba(94, 234, 212, 0.22)',
-        'rgba(240, 216, 117, 0.12)',
+        'rgba(167, 139, 250, 0.28)',
+        'rgba(94, 234, 212, 0.18)',
+        'rgba(240, 216, 117, 0.1)',
       ],
       iconRingGradient: [
-        'rgba(240, 216, 117, 0.55)',
+        'rgba(167, 139, 250, 0.55)',
+        'rgba(240, 216, 117, 0.45)',
         'rgba(94, 234, 212, 0.35)',
-        'rgba(167, 139, 250, 0.4)',
       ],
-      rimBorder: 'rgba(94, 234, 212, 0.12)',
-      labelShadow: 'rgba(240, 216, 117, 0.4)',
+      rimBorder: 'rgba(167, 139, 250, 0.22)',
+      labelShadow: 'rgba(240, 216, 117, 0.35)',
       iconSize: 23,
       iconSizeFocused: 25,
       floating: {
@@ -59,14 +55,14 @@ export const UNIFIED_THEME = {
       },
       uploadFabSize: 52,
       uploadFabLift: 22,
-      /** Full-width bar: base tint on top of sky gradients */
-      flatBarBase: 'rgba(2, 2, 14, 0.97)',
+      /** Full-width bar base — matches surface.panel */
+      flatBarBase: '#161432',
       /** Top edge shimmer (horizontal) */
       flatBarEdge: [
-        'rgba(94, 234, 212, 0.45)',
-        'rgba(167, 139, 250, 0.35)',
-        'rgba(240, 216, 117, 0.25)',
-        'rgba(94, 234, 212, 0.2)',
+        'rgba(167, 139, 250, 0.4)',
+        'rgba(94, 234, 212, 0.3)',
+        'rgba(240, 216, 117, 0.22)',
+        'rgba(167, 139, 250, 0.18)',
       ],
       /** Material top tabs — soft nebula panel behind active tab */
       topNavActiveWash: [
@@ -163,6 +159,9 @@ export const UNIFIED_THEME = {
 
     /** Reusable translucent surfaces (cards, chips, section accents) */
     surface: {
+      /** Solid panels used across settings, bookings, videos, etc. */
+      panel: '#161432',
+      sheet: '#0f0e2a',
       chip: 'rgba(255, 255, 255, 0.05)',
       chipStrong: 'rgba(255, 255, 255, 0.06)',
       heroGradient: [

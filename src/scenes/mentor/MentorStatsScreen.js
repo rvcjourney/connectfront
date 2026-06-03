@@ -1,7 +1,7 @@
 import { SafeScreen } from '../../components/SafeScreen';
 import { useEffect, useState, useRef } from 'react';
 import {
-  View, Text, Image, StyleSheet, RefreshControl,
+  View, Text, StyleSheet, RefreshControl,
   TouchableOpacity, Animated, Platform,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
@@ -111,7 +111,6 @@ export default function MentorStatsScreen({ onClose }) {
   const completionPct = Math.round((completedCount / PROFILE_FIELDS.length) * 100);
   const isComplete = completionPct === 100;
   const missing = PROFILE_FIELDS.filter(f => !f.done);
-  const firstName = profile?.name?.split(/\s+/)[0] || 'there';
   const ratingDisplay = typeof rating === 'number' ? rating.toFixed(1) : String(rating);
 
   return (
@@ -140,57 +139,6 @@ export default function MentorStatsScreen({ onClose }) {
         </View>
       ) : (
         <>
-          <View style={styles.hero}>
-            <LinearGradient
-              colors={S.heroGradient}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={StyleSheet.absoluteFill}
-              pointerEvents="none"
-            />
-            <View style={styles.heroTopRow}>
-              <View style={styles.heroIconRing}>
-                <LinearGradient colors={B.premiumGradient} style={styles.heroIconRingGrad}>
-                  {profile?.avatar_url ? (
-                    <Image source={{ uri: profile.avatar_url, cache: 'reload' }} style={styles.avatarImg} />
-                  ) : (
-                    <View style={[styles.avatarImg, styles.avatarPh]}>
-                      <Text style={styles.avatarLetter}>{profile?.name?.charAt(0).toUpperCase() || '?'}</Text>
-                    </View>
-                  )}
-                </LinearGradient>
-              </View>
-              <View style={styles.heroBody}>
-                <View style={styles.heroBadge}>
-                  <MaterialIcons name="school" size={13} color={TEAL} />
-                  <Text style={styles.heroBadgeText}>Mentor</Text>
-                </View>
-                <Text style={styles.heroEyebrow}>Dashboard</Text>
-                <Text style={styles.heroTitle}>Hi, {firstName}</Text>
-                <Text style={styles.specialization} numberOfLines={2}>
-                  {mentorProfile?.specialization || 'Add your specialization'}
-                </Text>
-              </View>
-            </View>
-
-            <Text style={styles.heroSubtitle}>
-              Manage sessions, track earnings, and keep your availability up to date.
-            </Text>
-
-            <View style={styles.heroChipRow}>
-              <View style={styles.heroChip}>
-                <MaterialIcons name="work-history" size={13} color={TEAL} />
-                <Text style={styles.heroChipText}>{(mentorProfile?.experience_years ?? 0) || 0}+ yrs</Text>
-              </View>
-              <View style={[styles.heroChip, styles.heroChipGold]}>
-                <MaterialIcons name="payments" size={13} color={GOLD} />
-                <Text style={styles.heroChipText}>
-                  {mentorProfile?.price_per_hour ? `₹${mentorProfile.price_per_hour}/hr` : 'Rate not set'}
-                </Text>
-              </View>
-            </View>
-          </View>
-
           {!isComplete ? (
             <TouchableOpacity
               style={styles.completionCard}
@@ -287,116 +235,6 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(255,255,255,0.12)',
     marginBottom: T.spacing.md,
     alignSelf: 'flex-start',
-  },
-  hero: {
-    borderRadius: 16,
-    overflow: 'hidden',
-    padding: T.spacing.lg,
-    marginBottom: T.spacing.md,
-    borderWidth: 1,
-    borderColor: 'rgba(167,139,250,0.22)',
-    backgroundColor: 'rgba(255,255,255,0.07)',
-    ...Platform.select({ ios: T.shadows.medium, android: { elevation: 6 } }),
-  },
-  heroTopRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: T.spacing.md,
-    marginBottom: T.spacing.sm,
-  },
-  heroIconRing: {},
-  heroIconRingGrad: {
-    padding: 2,
-    borderRadius: 28,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.35)',
-  },
-  avatarImg: {
-    width: 52,
-    height: 52,
-    borderRadius: 26,
-    backgroundColor: C.primary.void,
-  },
-  avatarPh: {
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: S.accentViolet,
-  },
-  avatarLetter: {
-    fontSize: 22,
-    fontWeight: '800',
-    color: PURPLE_LINK,
-  },
-  heroBody: { flex: 1, minWidth: 0 },
-  heroBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    alignSelf: 'flex-start',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 999,
-    backgroundColor: S.accentTeal,
-    borderWidth: 1,
-    borderColor: 'rgba(94,234,212,0.25)',
-    marginBottom: 6,
-  },
-  heroBadgeText: {
-    fontSize: 10,
-    color: TEAL,
-    fontWeight: '700',
-  },
-  heroEyebrow: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: PURPLE_LINK,
-    letterSpacing: 0.8,
-    textTransform: 'uppercase',
-    marginBottom: 2,
-  },
-  heroTitle: {
-    fontSize: 22,
-    fontWeight: '800',
-    color: C.text.primary,
-    letterSpacing: -0.4,
-  },
-  specialization: {
-    fontSize: 13,
-    color: GOLD,
-    fontWeight: '700',
-    marginTop: 2,
-    lineHeight: 18,
-  },
-  heroSubtitle: {
-    fontSize: 13,
-    color: C.text.secondary,
-    lineHeight: 20,
-    marginBottom: T.spacing.sm,
-  },
-  heroChipRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: T.spacing.xs,
-  },
-  heroChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    paddingVertical: 4,
-    paddingHorizontal: T.spacing.sm,
-    borderRadius: 999,
-    backgroundColor: 'rgba(255,255,255,0.08)',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.1)',
-  },
-  heroChipGold: {
-    backgroundColor: S.accentGold,
-    borderColor: 'rgba(240,216,117,0.25)',
-  },
-  heroChipText: {
-    fontSize: 10,
-    fontWeight: '700',
-    color: C.text.primary,
   },
   completionCard: {
     backgroundColor: S.accentGold,

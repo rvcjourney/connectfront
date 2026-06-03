@@ -29,6 +29,16 @@ import { SCREEN_NAMES } from '../../navigators/screenNames';
 
 const T = UNIFIED_THEME;
 const C = T.colors;
+const B = C.buttons;
+const S = C.surface;
+
+const PURPLE_LINK = B.nebulaGradient[0];
+const GOLD = C.accent.primary;
+const TEAL = C.accent.secondary;
+const PANEL_BG = '#161432';
+const INPUT_BG = '#0f0e2a';
+const SHEET_BG = '#0f0e2a';
+const GLASS_BORDER = 'rgba(167,139,250,0.22)';
 
 const FILTERS = [
   { key: 'all',        label: 'All',        icon: 'apps' },
@@ -93,13 +103,17 @@ function UnlockSheet({ video, onClose, onUnlocked }) {
         <View style={u.handle} />
 
         <View style={u.mentorRow}>
-          {video.profiles?.avatar_url ? (
-            <Image source={{ uri: video.profiles.avatar_url }} style={u.avatar} />
-          ) : (
-            <View style={[u.avatar, u.avatarFallback]}>
-              <MaterialIcons name="person" size={22} color={C.accent.primary} />
+          <LinearGradient colors={B.premiumGradient} style={u.avatarRing}>
+            <View style={u.avatarInner}>
+              {video.profiles?.avatar_url ? (
+                <Image source={{ uri: video.profiles.avatar_url }} style={u.avatar} />
+              ) : (
+                <View style={[u.avatar, u.avatarFallback]}>
+                  <MaterialIcons name="person" size={20} color={PURPLE_LINK} />
+                </View>
+              )}
             </View>
-          )}
+          </LinearGradient>
           <View style={{ flex: 1 }}>
             <Text style={u.mentorName}>{mentorName}</Text>
             <Text style={u.mentorSpec}>{video.mentor_profiles?.specialization || ''}</Text>
@@ -145,28 +159,30 @@ function UnlockSheet({ video, onClose, onUnlocked }) {
 }
 
 const u = StyleSheet.create({
-  backdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.55)' },
+  backdrop: { flex: 1, backgroundColor: 'rgba(3,3,8,0.75)' },
   sheet: {
-    backgroundColor: '#0f0e2a',
+    backgroundColor: SHEET_BG,
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     padding: 24,
     paddingBottom: 36,
     borderTopWidth: 1,
-    borderColor: 'rgba(255,255,255,0.08)',
+    borderColor: GLASS_BORDER,
   },
   handle: { width: 40, height: 4, backgroundColor: 'rgba(255,255,255,0.2)', borderRadius: 2, alignSelf: 'center', marginBottom: 20 },
   mentorRow: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 16 },
+  avatarRing: { padding: 2, borderRadius: 26, borderWidth: 1, borderColor: 'rgba(255,255,255,0.35)' },
+  avatarInner: { borderRadius: 24, overflow: 'hidden' },
   avatar: { width: 48, height: 48, borderRadius: 24 },
-  avatarFallback: { backgroundColor: 'rgba(124,58,237,0.15)', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: 'rgba(124,58,237,0.2)' },
-  mentorName: { color: C.text.primary, fontSize: 15, fontWeight: '700' },
-  mentorSpec: { color: C.text.muted, fontSize: 12, marginTop: 2 },
-  pricePill: { backgroundColor: 'rgba(94,234,212,0.12)', borderRadius: 10, paddingHorizontal: 10, paddingVertical: 5, borderWidth: 1, borderColor: 'rgba(94,234,212,0.25)' },
-  priceText: { color: C.accent.secondary, fontSize: 14, fontWeight: '800' },
-  divider: { height: 1, backgroundColor: 'rgba(255,255,255,0.07)', marginBottom: 16 },
+  avatarFallback: { backgroundColor: C.primary.void, alignItems: 'center', justifyContent: 'center' },
+  mentorName: { color: C.text.primary, fontSize: 15, fontWeight: '800' },
+  mentorSpec: { color: GOLD, fontSize: 12, marginTop: 2, fontWeight: '600' },
+  pricePill: { backgroundColor: S.accentTeal, borderRadius: 10, paddingHorizontal: 10, paddingVertical: 5, borderWidth: 1, borderColor: 'rgba(94,234,212,0.25)' },
+  priceText: { color: TEAL, fontSize: 14, fontWeight: '800' },
+  divider: { height: 1, backgroundColor: 'rgba(167,139,250,0.18)', marginBottom: 16 },
   title: { color: C.text.primary, fontSize: 18, fontWeight: '800', marginBottom: 6 },
   sub: { color: C.text.muted, fontSize: 13, lineHeight: 19, marginBottom: 16 },
-  perks: { gap: 10, marginBottom: 24 },
+  perks: { gap: 10, marginBottom: 24, backgroundColor: PANEL_BG, borderRadius: 14, padding: 14, borderWidth: 1, borderColor: GLASS_BORDER },
   perkRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   perkText: { color: C.text.secondary, fontSize: 13 },
   payBtn: { marginBottom: 8, marginVertical: 0 },
@@ -453,7 +469,7 @@ export default function VideosScreen({ navigation, route }) {
             onPress={() => { setFilter(f.key); setActiveIndex(0); }}
             activeOpacity={0.8}
           >
-            <MaterialIcons name={f.icon} size={13} color={filter === f.key ? '#000' : C.text.muted} />
+            <MaterialIcons name={f.icon} size={13} color={filter === f.key ? PURPLE_LINK : C.text.muted} />
             <Text style={[s.chipText, filter === f.key && s.chipTextActive]}>{f.label}</Text>
           </TouchableOpacity>
         ))}
@@ -462,15 +478,15 @@ export default function VideosScreen({ navigation, route }) {
       {/* ── Reel feed ─────────────────────────────────────────────────────────── */}
       {loading ? (
         <View style={[s.center, { height: reelHeight }]}>
-          <ActivityIndicator size="large" color={C.accent.secondary} />
+          <ActivityIndicator size="large" color={TEAL} />
           <Text style={s.loadingText}>Loading shorts…</Text>
         </View>
       ) : filtered.length === 0 ? (
-        <View style={[s.center, { height: reelHeight }]}>
+        <View style={[s.center, s.emptyPanel, { height: reelHeight }]}>
           <MaterialIcons
             name={filter === 'subscribed' ? 'subscriptions' : 'videocam-off'}
             size={44}
-            color={C.text.muted}
+            color={PURPLE_LINK}
           />
           <Text style={s.emptyTitle}>
             {filter === 'subscribed' ? 'No subscriptions yet' : 'No videos here'}
@@ -512,7 +528,7 @@ export default function VideosScreen({ navigation, route }) {
               <RefreshControl
                 refreshing={refreshing}
                 onRefresh={() => loadFeed(true, user?.id)}
-                tintColor={C.accent.secondary}
+                tintColor={TEAL}
               />
             }
           />
@@ -545,7 +561,9 @@ const s = StyleSheet.create({
   // ── Filter ────────────────────────────────────────────────────────────────
   filterScroll: {
     flexGrow: 0,
-    backgroundColor: 'rgba(0,0,0,0.6)',
+    backgroundColor: INPUT_BG,
+    borderBottomWidth: 1,
+    borderBottomColor: GLASS_BORDER,
   },
   filterRow: {
     paddingHorizontal: 14,
@@ -558,17 +576,17 @@ const s = StyleSheet.create({
     gap: 5,
     paddingHorizontal: 14,
     paddingVertical: 7,
-    borderRadius: 20,
-    backgroundColor: 'rgba(255,255,255,0.1)',
+    borderRadius: 999,
+    backgroundColor: PANEL_BG,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.14)',
+    borderColor: GLASS_BORDER,
   },
   chipActive: {
-    backgroundColor: C.accent.secondary,
-    borderColor: C.accent.secondary,
+    backgroundColor: S.accentViolet,
+    borderColor: 'rgba(167,139,250,0.35)',
   },
   chipText: { color: C.text.muted, fontSize: 12, fontWeight: '600' },
-  chipTextActive: { color: '#000' },
+  chipTextActive: { color: PURPLE_LINK, fontWeight: '800' },
 
   // ── States ────────────────────────────────────────────────────────────────
   center: {
@@ -576,6 +594,14 @@ const s = StyleSheet.create({
     justifyContent: 'center',
     gap: 12,
     backgroundColor: '#000',
+  },
+  emptyPanel: {
+    marginHorizontal: 24,
+    padding: 24,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: GLASS_BORDER,
+    backgroundColor: PANEL_BG,
   },
   loadingText: { color: C.text.muted, fontSize: 14 },
   emptyTitle: { color: C.text.primary, fontSize: 16, fontWeight: '600' },
@@ -612,7 +638,7 @@ const s = StyleSheet.create({
     justifyContent: 'center',
   },
   lockLabel: { color: '#fff', fontWeight: '700', fontSize: 13, marginTop: 10 },
-  lockPrice: { color: C.accent.secondary, fontSize: 12, fontWeight: '600', marginTop: 4 },
+  lockPrice: { color: TEAL, fontSize: 12, fontWeight: '700', marginTop: 4 },
 
   pauseIcon: {
     ...StyleSheet.absoluteFillObject,
@@ -667,6 +693,6 @@ const s = StyleSheet.create({
   unlockedBadge: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: 'rgba(10,6,30,0.75)', borderRadius: 6, paddingHorizontal: 8, paddingVertical: 4, borderWidth: 1, borderColor: 'rgba(74,222,128,0.35)' },
   unlockedBadgeText: { color: C.accent.success, fontSize: 9, fontWeight: '800', letterSpacing: 0.6 },
   unlockBadge: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: 'rgba(10,6,30,0.75)', borderRadius: 6, paddingHorizontal: 8, paddingVertical: 4, borderWidth: 1, borderColor: 'rgba(240,216,117,0.4)' },
-  unlockBadgeText: { color: C.accent.primary, fontSize: 9, fontWeight: '800', letterSpacing: 0.6 },
+  unlockBadgeText: { color: GOLD, fontSize: 9, fontWeight: '800', letterSpacing: 0.6 },
   expiryText: { color: 'rgba(255,255,255,0.5)', fontSize: 10 },
 });

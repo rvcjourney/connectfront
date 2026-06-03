@@ -10,7 +10,6 @@ import {
   Animated,
   Platform,
 } from 'react-native';
-import LinearGradient from 'react-native-linear-gradient';
 import Toast from 'react-native-simple-toast';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import { SafeScreen } from '../../components/SafeScreen';
@@ -148,36 +147,6 @@ function SectionHeaderRow({ title, count }) {
           <Text style={styles.secHdrCountText}>{count}</Text>
         </View>
       ) : null}
-    </View>
-  );
-}
-
-function BookingsHero() {
-  return (
-    <View style={styles.hero}>
-      <LinearGradient
-        colors={S.heroGradient}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={StyleSheet.absoluteFill}
-      />
-      <View style={styles.heroIconRing}>
-        <LinearGradient
-          colors={B.premiumGradient}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={styles.heroIconRingGrad}
-        >
-          <View style={styles.heroIconInner}>
-            <MaterialIcons name="event-note" size={24} color={PURPLE_LINK} />
-          </View>
-        </LinearGradient>
-      </View>
-      <Text style={styles.heroEyebrow}>Sessions</Text>
-      <Text style={styles.heroTitle}>My bookings</Text>
-      <Text style={styles.heroSubtitle}>
-        Join calls on time and review your session history here.
-      </Text>
     </View>
   );
 }
@@ -386,10 +355,8 @@ export default function LearnerBookingsScreen({ navigation }) {
   const hasMoreUpcoming = upcomingAll.length > upcomingShown;
   const fullyEmpty = upcomingAll.length === 0 && history.length === 0 && !loading;
 
-  // Build FlatList data: hero + upcoming section + history section + history items
+  // Build FlatList data: upcoming section + history section
   const listData = [];
-
-  listData.push({ type: 'hero', key: 'hero' });
 
   if (fullyEmpty) {
     listData.push({ type: 'empty', key: 'empty' });
@@ -421,9 +388,6 @@ export default function LearnerBookingsScreen({ navigation }) {
 
   const renderItem = ({ item }) => {
     switch (item.type) {
-      case 'hero':
-        return <BookingsHero />;
-
       case 'section_header':
         return (
           <View style={styles.sectionTop}>
@@ -486,15 +450,10 @@ export default function LearnerBookingsScreen({ navigation }) {
     }
   };
 
-  const HeroCard = <BookingsHero />;
-
   return (
     <SafeScreen scrollable={false} padding={0} hasBottomTabs={false} includeTopInset={false}>
       {loading ? (
-        <View style={{ flex: 1 }}>
-          <View style={styles.listContent}>{HeroCard}</View>
-          <BookingsSkeleton />
-        </View>
+        <BookingsSkeleton />
       ) : (
         <FlatList
           style={{ flex: 1 }}
@@ -520,54 +479,6 @@ const styles = StyleSheet.create({
   listContent: {
     padding: T.spacing.lg,
     paddingBottom: T.spacing.xxxl,
-  },
-  hero: {
-    borderRadius: 16,
-    overflow: 'hidden',
-    padding: T.spacing.lg,
-    marginBottom: T.spacing.lg,
-    borderWidth: 1,
-    borderColor: 'rgba(167,139,250,0.22)',
-    backgroundColor: 'rgba(255,255,255,0.07)',
-    alignItems: 'flex-start',
-    ...Platform.select({ ios: T.shadows.medium, android: { elevation: 6 } }),
-  },
-  heroIconRing: {
-    marginBottom: T.spacing.sm,
-  },
-  heroIconRingGrad: {
-    padding: 2,
-    borderRadius: 22,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.35)',
-  },
-  heroIconInner: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: C.primary.void,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  heroEyebrow: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: PURPLE_LINK,
-    letterSpacing: 0.8,
-    textTransform: 'uppercase',
-    marginBottom: 4,
-  },
-  heroTitle: {
-    fontSize: 22,
-    fontWeight: '800',
-    color: C.text.primary,
-    letterSpacing: -0.4,
-    marginBottom: T.spacing.xs,
-  },
-  heroSubtitle: {
-    fontSize: 13,
-    color: C.text.secondary,
-    lineHeight: 20,
   },
   sectionTop: {
     marginTop: T.spacing.md,

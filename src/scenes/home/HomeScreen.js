@@ -505,7 +505,7 @@ export default function HomeScreen() {
             accessibilityRole="button"
             accessibilityLabel="Settings"
           >
-            <MaterialIcons name="settings" size={22} color={C.text.primary} />
+            <MaterialIcons name="bolt" size={22} color={C.text.primary} />
           </TouchableOpacity>
         </Animated.View>
 

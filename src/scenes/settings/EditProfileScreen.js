@@ -20,14 +20,26 @@ import { profileApi } from '../../api/profileApi';
 import { supabase } from '../../lib/supabase';
 import { MENTOR_CATEGORIES } from '../../constants/mentorCategories';
 import { fetchActiveCategoryNames } from '../../api/contentApi';
+import LinearGradient from 'react-native-linear-gradient';
 
-const SectionHeader = ({ icon, title, accent }) => (
+const T = UNIFIED_THEME;
+const C = T.colors;
+const B = C.buttons;
+const S = C.surface;
+
+const PURPLE_LINK = B.nebulaGradient[0];
+const GOLD = C.accent.primary;
+const TEAL = C.accent.secondary;
+const PANEL_BG = '#161432';
+const INPUT_BG = '#0f0e2a';
+
+const SectionHeader = ({ icon, title, accent, accentBg }) => (
   <View style={sSection.row}>
-    <View style={[sSection.badge, { backgroundColor: accent + '25' }]}>
+    <View style={[sSection.badge, { backgroundColor: accentBg || S.accentViolet }]}>
       <MaterialIcons name={icon} size={13} color={accent} />
     </View>
     <Text style={[sSection.title, { color: accent }]}>{title}</Text>
-    <View style={[sSection.line, { backgroundColor: accent + '30' }]} />
+    <View style={[sSection.line, { backgroundColor: 'rgba(167,139,250,0.22)' }]} />
   </View>
 );
 
@@ -35,9 +47,9 @@ const sSection = StyleSheet.create({
   row: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: UNIFIED_THEME.spacing.sm,
-    marginTop: UNIFIED_THEME.spacing.lg,
-    gap: UNIFIED_THEME.spacing.sm,
+    marginBottom: T.spacing.sm,
+    marginTop: T.spacing.lg,
+    gap: T.spacing.sm,
   },
   badge: {
     width: 24,
@@ -61,13 +73,13 @@ const sSection = StyleSheet.create({
 const Field = ({ icon, label, value, onChangeText, placeholder, readOnly, hint, error, multiline, isLast, keyboardType }) => (
   <View style={[sField.wrapper, isLast && sField.noBorder]}>
     <View style={sField.labelRow}>
-      {icon && <MaterialIcons name={icon} size={13} color={UNIFIED_THEME.colors.text.muted} style={sField.icon} />}
+      {icon && <MaterialIcons name={icon} size={13} color={C.text.muted} style={sField.icon} />}
       <Text style={sField.label}>{label}</Text>
     </View>
     {readOnly ? (
       <View style={sField.readOnlyBox}>
         <Text style={sField.readOnlyText}>{value}</Text>
-        <MaterialIcons name="lock-outline" size={14} color={UNIFIED_THEME.colors.text.disabled} />
+        <MaterialIcons name="lock-outline" size={14} color={C.text.disabled} />
       </View>
     ) : (
       <TextInput
@@ -75,7 +87,7 @@ const Field = ({ icon, label, value, onChangeText, placeholder, readOnly, hint, 
         value={value}
         onChangeText={onChangeText}
         placeholder={placeholder}
-        placeholderTextColor={UNIFIED_THEME.colors.text.disabled}
+        placeholderTextColor={C.text.disabled}
         multiline={multiline}
         numberOfLines={multiline ? 3 : 1}
         keyboardType={keyboardType || 'default'}
@@ -88,9 +100,9 @@ const Field = ({ icon, label, value, onChangeText, placeholder, readOnly, hint, 
 
 const sField = StyleSheet.create({
   wrapper: {
-    paddingVertical: UNIFIED_THEME.spacing.md,
+    paddingVertical: T.spacing.md,
     borderBottomWidth: 1,
-    borderBottomColor: UNIFIED_THEME.colors.border.light,
+    borderBottomColor: 'rgba(167,139,250,0.15)',
   },
   noBorder: { borderBottomWidth: 0 },
   labelRow: {
@@ -101,44 +113,44 @@ const sField = StyleSheet.create({
   icon: { marginRight: 5 },
   label: {
     fontSize: 11,
-    fontWeight: '600',
-    color: UNIFIED_THEME.colors.text.muted,
-    letterSpacing: 0.5,
+    fontWeight: '700',
+    color: PURPLE_LINK,
+    letterSpacing: 0.8,
     textTransform: 'uppercase',
   },
   input: {
-    backgroundColor: UNIFIED_THEME.colors.primary.dark,
+    backgroundColor: INPUT_BG,
     borderWidth: 1,
-    borderColor: UNIFIED_THEME.colors.border.light,
-    borderRadius: 10,
-    paddingHorizontal: UNIFIED_THEME.spacing.md,
-    paddingVertical: UNIFIED_THEME.spacing.sm,
-    color: UNIFIED_THEME.colors.text.primary,
+    borderColor: 'rgba(167,139,250,0.22)',
+    borderRadius: 12,
+    paddingHorizontal: T.spacing.md,
+    paddingVertical: T.spacing.sm,
+    color: C.text.primary,
     fontSize: 14,
   },
   multiline: {
     height: 80,
-    paddingTop: UNIFIED_THEME.spacing.sm,
+    paddingTop: T.spacing.sm,
   },
   readOnlyBox: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: UNIFIED_THEME.colors.primary.dark,
+    backgroundColor: INPUT_BG,
     borderWidth: 1,
-    borderColor: UNIFIED_THEME.colors.border.light,
-    borderRadius: 10,
-    paddingHorizontal: UNIFIED_THEME.spacing.md,
-    paddingVertical: UNIFIED_THEME.spacing.sm,
-    opacity: 0.6,
+    borderColor: 'rgba(167,139,250,0.15)',
+    borderRadius: 12,
+    paddingHorizontal: T.spacing.md,
+    paddingVertical: T.spacing.sm,
+    opacity: 0.7,
   },
   readOnlyText: {
-    color: UNIFIED_THEME.colors.text.secondary,
+    color: C.text.secondary,
     fontSize: 14,
   },
   hint: {
     fontSize: 11,
-    color: UNIFIED_THEME.colors.text.disabled,
+    color: C.text.disabled,
     marginTop: 4,
   },
   hintError: {
@@ -370,7 +382,7 @@ export default function EditProfileScreen({ navigation }) {
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
-          <MaterialIcons name="arrow-back" size={22} color={UNIFIED_THEME.colors.text.primary} />
+          <MaterialIcons name="arrow-back" size={22} color={C.text.primary} />
         </TouchableOpacity>
         <View style={styles.headerTitleWrap}>
           <Text style={styles.headerTitle}>Edit Profile</Text>
@@ -393,20 +405,24 @@ export default function EditProfileScreen({ navigation }) {
         {/* Avatar */}
         <View style={styles.avatarSection}>
           <TouchableOpacity
-            style={styles.avatarRing}
             onPress={handlePickImage}
             disabled={loading}
             activeOpacity={0.8}
+            style={styles.avatarTouchable}
           >
-            {avatarUrl ? (
-              <Image key={avatarUrl} source={{ uri: avatarUrl, cache: 'reload' }} style={styles.avatar} />
-            ) : (
-              <View style={[styles.avatar, styles.avatarPlaceholder]}>
-                <MaterialIcons name="person" size={54} color={UNIFIED_THEME.colors.text.muted} />
+            <LinearGradient colors={B.premiumGradient} style={styles.avatarRing}>
+              <View style={styles.avatarInner}>
+                {avatarUrl ? (
+                  <Image key={avatarUrl} source={{ uri: avatarUrl, cache: 'reload' }} style={styles.avatar} />
+                ) : (
+                  <View style={[styles.avatar, styles.avatarPlaceholder]}>
+                    <MaterialIcons name="person" size={48} color={PURPLE_LINK} />
+                  </View>
+                )}
               </View>
-            )}
+            </LinearGradient>
             <View style={styles.avatarOverlay}>
-              <MaterialIcons name="camera-alt" size={20} color="#fff" />
+              <MaterialIcons name="camera-alt" size={18} color={C.text.primary} />
             </View>
           </TouchableOpacity>
           <Text style={styles.avatarHint}>Tap to change photo</Text>
@@ -417,7 +433,8 @@ export default function EditProfileScreen({ navigation }) {
           <SectionHeader
             icon="person"
             title="Personal Info"
-            accent={UNIFIED_THEME.colors.accent.secondary}
+            accent={TEAL}
+            accentBg={S.accentTeal}
           />
           <View style={styles.card}>
             <Field
@@ -450,7 +467,7 @@ export default function EditProfileScreen({ navigation }) {
           </View>
 
           {/* As Learner */}
-          <SectionHeader icon="school" title="As Learner" accent="#10B981" />
+          <SectionHeader icon="school" title="As Learner" accent={TEAL} accentBg={S.accentTeal} />
           <View style={styles.card}>
             <Field
               icon="info-outline"
@@ -475,7 +492,8 @@ export default function EditProfileScreen({ navigation }) {
           <SectionHeader
             icon="workspace-premium"
             title="As Mentor"
-            accent={UNIFIED_THEME.colors.accent.primary}
+            accent={GOLD}
+            accentBg={S.accentGold}
           />
           <View style={styles.card}>
             <Field
@@ -494,7 +512,7 @@ export default function EditProfileScreen({ navigation }) {
               multiline
             />
             <View style={styles.rowFields}>
-              <View style={{ flex: 1, marginRight: UNIFIED_THEME.spacing.sm }}>
+              <View style={{ flex: 1, marginRight: T.spacing.sm }}>
                 <Field
                   icon="event-note"
                   label="Experience (yrs)"
@@ -521,7 +539,7 @@ export default function EditProfileScreen({ navigation }) {
             {/* Cover Image */}
             <View style={[sField.wrapper]}>
               <View style={sField.labelRow}>
-                <MaterialIcons name="image" size={13} color={UNIFIED_THEME.colors.text.muted} style={sField.icon} />
+                <MaterialIcons name="image" size={13} color={C.text.muted} style={sField.icon} />
                 <Text style={sField.label}>Cover Image</Text>
               </View>
               <TouchableOpacity
@@ -534,7 +552,7 @@ export default function EditProfileScreen({ navigation }) {
                   <Image source={{ uri: coverImageUrl }} style={styles.coverPreview} resizeMode="cover" />
                 ) : (
                   <View style={styles.coverPlaceholder}>
-                    <MaterialIcons name="add-photo-alternate" size={28} color={UNIFIED_THEME.colors.text.muted} />
+                    <MaterialIcons name="add-photo-alternate" size={28} color={PURPLE_LINK} />
                     <Text style={styles.coverPlaceholderTxt}>Tap to upload cover</Text>
                   </View>
                 )}
@@ -547,7 +565,7 @@ export default function EditProfileScreen({ navigation }) {
             {/* Category dropdown */}
             <View style={[sField.wrapper, sField.noBorder]}>
               <View style={sField.labelRow}>
-                <MaterialIcons name="category" size={13} color={UNIFIED_THEME.colors.text.muted} style={sField.icon} />
+                <MaterialIcons name="category" size={13} color={C.text.muted} style={sField.icon} />
                 <Text style={sField.label}>Category</Text>
               </View>
               <TouchableOpacity
@@ -561,7 +579,7 @@ export default function EditProfileScreen({ navigation }) {
                 <MaterialIcons
                   name={showCategoryPicker ? 'expand-less' : 'expand-more'}
                   size={20}
-                  color={UNIFIED_THEME.colors.text.muted}
+                  color={C.text.muted}
                 />
               </TouchableOpacity>
               {showCategoryPicker && (
@@ -581,7 +599,7 @@ export default function EditProfileScreen({ navigation }) {
                         {cat}
                       </Text>
                       {category === cat && (
-                        <MaterialIcons name="check" size={16} color={UNIFIED_THEME.colors.accent.primary} />
+                        <MaterialIcons name="check" size={16} color={GOLD} />
                       )}
                     </TouchableOpacity>
                   ))}
@@ -628,64 +646,67 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'flex-start',
     justifyContent: 'space-between',
-    paddingHorizontal: UNIFIED_THEME.spacing.lg,
-    paddingVertical: UNIFIED_THEME.spacing.md,
+    paddingHorizontal: T.spacing.lg,
+    paddingVertical: T.spacing.md,
     borderBottomWidth: 1,
-    borderBottomColor: UNIFIED_THEME.colors.border.light,
+    borderBottomColor: 'rgba(167,139,250,0.22)',
+    backgroundColor: INPUT_BG,
   },
   backBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 10,
-    backgroundColor: UNIFIED_THEME.colors.component.input,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: PANEL_BG,
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: UNIFIED_THEME.colors.border.light,
+    borderColor: 'rgba(167,139,250,0.22)',
   },
   headerTitleWrap: {
     flex: 1,
     alignItems: 'center',
-    paddingHorizontal: UNIFIED_THEME.spacing.sm,
+    paddingHorizontal: T.spacing.sm,
   },
   headerTitle: {
     fontSize: 17,
-    fontWeight: '700',
-    color: UNIFIED_THEME.colors.text.primary,
-    letterSpacing: 0.3,
+    fontWeight: '800',
+    color: C.text.primary,
+    letterSpacing: -0.3,
     textAlign: 'center',
   },
   headerSubtitle: {
     fontSize: 11,
-    color: UNIFIED_THEME.colors.text.muted,
+    color: C.text.muted,
     marginTop: 2,
     textAlign: 'center',
   },
   saveBtn: {
-    paddingHorizontal: UNIFIED_THEME.spacing.lg,
-    paddingVertical: UNIFIED_THEME.spacing.sm,
-    backgroundColor: UNIFIED_THEME.colors.accent.primary,
-    borderRadius: 10,
+    paddingHorizontal: T.spacing.lg,
+    paddingVertical: T.spacing.sm,
+    backgroundColor: GOLD,
+    borderRadius: 12,
     marginTop: 2,
+    borderWidth: 1,
+    borderColor: 'rgba(240,216,117,0.35)',
   },
   saveBtnDisabled: { opacity: 0.5 },
   saveBtnText: {
     fontSize: 13,
-    fontWeight: '700',
-    color: '#fff',
+    fontWeight: '800',
+    color: C.primary.void,
     letterSpacing: 0.3,
   },
   scrollContent: {
-    paddingBottom: UNIFIED_THEME.spacing.xl,
+    paddingBottom: T.spacing.xl,
   },
   coverPicker: {
     width: '100%',
     height: 110,
-    borderRadius: 10,
+    borderRadius: 12,
     overflow: 'hidden',
     borderWidth: 1,
-    borderColor: UNIFIED_THEME.colors.border.light,
-    backgroundColor: UNIFIED_THEME.colors.component.input,
+    borderColor: 'rgba(167,139,250,0.22)',
+    backgroundColor: INPUT_BG,
     marginTop: 6,
     position: 'relative',
   },
@@ -701,7 +722,7 @@ const styles = StyleSheet.create({
   },
   coverPlaceholderTxt: {
     fontSize: 12,
-    color: UNIFIED_THEME.colors.text.muted,
+    color: C.text.muted,
     fontWeight: '600',
   },
   coverEditBadge: {
@@ -711,67 +732,74 @@ const styles = StyleSheet.create({
     width: 28,
     height: 28,
     borderRadius: 14,
-    backgroundColor: 'rgba(0,0,0,0.55)',
+    backgroundColor: PANEL_BG,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.2)',
+    borderColor: 'rgba(167,139,250,0.35)',
   },
   avatarSection: {
     alignItems: 'center',
-    paddingVertical: UNIFIED_THEME.spacing.lg,
+    paddingVertical: T.spacing.lg,
     borderBottomWidth: 1,
-    borderBottomColor: UNIFIED_THEME.colors.border.light,
-    marginBottom: UNIFIED_THEME.spacing.sm,
+    borderBottomColor: 'rgba(167,139,250,0.22)',
+    marginBottom: T.spacing.sm,
+  },
+  avatarTouchable: {
+    position: 'relative',
+    alignItems: 'center',
   },
   avatarRing: {
-    width: 110,
-    height: 110,
-    borderRadius: 55,
-    borderWidth: 2,
-    borderColor: UNIFIED_THEME.colors.accent.primary,
     padding: 3,
-    marginBottom: UNIFIED_THEME.spacing.sm,
-    position: 'relative',
+    borderRadius: 58,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.35)',
+    marginBottom: T.spacing.sm,
+  },
+  avatarInner: {
+    width: 104,
+    height: 104,
+    borderRadius: 52,
+    overflow: 'hidden',
+    backgroundColor: C.primary.void,
   },
   avatar: {
     width: '100%',
     height: '100%',
-    borderRadius: 50,
+    borderRadius: 52,
   },
   avatarPlaceholder: {
-    backgroundColor: UNIFIED_THEME.colors.component.input,
     justifyContent: 'center',
     alignItems: 'center',
   },
   avatarOverlay: {
     position: 'absolute',
-    bottom: 0,
-    right: 0,
+    bottom: 4,
+    right: 4,
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: UNIFIED_THEME.colors.accent.primary,
+    backgroundColor: PANEL_BG,
     justifyContent: 'center',
     alignItems: 'center',
-    borderWidth: 2,
-    borderColor: UNIFIED_THEME.colors.primary.light,
+    borderWidth: 1,
+    borderColor: 'rgba(167,139,250,0.35)',
   },
   avatarHint: {
     fontSize: 12,
-    color: UNIFIED_THEME.colors.text.muted,
+    color: C.text.muted,
     marginTop: 2,
   },
   body: {
-    paddingHorizontal: UNIFIED_THEME.spacing.lg,
+    paddingHorizontal: T.spacing.lg,
   },
   card: {
-    backgroundColor: UNIFIED_THEME.colors.component.input,
-    borderRadius: 14,
+    backgroundColor: PANEL_BG,
+    borderRadius: 16,
     borderWidth: 1,
-    borderColor: UNIFIED_THEME.colors.border.light,
-    paddingHorizontal: UNIFIED_THEME.spacing.lg,
-    marginBottom: UNIFIED_THEME.spacing.sm,
+    borderColor: 'rgba(167,139,250,0.22)',
+    paddingHorizontal: T.spacing.lg,
+    marginBottom: T.spacing.sm,
   },
   rowFields: {
     flexDirection: 'row',
@@ -780,57 +808,57 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: UNIFIED_THEME.colors.primary.dark,
+    backgroundColor: INPUT_BG,
     borderWidth: 1,
-    borderColor: UNIFIED_THEME.colors.border.light,
-    borderRadius: 10,
-    paddingHorizontal: UNIFIED_THEME.spacing.md,
-    paddingVertical: UNIFIED_THEME.spacing.sm,
+    borderColor: 'rgba(167,139,250,0.22)',
+    borderRadius: 12,
+    paddingHorizontal: T.spacing.md,
+    paddingVertical: T.spacing.sm,
   },
   dropdownValue: {
     fontSize: 14,
-    color: UNIFIED_THEME.colors.text.primary,
+    color: C.text.primary,
   },
   dropdownPlaceholder: {
     fontSize: 14,
-    color: UNIFIED_THEME.colors.text.disabled,
+    color: C.text.disabled,
   },
   dropdownList: {
-    marginTop: UNIFIED_THEME.spacing.sm,
-    backgroundColor: UNIFIED_THEME.colors.primary.dark,
+    marginTop: T.spacing.sm,
+    backgroundColor: INPUT_BG,
     borderWidth: 1,
-    borderColor: UNIFIED_THEME.colors.border.light,
-    borderRadius: 10,
+    borderColor: 'rgba(167,139,250,0.22)',
+    borderRadius: 12,
     overflow: 'hidden',
   },
   dropdownItem: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingVertical: UNIFIED_THEME.spacing.md,
-    paddingHorizontal: UNIFIED_THEME.spacing.md,
+    paddingVertical: T.spacing.md,
+    paddingHorizontal: T.spacing.md,
     borderBottomWidth: 1,
-    borderBottomColor: UNIFIED_THEME.colors.border.light,
+    borderBottomColor: 'rgba(167,139,250,0.15)',
   },
   dropdownItemLast: { borderBottomWidth: 0 },
-  dropdownItemActive: { backgroundColor: 'rgba(167, 139, 250, 0.12)' },
+  dropdownItemActive: { backgroundColor: S.accentViolet },
   dropdownItemText: {
     fontSize: 14,
-    color: UNIFIED_THEME.colors.text.primary,
+    color: C.text.primary,
   },
   dropdownItemTextActive: {
-    color: UNIFIED_THEME.colors.accent.primary,
-    fontWeight: '600',
+    color: GOLD,
+    fontWeight: '700',
   },
   dangerZoneWrap: {
-    marginTop: UNIFIED_THEME.spacing.xl,
-    marginBottom: UNIFIED_THEME.spacing.xxl,
+    marginTop: T.spacing.xl,
+    marginBottom: T.spacing.xxl,
   },
   dangerZoneHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: UNIFIED_THEME.spacing.sm,
-    marginBottom: UNIFIED_THEME.spacing.md,
+    gap: T.spacing.sm,
+    marginBottom: T.spacing.md,
   },
   dangerZoneTitle: {
     fontSize: 11,
@@ -852,8 +880,8 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: 'rgba(239,68,68,0.2)',
     borderRadius: 14,
-    padding: UNIFIED_THEME.spacing.md,
-    gap: UNIFIED_THEME.spacing.md,
+    padding: T.spacing.md,
+    gap: T.spacing.md,
   },
   dangerInfo: {
     flex: 1,

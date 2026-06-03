@@ -22,7 +22,16 @@ import { useAuth } from '../../hooks/useAuth';
 import { SCREEN_NAMES } from '../../navigators/screenNames';
 
 const T = UNIFIED_THEME;
-const B = T.colors.buttons;
+const C = T.colors;
+const B = C.buttons;
+const S = C.surface;
+
+const PURPLE_LINK = B.nebulaGradient[0];
+const GOLD = C.accent.primary;
+const TEAL = C.accent.secondary;
+const PANEL_BG = '#161432';
+const INPUT_BG = '#0f0e2a';
+
 const MIN_WITHDRAWAL = 5000;
 
 const fmt = (n) =>
@@ -32,7 +41,7 @@ function InfoRow({ icon, label, value, valueColor }) {
   return (
     <View style={styles.infoRow}>
       <View style={styles.infoLeft}>
-        <MaterialIcons name={icon} size={18} color={T.colors.text.muted} />
+        <MaterialIcons name={icon} size={18} color={TEAL} />
         <Text style={styles.infoLabel}>{label}</Text>
       </View>
       <Text style={[styles.infoValue, valueColor && { color: valueColor }]}>{value}</Text>
@@ -126,7 +135,7 @@ export default function WalletScreen({ navigation }) {
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={T.colors.accent.secondary} />
+          <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={TEAL} />
         }
       >
         {/* Header */}
@@ -140,22 +149,8 @@ export default function WalletScreen({ navigation }) {
 
         {/* Balance Hero Card */}
         <View style={styles.heroCard}>
-          <LinearGradient
-            colors={['rgba(94,234,212,0.18)', 'rgba(124,58,237,0.22)', 'rgba(2,0,20,0.9)']}
-            locations={[0, 0.45, 1]}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-            style={StyleSheet.absoluteFill}
-          />
           <View style={styles.heroTop}>
-            <View style={styles.walletIconWrap}>
-              <LinearGradient
-                colors={['rgba(94,234,212,0.3)', 'rgba(167,139,250,0.2)']}
-                style={styles.walletIconGrad}
-              >
-                <MaterialIcons name="account-balance-wallet" size={26} color={T.colors.accent.secondary} />
-              </LinearGradient>
-            </View>
+            <MaterialIcons name="account-balance-wallet" size={28} color={TEAL} />
             <View style={styles.heroTextBlock}>
               <Text style={styles.heroLabel}>Available Balance</Text>
               <Text style={styles.heroAmount}>{fmt(wallet.balance)}</Text>
@@ -348,47 +343,35 @@ const styles = StyleSheet.create({
     marginBottom: T.spacing.lg,
   },
   backBtn: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
-    backgroundColor: T.colors.component.card,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: PANEL_BG,
     borderWidth: 1,
-    borderColor: T.colors.border.light,
+    borderColor: 'rgba(167,139,250,0.22)',
     justifyContent: 'center',
     alignItems: 'center',
   },
   headerTitle: {
-    ...T.typography.headingMd,
-    color: T.colors.text.primary,
-    fontWeight: '700',
+    fontSize: 18,
+    color: C.text.primary,
+    fontWeight: '800',
   },
 
-  // Hero
   heroCard: {
-    borderRadius: T.borderRadius.lg,
+    borderRadius: 16,
     overflow: 'hidden',
     padding: T.spacing.lg,
     marginBottom: T.spacing.lg,
     borderWidth: 1,
-    borderColor: 'rgba(94,234,212,0.25)',
+    borderColor: 'rgba(167,139,250,0.22)',
+    backgroundColor: PANEL_BG,
   },
   heroTop: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: T.spacing.lg,
     marginBottom: T.spacing.sm,
-  },
-  walletIconWrap: {
-    borderRadius: T.borderRadius.md,
-    overflow: 'hidden',
-    borderWidth: 1,
-    borderColor: 'rgba(94,234,212,0.2)',
-  },
-  walletIconGrad: {
-    width: 56,
-    height: 56,
-    justifyContent: 'center',
-    alignItems: 'center',
   },
   heroTextBlock: { flex: 1 },
   heroLabel: {
@@ -435,14 +418,14 @@ const styles = StyleSheet.create({
   },
   statBox: {
     flex: 1,
-    borderRadius: T.borderRadius.lg,
+    borderRadius: 14,
     overflow: 'hidden',
     borderWidth: 1,
-    borderColor: T.colors.border.light,
+    borderColor: 'rgba(167,139,250,0.22)',
     padding: T.spacing.md,
     alignItems: 'center',
     gap: T.spacing.xs,
-    backgroundColor: T.colors.component.card,
+    backgroundColor: PANEL_BG,
   },
   statVal: {
     fontSize: 13,
@@ -457,10 +440,10 @@ const styles = StyleSheet.create({
 
   // Withdraw Card
   withdrawCard: {
-    backgroundColor: T.colors.component.card,
-    borderRadius: T.borderRadius.lg,
+    backgroundColor: PANEL_BG,
+    borderRadius: 16,
     borderWidth: 1,
-    borderColor: T.colors.border.light,
+    borderColor: 'rgba(167,139,250,0.22)',
     padding: T.spacing.lg,
     marginBottom: T.spacing.lg,
     gap: T.spacing.md,
@@ -527,10 +510,10 @@ const styles = StyleSheet.create({
 
   // Form
   formCard: {
-    backgroundColor: T.colors.component.card,
-    borderRadius: T.borderRadius.lg,
+    backgroundColor: PANEL_BG,
+    borderRadius: 16,
     borderWidth: 1,
-    borderColor: T.colors.border.default,
+    borderColor: 'rgba(167,139,250,0.22)',
     padding: T.spacing.lg,
     gap: T.spacing.sm,
   },
@@ -541,32 +524,35 @@ const styles = StyleSheet.create({
     marginBottom: T.spacing.sm,
   },
   fieldLabel: {
-    ...T.typography.labelMd,
-    color: T.colors.text.secondary,
+    fontSize: 11,
+    fontWeight: '700',
+    color: PURPLE_LINK,
+    textTransform: 'uppercase',
+    letterSpacing: 0.8,
     marginBottom: 2,
   },
   inputWrap: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: T.colors.component.input,
-    borderRadius: T.borderRadius.md,
+    backgroundColor: INPUT_BG,
+    borderRadius: 12,
     borderWidth: 1,
-    borderColor: T.colors.border.light,
+    borderColor: 'rgba(167,139,250,0.22)',
     paddingHorizontal: T.spacing.md,
     marginBottom: T.spacing.sm,
   },
   inputIcon: { marginRight: T.spacing.sm },
   rupeePrefix: {
-    ...T.typography.bodyMd,
-    color: T.colors.accent.secondary,
-    fontWeight: '700',
+    fontSize: 15,
+    color: TEAL,
+    fontWeight: '800',
     marginRight: T.spacing.sm,
   },
   fieldInput: {
     flex: 1,
     paddingVertical: T.spacing.sm + 2,
-    color: T.colors.text.primary,
-    ...T.typography.bodyMd,
+    color: C.text.primary,
+    fontSize: 15,
   },
 
   infoRow: {
@@ -575,7 +561,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingVertical: T.spacing.xs,
     borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: T.colors.border.light,
+    borderTopColor: 'rgba(167,139,250,0.15)',
   },
   infoLeft: {
     flexDirection: 'row',

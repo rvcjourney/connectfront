@@ -95,34 +95,6 @@ function CustomBarChart({ data }) {
 
 // ──────────────────────────────────────────────────────────────────────────────
 
-function EarningsHero() {
-  return (
-    <View style={styles.hero}>
-      <LinearGradient
-        colors={S.heroGradient}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={StyleSheet.absoluteFill}
-      />
-      <View style={styles.heroIconRing}>
-        <LinearGradient
-          colors={B.premiumGradient}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={styles.heroIconRingGrad}
-        >
-          <View style={styles.heroIconInner}>
-            <MaterialIcons name="account-balance-wallet" size={24} color={PURPLE_LINK} />
-          </View>
-        </LinearGradient>
-      </View>
-      <Text style={styles.heroEyebrow}>Mentor</Text>
-      <Text style={styles.heroTitle}>Earnings</Text>
-      <Text style={styles.heroSubtitle}>Track payouts and session revenue over time.</Text>
-    </View>
-  );
-}
-
 function StatSegment({ icon, iconColor, value, label }) {
   return (
     <View style={styles.statSeg}>
@@ -239,8 +211,6 @@ export default function MentorEarningsScreen() {
         showsVerticalScrollIndicator={false}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={TEAL} />}
       >
-        <EarningsHero />
-
         <View style={styles.totalHighlight}>
           <Text style={styles.totalLabel}>Total earnings</Text>
           <Text style={styles.totalAmount}>{formatCurrency(totalEarnings)}</Text>
@@ -411,54 +381,6 @@ const chart = StyleSheet.create({
 });
 
 const styles = StyleSheet.create({
-  hero: {
-    borderRadius: 16,
-    overflow: 'hidden',
-    padding: T.spacing.lg,
-    marginBottom: T.spacing.md,
-    borderWidth: 1,
-    borderColor: 'rgba(167,139,250,0.22)',
-    backgroundColor: 'rgba(255,255,255,0.07)',
-    alignItems: 'flex-start',
-    ...Platform.select({ ios: T.shadows.medium, android: { elevation: 6 } }),
-  },
-  heroIconRing: {
-    marginBottom: T.spacing.sm,
-  },
-  heroIconRingGrad: {
-    padding: 2,
-    borderRadius: 22,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.35)',
-  },
-  heroIconInner: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: C.primary.void,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  heroEyebrow: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: PURPLE_LINK,
-    letterSpacing: 0.8,
-    textTransform: 'uppercase',
-    marginBottom: 4,
-  },
-  heroTitle: {
-    fontSize: 22,
-    fontWeight: '800',
-    color: C.text.primary,
-    letterSpacing: -0.4,
-    marginBottom: T.spacing.xs,
-  },
-  heroSubtitle: {
-    fontSize: 13,
-    color: C.text.secondary,
-    lineHeight: 20,
-  },
   totalHighlight: {
     borderRadius: 16,
     borderWidth: 1,

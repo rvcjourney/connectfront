@@ -239,18 +239,18 @@ const styles = StyleSheet.create({
   barShell: {
     position: 'relative',
     overflow: 'hidden',
-    backgroundColor: 'rgba(255,255,255,0.07)',
+    backgroundColor: TB.flatBarBase,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(167,139,250,0.22)',
+    borderBottomColor: C.border.light,
     paddingTop: T.spacing.sm,
     ...Platform.select({
       ios: {
-        shadowColor: 'rgba(124, 58, 237, 0.35)',
+        shadowColor: UNIFIED_THEME.shadows.medium.shadowColor,
         shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.28,
-        shadowRadius: 10,
+        shadowOpacity: UNIFIED_THEME.shadows.medium.shadowOpacity * 0.7,
+        shadowRadius: UNIFIED_THEME.shadows.medium.shadowRadius,
       },
-      android: { elevation: 6 },
+      android: { elevation: UNIFIED_THEME.shadows.medium.elevation },
     }),
   },
   barTint: {
@@ -349,7 +349,7 @@ const styles = StyleSheet.create({
     flex: 1,
     width: '100%',
     borderRadius: 18,
-    backgroundColor: 'rgba(2, 0, 20, 0.72)',
+    backgroundColor: C.surface.sheet,
     borderWidth: 1,
     borderColor: TB.rimBorder,
     justifyContent: 'center',

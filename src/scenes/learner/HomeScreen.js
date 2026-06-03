@@ -9,7 +9,6 @@ import {
   Animated,
   Platform,
 } from 'react-native';
-import LinearGradient from 'react-native-linear-gradient';
 import Toast from 'react-native-simple-toast';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import { SafeScreen } from '../../components/SafeScreen';
@@ -294,32 +293,6 @@ export default function LearnerHomeScreen({ navigation }) {
         />
       }
     >
-      <View style={styles.discoverHero}>
-        <LinearGradient
-          colors={S.heroGradient}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={StyleSheet.absoluteFill}
-        />
-        <View style={styles.heroIconRing}>
-          <LinearGradient
-            colors={B.premiumGradient}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-            style={styles.heroIconRingGrad}
-          >
-            <View style={styles.heroIconInner}>
-              <MaterialIcons name="travel-explore" size={24} color={PURPLE_LINK} />
-            </View>
-          </LinearGradient>
-        </View>
-        <Text style={styles.heroEyebrow}>Discover</Text>
-        <Text style={styles.heroTitle}>Find your mentor</Text>
-        <Text style={styles.heroSubtitle}>
-          Search by name or browse experts by category.
-        </Text>
-      </View>
-
       <View style={styles.searchWrap}>
         <View style={styles.searchLabelRow}>
           <MaterialIcons name="explore" size={15} color={PURPLE_LINK} />
@@ -393,54 +366,6 @@ export default function LearnerHomeScreen({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-  discoverHero: {
-    borderRadius: 16,
-    overflow: 'hidden',
-    padding: T.spacing.lg,
-    marginBottom: T.spacing.md,
-    borderWidth: 1,
-    borderColor: 'rgba(167,139,250,0.22)',
-    backgroundColor: 'rgba(255,255,255,0.07)',
-    alignItems: 'flex-start',
-    ...Platform.select({ ios: T.shadows.medium, android: { elevation: 6 } }),
-  },
-  heroIconRing: {
-    marginBottom: T.spacing.sm,
-  },
-  heroIconRingGrad: {
-    padding: 2,
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.35)',
-  },
-  heroIconInner: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: C.primary.void,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  heroEyebrow: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: PURPLE_LINK,
-    letterSpacing: 0.8,
-    textTransform: 'uppercase',
-    marginBottom: 4,
-  },
-  heroTitle: {
-    fontSize: 20,
-    fontWeight: '800',
-    color: C.text.primary,
-    letterSpacing: -0.4,
-    marginBottom: T.spacing.xs,
-  },
-  heroSubtitle: {
-    fontSize: 13,
-    color: C.text.secondary,
-    lineHeight: 20,
-  },
   searchWrap: {
     marginBottom: T.spacing.lg,
   },
