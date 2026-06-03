@@ -18,6 +18,7 @@ import {
 } from 'react-native';
 import Video from 'react-native-video';
 import { SafeScreen } from '../../components/SafeScreen';
+import CosmicButton from '../../components/CosmicButton';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import { launchImageLibrary } from 'react-native-image-picker';
 import { useNavigation } from '@react-navigation/native';
@@ -524,20 +525,21 @@ function UploadModal({ visible, onClose, onUploaded }) {
               </View>
             )}
 
-            {/* Upload button */}
-            <TouchableOpacity
-              style={[styles.uploadBtn, uploading && { opacity: 0.6 }]}
+            <CosmicButton
+              label={
+                uploading
+                  ? progress < 100
+                    ? 'Uploading...'
+                    : 'Saving...'
+                  : 'Upload Video'
+              }
+              variant="nebula"
+              icon="cloud-upload"
               onPress={handleUpload}
+              loading={uploading}
               disabled={uploading}
-            >
-              {uploading ? (
-                <Text style={styles.uploadBtnText}>
-                  {progress < 100 ? 'Uploading...' : 'Saving...'}
-                </Text>
-              ) : (
-                <Text style={styles.uploadBtnText}>Upload Video</Text>
-              )}
-            </TouchableOpacity>
+              style={styles.uploadBtn}
+            />
           </ScrollView>
         </View>
       </KeyboardAvoidingView>
@@ -956,10 +958,6 @@ const styles = StyleSheet.create({
   },
   uploadBtn: {
     marginTop: 16,
-    backgroundColor: T.colors.accent.primary,
-    borderRadius: 14,
-    paddingVertical: 14,
-    alignItems: 'center',
+    marginVertical: 0,
   },
-  uploadBtnText: { color: '#000', fontSize: 15, fontWeight: '700' },
 });

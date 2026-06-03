@@ -20,6 +20,7 @@ import RazorpayCheckout from 'react-native-razorpay';
 import Toast from 'react-native-simple-toast';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { UNIFIED_THEME } from '../../unifiedTheme';
+import CosmicButton from '../../components/CosmicButton';
 import { videoApi } from '../../api/videoApi';
 import { homeApi } from '../../api/homeApi';
 import { useAuth } from '../../hooks/useAuth';
@@ -122,27 +123,22 @@ function UnlockSheet({ video, onClose, onUnlocked }) {
           ))}
         </View>
 
-        <TouchableOpacity
-          style={[u.payBtn, loading && { opacity: 0.6 }]}
+        <CosmicButton
+          label={`Subscribe · ₹${price}/mo`}
+          variant="nebula"
           onPress={handleUnlock}
+          loading={loading}
           disabled={loading}
-          activeOpacity={0.85}
-        >
-          <LinearGradient
-            colors={[C.accent.secondary, C.accent.primary]}
-            start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
-            style={u.payBtnInner}
-          >
-            {loading
-              ? <ActivityIndicator color="#000" size="small" />
-              : <Text style={u.payBtnText}>Subscribe · ₹{price}/mo</Text>
-            }
-          </LinearGradient>
-        </TouchableOpacity>
+          style={u.payBtn}
+        />
 
-        <TouchableOpacity onPress={onClose} style={u.cancelBtn}>
-          <Text style={u.cancelText}>Maybe later</Text>
-        </TouchableOpacity>
+        <CosmicButton
+          label="Maybe later"
+          variant="goldOutline"
+          size="compact"
+          onPress={onClose}
+          style={u.cancelBtnWrap}
+        />
       </View>
     </Modal>
   );
@@ -173,11 +169,8 @@ const u = StyleSheet.create({
   perks: { gap: 10, marginBottom: 24 },
   perkRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   perkText: { color: C.text.secondary, fontSize: 13 },
-  payBtn: { borderRadius: 14, overflow: 'hidden', marginBottom: 12 },
-  payBtnInner: { paddingVertical: 15, alignItems: 'center' },
-  payBtnText: { color: '#000', fontSize: 15, fontWeight: '800' },
-  cancelBtn: { alignItems: 'center', paddingVertical: 8 },
-  cancelText: { color: C.text.muted, fontSize: 13 },
+  payBtn: { marginBottom: 8, marginVertical: 0 },
+  cancelBtnWrap: { marginVertical: 0 },
 });
 
 // ─── Single short card (full-screen reel) ─────────────────────────────────────

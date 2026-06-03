@@ -10,8 +10,12 @@ import {
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import { UNIFIED_THEME } from '../unifiedTheme';
 import { formatDate, formatTime, formatDateForDisplay } from '../utils/dateHelpers';
+import CosmicButton from './CosmicButton';
 
 const T = UNIFIED_THEME.colors;
+const S = UNIFIED_THEME.colors.surface;
+const B = UNIFIED_THEME.colors.buttons;
+const PURPLE_LINK = B.nebulaGradient[0];
 
 const STATUS_COLORS = {
   pending: T.accent.warning,
@@ -48,6 +52,7 @@ export const BookingCard = ({
   onPressJoin,
   onPressCancel,
   onPressRecording = null,
+  onPressDownload = null,
   onPressRate = null,
   statusLabel = null,
 }) => {
@@ -91,13 +96,15 @@ export const BookingCard = ({
   const canCancel =
     onPressCancel && (booking.status === 'pending' || booking.status === 'confirmed');
   const canViewRecording = !!onPressRecording;
+  const canDownloadRecording = !!onPressDownload;
 
   const statusTitle =
     typeof displayStatus === 'string'
       ? displayStatus.charAt(0).toUpperCase() + displayStatus.slice(1)
       : displayStatus;
 
-  const hasActions = canJoin || canCancel || canViewRecording || onPressRate;
+  const hasActions =
+    canJoin || canCancel || canViewRecording || canDownloadRecording || onPressRate;
 
   return (
     <View
@@ -124,7 +131,7 @@ export const BookingCard = ({
             <MaterialIcons
               name="person"
               size={compact ? 20 : 22}
-              color={T.accent.secondary}
+              color={PURPLE_LINK}
             />
           </View>
         )}
@@ -171,52 +178,53 @@ export const BookingCard = ({
       {hasActions ? (
         <View style={[styles.actions, compact && styles.actionsCompact]}>
           {canJoin && onPressJoin ? (
-            <TouchableOpacity
-              style={[styles.joinBtn, compact && styles.actionBtnCompact]}
+            <CosmicButton
+              label={compact ? 'Start' : isMentor ? 'Start' : 'Join'}
+              variant="success"
+              size="compact"
+              icon="videocam"
               onPress={onPressJoin}
-              activeOpacity={0.85}
-            >
-              <MaterialIcons name="videocam" size={20} color={T.accent.success} />
-              {compact ? (
-                <Text style={styles.joinBtnTextCompact}>Start</Text>
-              ) : (
-                <Text style={styles.joinBtnText}>{isMentor ? 'Start' : 'Join'}</Text>
-              )}
-            </TouchableOpacity>
+              style={[styles.joinBtn, compact && styles.actionBtnCompact]}
+            />
           ) : null}
           {canCancel && onPressCancel ? (
-            <TouchableOpacity
-              style={[styles.cancelBtn, compact && styles.actionBtnCompact]}
+            <CosmicButton
+              label={compact ? 'Cancel' : 'Cancel'}
+              variant="outline"
+              size="compact"
               onPress={onPressCancel}
-              activeOpacity={0.85}
-            >
-              <MaterialIcons name="close" size={18} color={T.text.secondary} />
-              {!compact ? <Text style={styles.cancelBtnText}>Cancel</Text> : null}
-            </TouchableOpacity>
+              style={[styles.cancelBtnOuter, compact && styles.actionBtnCompact]}
+            />
           ) : null}
           {canViewRecording ? (
-            <TouchableOpacity
-              style={[styles.recordingBtn, compact && styles.actionBtnCompact]}
+            <CosmicButton
+              label={compact ? 'Replay' : 'Replay'}
+              variant="info"
+              size="compact"
+              icon="play-circle-filled"
               onPress={onPressRecording}
-              activeOpacity={0.85}
-            >
-              <MaterialIcons name="play-circle-filled" size={20} color={T.accent.secondary} />
-              {compact ? (
-                <Text style={styles.recordingBtnTextCompact}>Replay</Text>
-              ) : (
-                <Text style={styles.recordingBtnText}>Replay</Text>
-              )}
-            </TouchableOpacity>
+              style={[styles.recordingBtnOuter, compact && styles.actionBtnCompact]}
+            />
+          ) : null}
+          {canDownloadRecording ? (
+            <CosmicButton
+              label={compact ? 'Save' : 'Download'}
+              variant="outline"
+              size="compact"
+              icon="file-download"
+              onPress={onPressDownload}
+              style={[styles.downloadBtnOuter, compact && styles.actionBtnCompact]}
+            />
           ) : null}
           {onPressRate ? (
-            <TouchableOpacity
-              style={[styles.rateBtn, compact && styles.actionBtnCompact]}
+            <CosmicButton
+              label={compact ? 'Rate' : 'Rate'}
+              variant="warning"
+              size="compact"
+              icon="star-outline"
               onPress={onPressRate}
-              activeOpacity={0.85}
-            >
-              <MaterialIcons name="star-outline" size={18} color={T.accent.warning} />
-              {!compact ? <Text style={styles.rateBtnText}>Rate</Text> : null}
-            </TouchableOpacity>
+              style={[styles.rateBtnOuter, compact && styles.actionBtnCompact]}
+            />
           ) : null}
         </View>
       ) : null}
@@ -226,15 +234,15 @@ export const BookingCard = ({
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: T.component.card,
-    borderRadius: UNIFIED_THEME.borderRadius.md,
+    backgroundColor: 'rgba(255,255,255,0.07)',
+    borderRadius: 16,
     padding: UNIFIED_THEME.spacing.md,
     borderWidth: 1,
-    borderColor: T.border.light,
+    borderColor: 'rgba(255,255,255,0.14)',
     borderLeftWidth: 3,
     ...Platform.select({
       ios: UNIFIED_THEME.shadows.small,
-      android: { elevation: 2 },
+      android: { elevation: 4 },
     }),
   },
   cardCompact: {
@@ -249,16 +257,16 @@ const styles = StyleSheet.create({
   avatar: {
     width: 52,
     height: 52,
-    borderRadius: UNIFIED_THEME.borderRadius.sm,
+    borderRadius: 26,
     borderWidth: 1,
-    borderColor: T.border.light,
+    borderColor: 'rgba(255,255,255,0.2)',
   },
   avatarCompact: {
     width: 44,
     height: 44,
   },
   avatarPlaceholder: {
-    backgroundColor: T.component.input,
+    backgroundColor: S.accentViolet,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -269,7 +277,7 @@ const styles = StyleSheet.create({
   name: {
     ...UNIFIED_THEME.typography.labelMd,
     color: T.text.primary,
-    fontWeight: '700',
+    fontWeight: '800',
     marginBottom: 4,
   },
   nameCompact: {
@@ -292,9 +300,9 @@ const styles = StyleSheet.create({
     gap: 4,
     paddingHorizontal: 8,
     paddingVertical: 5,
-    borderRadius: UNIFIED_THEME.borderRadius.round,
+    borderRadius: 999,
     borderWidth: 1,
-    backgroundColor: 'rgba(255,255,255,0.04)',
+    backgroundColor: 'rgba(255,255,255,0.06)',
     maxWidth: '36%',
   },
   statusText: {
@@ -312,7 +320,7 @@ const styles = StyleSheet.create({
     marginTop: UNIFIED_THEME.spacing.sm,
     paddingTop: UNIFIED_THEME.spacing.sm,
     borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: T.border.light,
+    borderTopColor: 'rgba(255,255,255,0.1)',
   },
   goalStripCompact: {
     marginTop: UNIFIED_THEME.spacing.xs,
@@ -340,83 +348,17 @@ const styles = StyleSheet.create({
   },
   joinBtn: {
     flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: UNIFIED_THEME.spacing.sm,
-    paddingVertical: UNIFIED_THEME.spacing.sm + 2,
-    paddingHorizontal: UNIFIED_THEME.spacing.md,
-    borderRadius: UNIFIED_THEME.borderRadius.sm,
-    backgroundColor: 'rgba(52, 211, 153, 0.12)',
-    borderWidth: 1,
-    borderColor: T.accent.success,
   },
-  joinBtnText: {
-    ...UNIFIED_THEME.typography.labelMd,
-    color: T.accent.success,
-    fontWeight: '800',
-  },
-  joinBtnTextCompact: {
-    ...UNIFIED_THEME.typography.labelSm,
-    color: T.accent.success,
-    fontWeight: '800',
-  },
-  recordingBtnTextCompact: {
-    ...UNIFIED_THEME.typography.labelSm,
-    color: T.accent.secondary,
-    fontWeight: '800',
-  },
-  cancelBtn: {
+  cancelBtnOuter: {
     flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
-    paddingVertical: UNIFIED_THEME.spacing.sm,
-    borderRadius: UNIFIED_THEME.borderRadius.sm,
-    borderWidth: 1,
-    borderColor: T.border.light,
-    backgroundColor: T.component.input,
   },
-  cancelBtnText: {
-    ...UNIFIED_THEME.typography.bodySm,
-    color: T.text.secondary,
-    fontWeight: '600',
-  },
-  recordingBtn: {
+  recordingBtnOuter: {
     flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: UNIFIED_THEME.spacing.sm,
-    paddingVertical: UNIFIED_THEME.spacing.sm + 2,
-    paddingHorizontal: UNIFIED_THEME.spacing.md,
-    borderRadius: UNIFIED_THEME.borderRadius.sm,
-    backgroundColor: 'rgba(94, 234, 212, 0.12)',
-    borderWidth: 1,
-    borderColor: T.accent.secondary,
   },
-  recordingBtnText: {
-    ...UNIFIED_THEME.typography.labelMd,
-    color: T.accent.secondary,
-    fontWeight: '800',
-  },
-  rateBtn: {
+  downloadBtnOuter: {
     flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: UNIFIED_THEME.borderRadius.sm,
-    backgroundColor: 'rgba(251,191,36,0.1)',
-    borderWidth: 1,
-    borderColor: UNIFIED_THEME.colors.accent.warning,
   },
-  rateBtnText: {
-    ...UNIFIED_THEME.typography.labelMd,
-    color: UNIFIED_THEME.colors.accent.warning,
-    fontWeight: '700',
+  rateBtnOuter: {
+    flex: 1,
   },
 });

@@ -4,6 +4,7 @@ import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import { UNIFIED_THEME } from '../unifiedTheme';
 import { formatPrice } from '../utils/formatCurrency';
 import { StarRating } from './StarRating';
+import CosmicButton from './CosmicButton';
 
 export const MentorCard = ({ mentor, onPress }) => {
   const avatarUrl = mentor.profiles?.avatar_url;
@@ -53,12 +54,13 @@ export const MentorCard = ({ mentor, onPress }) => {
           <MaterialIcons name="check-circle" size={14} color={UNIFIED_THEME.colors.success} />
           <Text style={styles.badgeText}>{mentor.total_sessions || 0} sessions</Text>
         </View>
-        <TouchableOpacity
-          style={styles.bookButton}
+        <CosmicButton
+          label="Book Now"
+          variant="primary"
+          size="compact"
           onPress={onPress}
-        >
-          <Text style={styles.bookButtonText}>Book Now</Text>
-        </TouchableOpacity>
+          style={styles.bookButton}
+        />
       </View>
     </TouchableOpacity>
   );
@@ -147,14 +149,8 @@ const styles = StyleSheet.create({
     marginLeft: 4,
   },
   bookButton: {
-    backgroundColor: UNIFIED_THEME.colors.accent.primary,
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 8,
-  },
-  bookButtonText: {
-    ...UNIFIED_THEME.typography.bodySm,
-    color: UNIFIED_THEME.colors.text.primary,
-    fontWeight: '600',
+    flexShrink: 0,
+    minWidth: 108,
+    maxWidth: 140,
   },
 });

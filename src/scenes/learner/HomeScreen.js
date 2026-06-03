@@ -23,7 +23,13 @@ import { useAuth } from '../../hooks/useAuth';
 import { SCREEN_NAMES } from '../../navigators/screenNames';
 
 const T = UNIFIED_THEME;
-const TB = T.colors.tabBar;
+const C = T.colors;
+const B = C.buttons;
+const S = C.surface;
+
+const PURPLE_LINK = B.nebulaGradient[0];
+const GOLD = C.accent.primary;
+const TEAL = C.accent.secondary;
 
 const CATEGORY_ICONS_FALLBACK = {
   technology:   'computer',
@@ -111,11 +117,11 @@ function HomeScreenSkeleton() {
 }
 
 const sk = StyleSheet.create({
-  bone: { backgroundColor: T.colors.border.default, borderRadius: T.borderRadius.lg },
+  bone: { backgroundColor: 'rgba(255,255,255,0.1)', borderRadius: T.borderRadius.lg },
   imageCard: {
     width: 120,
     height: 172,
-    borderRadius: T.borderRadius.lg,
+    borderRadius: 16,
   },
   section: { marginBottom: T.spacing.xxl },
   headerRow: {
@@ -232,7 +238,7 @@ export default function LearnerHomeScreen({ navigation }) {
             <MaterialIcons
               name={getCategoryIcon(category, categoryIconMap)}
               size={14}
-              color={T.colors.accent.secondary}
+              color={PURPLE_LINK}
             />
           </View>
           <Text style={styles.categoryTitle}>{category}</Text>
@@ -247,9 +253,9 @@ export default function LearnerHomeScreen({ navigation }) {
             style={styles.seeAllBtn}
             onPress={() => navigation.navigate(SCREEN_NAMES.CategoryMentors, { category })}
             activeOpacity={0.7}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
           >
-            <Text style={styles.seeAllTxt}>See all</Text>
-            <MaterialIcons name="chevron-right" size={13} color={T.colors.accent.secondary} />
+            <Text style={styles.seeAllTxt}>See all &gt;</Text>
           </TouchableOpacity>
         )}
         {isSearch && (
@@ -284,15 +290,39 @@ export default function LearnerHomeScreen({ navigation }) {
         <RefreshControl
           refreshing={refreshing}
           onRefresh={handleRefresh}
-          tintColor={T.colors.accent.secondary}
+          tintColor={TEAL}
         />
       }
     >
-
+      <View style={styles.discoverHero}>
+        <LinearGradient
+          colors={S.heroGradient}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={StyleSheet.absoluteFill}
+        />
+        <View style={styles.heroIconRing}>
+          <LinearGradient
+            colors={B.premiumGradient}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.heroIconRingGrad}
+          >
+            <View style={styles.heroIconInner}>
+              <MaterialIcons name="travel-explore" size={24} color={PURPLE_LINK} />
+            </View>
+          </LinearGradient>
+        </View>
+        <Text style={styles.heroEyebrow}>Discover</Text>
+        <Text style={styles.heroTitle}>Find your mentor</Text>
+        <Text style={styles.heroSubtitle}>
+          Search by name or browse experts by category.
+        </Text>
+      </View>
 
       <View style={styles.searchWrap}>
         <View style={styles.searchLabelRow}>
-          <MaterialIcons name="explore" size={15} color={T.colors.accent.secondary} />
+          <MaterialIcons name="explore" size={15} color={PURPLE_LINK} />
           <Text style={styles.searchLabel}>
             {isSearching
               ? 'Search results'
@@ -318,8 +348,8 @@ export default function LearnerHomeScreen({ navigation }) {
           </View>
         ) : (
           <View style={styles.emptyPanel}>
-            <View style={styles.emptyIconTile}>
-              <MaterialIcons name="travel-explore" size={30} color={T.colors.accent.secondary} />
+            <View style={styles.emptyIconRing}>
+              <MaterialIcons name="travel-explore" size={30} color={PURPLE_LINK} />
             </View>
             <Text style={styles.emptyTitle}>No mentors found</Text>
             <Text style={styles.emptySubtitle}>
@@ -335,8 +365,8 @@ export default function LearnerHomeScreen({ navigation }) {
         </View>
       ) : (
         <View style={styles.emptyPanel}>
-          <View style={styles.emptyIconTile}>
-            <MaterialIcons name="travel-explore" size={30} color={T.colors.accent.secondary} />
+          <View style={styles.emptyIconRing}>
+            <MaterialIcons name="travel-explore" size={30} color={PURPLE_LINK} />
           </View>
           <Text style={styles.emptyTitle}>No mentors available</Text>
           <Text style={styles.emptySubtitle}>
@@ -363,94 +393,53 @@ export default function LearnerHomeScreen({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-  hero: {
-    borderRadius: T.borderRadius.sm,
+  discoverHero: {
+    borderRadius: 16,
     overflow: 'hidden',
     padding: T.spacing.lg,
     marginBottom: T.spacing.md,
     borderWidth: 1,
-    borderColor: T.colors.border.light,
-    borderLeftWidth: 3,
-    borderLeftColor: T.colors.accent.secondary,
-    backgroundColor: T.colors.primary.dark,
-    ...Platform.select({
-      ios: T.shadows.small,
-      android: { elevation: 4 },
-    }),
+    borderColor: 'rgba(167,139,250,0.22)',
+    backgroundColor: 'rgba(255,255,255,0.07)',
+    alignItems: 'flex-start',
+    ...Platform.select({ ios: T.shadows.medium, android: { elevation: 6 } }),
   },
-  heroBeam: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    top: 0,
-    height: 2,
-    opacity: 0.9,
-    zIndex: 1,
+  heroIconRing: {
+    marginBottom: T.spacing.sm,
   },
-  heroTop: {
-    flexDirection: 'row',
-    justifyContent: 'flex-start',
-    marginBottom: T.spacing.md,
-    zIndex: 1,
-  },
-  heroBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    paddingHorizontal: T.spacing.sm + 2,
-    paddingVertical: 5,
-    borderRadius: T.borderRadius.sm,
-    backgroundColor: T.colors.component.input,
+  heroIconRingGrad: {
+    padding: 2,
+    borderRadius: 20,
     borderWidth: 1,
-    borderColor: T.colors.border.light,
+    borderColor: 'rgba(255,255,255,0.35)',
   },
-  heroBadgeText: {
-    ...T.typography.labelSm,
-    color: T.colors.text.secondary,
+  heroIconInner: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: C.primary.void,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  heroEyebrow: {
+    fontSize: 11,
     fontWeight: '700',
+    color: PURPLE_LINK,
+    letterSpacing: 0.8,
+    textTransform: 'uppercase',
+    marginBottom: 4,
   },
   heroTitle: {
-    ...T.typography.headingMd,
-    color: T.colors.text.primary,
+    fontSize: 20,
     fontWeight: '800',
-    marginBottom: T.spacing.sm,
-    zIndex: 1,
+    color: C.text.primary,
+    letterSpacing: -0.4,
+    marginBottom: T.spacing.xs,
   },
   heroSubtitle: {
-    ...T.typography.bodyMd,
-    color: T.colors.text.muted,
-    lineHeight: 22,
-    marginBottom: T.spacing.lg,
-    zIndex: 1,
-  },
-  heroStats: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderTopWidth: 1,
-    borderTopColor: T.colors.border.light,
-    paddingTop: T.spacing.md,
-    marginTop: -T.spacing.xs,
-    zIndex: 1,
-  },
-  heroStat: {
-    flex: 1,
-    alignItems: 'center',
-  },
-  heroStatDivider: {
-    width: StyleSheet.hairlineWidth,
-    height: 36,
-    backgroundColor: T.colors.border.light,
-    opacity: 0.7,
-  },
-  heroStatValue: {
-    ...T.typography.headingSm,
-    color: T.colors.accent.primary,
-    fontWeight: '800',
-  },
-  heroStatLabel: {
-    ...T.typography.labelSm,
-    color: T.colors.text.muted,
-    marginTop: 2,
+    fontSize: 13,
+    color: C.text.secondary,
+    lineHeight: 20,
   },
   searchWrap: {
     marginBottom: T.spacing.lg,
@@ -463,10 +452,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 2,
   },
   searchLabel: {
-    ...T.typography.labelSm,
-    color: T.colors.text.muted,
+    fontSize: 12,
+    color: C.text.muted,
     fontWeight: '600',
-    letterSpacing: 0.3,
+    letterSpacing: 0.2,
   },
   searchBarInner: {
     marginBottom: 0,
@@ -483,109 +472,108 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: T.spacing.md,
+    marginTop: T.spacing.xs,
+    marginBottom: 2,
   },
   categoryLabel: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: T.spacing.sm,
     flex: 1,
+    minWidth: 0,
   },
   categoryIconBox: {
     width: 26,
     height: 26,
-    borderRadius: 7,
-    backgroundColor: 'rgba(94, 234, 212, 0.12)',
+    borderRadius: 8,
+    backgroundColor: S.accentViolet,
     borderWidth: 1,
-    borderColor: 'rgba(94, 234, 212, 0.2)',
+    borderColor: 'rgba(167,139,250,0.35)',
     justifyContent: 'center',
     alignItems: 'center',
   },
   categoryTitle: {
-    ...T.typography.bodyMd,
-    color: T.colors.text.primary,
-    fontWeight: '700',
+    fontSize: 15,
+    color: C.text.primary,
+    fontWeight: '800',
+    flexShrink: 1,
   },
   countPill: {
-    paddingHorizontal: 7,
-    paddingVertical: 2,
-    borderRadius: 10,
-    backgroundColor: T.colors.component.input,
+    minWidth: 26,
+    height: 26,
+    paddingHorizontal: 8,
+    borderRadius: 999,
+    backgroundColor: S.accentViolet,
     borderWidth: 1,
-    borderColor: T.colors.border.light,
+    borderColor: 'rgba(167,139,250,0.35)',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   countPillTxt: {
-    ...T.typography.labelSm,
-    color: T.colors.text.muted,
-    fontWeight: '600',
     fontSize: 11,
+    color: PURPLE_LINK,
+    fontWeight: '800',
   },
   seeAllBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 2,
     paddingVertical: 4,
     paddingLeft: T.spacing.sm,
   },
   seeAllTxt: {
-    ...T.typography.labelSm,
-    color: T.colors.accent.secondary,
-    fontWeight: '600',
+    fontSize: 13,
+    color: PURPLE_LINK,
+    fontWeight: '700',
   },
   resultBadge: {
     paddingHorizontal: T.spacing.sm,
-    paddingVertical: 3,
-    borderRadius: T.borderRadius.sm,
-    backgroundColor: 'rgba(94, 234, 212, 0.12)',
+    paddingVertical: 4,
+    borderRadius: 999,
+    backgroundColor: S.accentTeal,
     borderWidth: 1,
-    borderColor: 'rgba(94, 234, 212, 0.2)',
+    borderColor: 'rgba(94,234,212,0.25)',
   },
   resultBadgeTxt: {
-    ...T.typography.labelSm,
-    color: T.colors.accent.secondary,
-    fontWeight: '700',
     fontSize: 11,
+    color: TEAL,
+    fontWeight: '700',
   },
 
   mentorsRow: {
-    paddingLeft: 2,
     paddingRight: T.spacing.lg,
+    paddingTop: 6,
     paddingBottom: T.spacing.sm,
-    gap: T.spacing.sm,
+    gap: 10,
   },
   emptyPanel: {
     alignItems: 'center',
     paddingVertical: T.spacing.xxxl,
     paddingHorizontal: T.spacing.lg,
     borderWidth: 1,
-    borderColor: T.colors.border.light,
-    borderRadius: T.borderRadius.sm,
-    backgroundColor: T.colors.component.card,
-    borderLeftWidth: 3,
-    borderLeftColor: T.colors.accent.secondary,
+    borderColor: 'rgba(167,139,250,0.22)',
+    borderRadius: 16,
+    backgroundColor: 'rgba(255,255,255,0.07)',
   },
-  emptyIconTile: {
-    width: 64,
-    height: 64,
-    borderRadius: T.borderRadius.sm,
-    backgroundColor: T.colors.component.input,
+  emptyIconRing: {
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    backgroundColor: S.accentViolet,
     borderWidth: 1,
-    borderColor: T.colors.border.light,
+    borderColor: 'rgba(167,139,250,0.35)',
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: T.spacing.lg,
   },
   emptyTitle: {
-    ...T.typography.headingSm,
-    color: T.colors.text.primary,
+    fontSize: 17,
+    fontWeight: '800',
+    color: C.text.primary,
     textAlign: 'center',
     marginBottom: T.spacing.sm,
-    fontWeight: '700',
   },
   emptySubtitle: {
-    ...T.typography.bodyMd,
-    color: T.colors.text.muted,
+    fontSize: 13,
+    color: C.text.muted,
     textAlign: 'center',
-    lineHeight: 22,
+    lineHeight: 20,
   },
 });

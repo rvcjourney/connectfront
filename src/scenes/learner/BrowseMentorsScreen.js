@@ -13,12 +13,47 @@ import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import { SafeScreen } from '../../components/SafeScreen';
 import { UNIFIED_THEME } from '../../unifiedTheme';
 import { LoadingOverlay } from '../../components/LoadingOverlay';
-import { SectionHeader } from '../../components/SectionHeader';
 import { LearnerMentorCard } from '../../components/LearnerMentorCard';
 import { mentorApi } from '../../api/mentorApi';
 import { SCREEN_NAMES } from '../../navigators/screenNames';
 
 const T = UNIFIED_THEME;
+const C = T.colors;
+const B = C.buttons;
+const S = C.surface;
+
+const PURPLE_LINK = B.nebulaGradient[0];
+const GOLD = C.accent.primary;
+const TEAL = C.accent.secondary;
+
+function SectionHeaderRow({ title, count }) {
+  return (
+    <View style={styles.secHdrRow}>
+      <Text style={styles.secHdrTitle}>{title}</Text>
+      {count != null ? (
+        <View style={styles.secHdrCount}>
+          <Text style={styles.secHdrCountText}>{count}</Text>
+        </View>
+      ) : null}
+    </View>
+  );
+}
+
+function StatSegment({ icon, iconColor, value, label }) {
+  return (
+    <View style={styles.statSeg}>
+      <Text style={styles.statValue} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.72}>
+        {value}
+      </Text>
+      <View style={styles.statLabelRow}>
+        <MaterialIcons name={icon} size={12} color={iconColor} />
+        <Text style={styles.statLabel} numberOfLines={1}>
+          {label}
+        </Text>
+      </View>
+    </View>
+  );
+}
 
 export default function BrowseMentorsScreen({ navigation }) {
   const [mentorsByCategory, setMentorsByCategory] = useState({});
@@ -49,10 +84,7 @@ export default function BrowseMentorsScreen({ navigation }) {
   };
 
   const handleMentorPress = mentor => {
-    navigation.navigate(SCREEN_NAMES.Mentor
-      
-      
-      , {
+    navigation.navigate(SCREEN_NAMES.MentorProfile, {
       mentorId: mentor.id,
     });
   };
@@ -66,7 +98,7 @@ export default function BrowseMentorsScreen({ navigation }) {
 
   const renderCategorySection = (category, mentors) => (
     <View key={category} style={styles.section}>
-      <SectionHeader title={category} subtitle="Tap a card to view full profile" count={mentors.length} />
+      <SectionHeaderRow title={category} count={mentors.length} />
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
@@ -94,30 +126,29 @@ export default function BrowseMentorsScreen({ navigation }) {
         <RefreshControl
           refreshing={refreshing}
           onRefresh={handleRefresh}
-          tintColor={T.colors.accent.secondary}
+          tintColor={TEAL}
         />
       }
     >
       <View style={styles.hero}>
         <LinearGradient
-          colors={T.colors.tabBar.flatBarEdge}
-          locations={[0, 0.4, 0.7, 1]}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 0 }}
-          style={styles.heroBeam}
-          pointerEvents="none"
-        />
-        <LinearGradient
-          colors={[
-            'rgba(167, 139, 250, 0.2)',
-            'rgba(94, 234, 212, 0.1)',
-            'rgba(2, 0, 20, 0.45)',
-          ]}
+          colors={S.heroGradient}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
           style={StyleSheet.absoluteFill}
         />
-        <View style={styles.heroRim} pointerEvents="none" />
+        <View style={styles.heroIconRing}>
+          <LinearGradient
+            colors={B.premiumGradient}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.heroIconRingGrad}
+          >
+            <View style={styles.heroIconInner}>
+              <MaterialIcons name="travel-explore" size={28} color={PURPLE_LINK} />
+            </View>
+          </LinearGradient>
+        </View>
         <Text style={styles.heroEyebrow}>Browse</Text>
         <Text style={styles.heroTitle}>Discover mentors</Text>
         <Text style={styles.heroSubtitle}>
@@ -125,30 +156,37 @@ export default function BrowseMentorsScreen({ navigation }) {
         </Text>
         <View style={styles.heroChipRow}>
           <View style={styles.heroChip}>
-            <MaterialIcons name="verified" size={13} color={T.colors.accent.secondary} />
+            <MaterialIcons name="verified" size={13} color={TEAL} />
             <Text style={styles.heroChipText}>Verified profiles</Text>
           </View>
-          <View style={styles.heroChip}>
-            <MaterialIcons name="bolt" size={13} color={T.colors.accent.primary} />
+          <View style={[styles.heroChip, styles.heroChipAccent]}>
+            <MaterialIcons name="bolt" size={13} color={GOLD} />
             <Text style={styles.heroChipText}>Quick booking</Text>
           </View>
         </View>
-        <View style={styles.heroStats}>
-          <View style={styles.heroStat}>
-            <Text style={styles.heroStatValue}>{categories.length}</Text>
-            <Text style={styles.heroStatLabel}>Categories</Text>
-          </View>
-          <View style={styles.heroStatDivider} />
-          <View style={styles.heroStat}>
-            <Text style={styles.heroStatValue}>{totalMentors}</Text>
-            <Text style={styles.heroStatLabel}>Mentors</Text>
-          </View>
-          <View style={styles.heroStatDivider} />
-          <View style={styles.heroStat}>
-            <Text style={styles.heroStatValue}>{featuredCount}</Text>
-            <Text style={styles.heroStatLabel}>Active groups</Text>
-          </View>
-        </View>
+      </View>
+
+      <View style={styles.statsBar}>
+        <StatSegment
+          icon="category"
+          iconColor="#e879f9"
+          value={String(categories.length)}
+          label="Categories"
+        />
+        <View style={styles.statDivider} />
+        <StatSegment
+          icon="groups"
+          iconColor={PURPLE_LINK}
+          value={String(totalMentors)}
+          label="Mentors"
+        />
+        <View style={styles.statDivider} />
+        <StatSegment
+          icon="auto-awesome"
+          iconColor={TEAL}
+          value={String(featuredCount)}
+          label="Active"
+        />
       </View>
 
       {categories.length > 0 ? (
@@ -160,8 +198,8 @@ export default function BrowseMentorsScreen({ navigation }) {
       ) : (
         !loading && (
           <View style={styles.emptyWrap}>
-            <View style={styles.emptyIconCircle}>
-              <MaterialIcons name="groups" size={36} color={T.colors.accent.secondary} />
+            <View style={styles.emptyIconRing}>
+              <MaterialIcons name="groups" size={36} color={PURPLE_LINK} />
             </View>
             <Text style={styles.emptyTitle}>No mentors available</Text>
             <Text style={styles.emptySubtitle}>Check back soon for new experts.</Text>
@@ -179,143 +217,197 @@ export default function BrowseMentorsScreen({ navigation }) {
 
 const styles = StyleSheet.create({
   hero: {
-    borderRadius: T.borderRadius.xl,
+    borderRadius: 16,
     overflow: 'hidden',
     padding: T.spacing.lg,
-    marginBottom: T.spacing.lg,
+    marginBottom: T.spacing.md,
     borderWidth: 1,
-    borderColor: T.colors.border.light,
-    backgroundColor: T.colors.primary.dark,
-    ...Platform.select({
-      ios: T.shadows.medium,
-      android: { elevation: 6 },
-    }),
+    borderColor: 'rgba(167,139,250,0.22)',
+    backgroundColor: 'rgba(255,255,255,0.07)',
+    alignItems: 'flex-start',
+    ...Platform.select({ ios: T.shadows.medium, android: { elevation: 6 } }),
   },
-  heroRim: {
-    ...StyleSheet.absoluteFillObject,
-    borderRadius: T.borderRadius.xl,
-    borderWidth: 1,
-    borderColor: T.colors.tabBar.rimBorder,
-    margin: 1,
-  },
-  heroBeam: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    top: 0,
-    height: 2,
-    opacity: 0.9,
-    zIndex: 1,
-  },
-  heroEyebrow: {
-    ...T.typography.labelSm,
-    color: T.colors.accent.secondary,
-    letterSpacing: 1.2,
-    textTransform: 'uppercase',
-    marginBottom: T.spacing.xs,
-    zIndex: 1,
-  },
-  heroTitle: {
-    ...T.typography.headingMd,
-    color: T.colors.text.primary,
+  heroIconRing: {
     marginBottom: T.spacing.sm,
   },
+  heroIconRingGrad: {
+    padding: 2,
+    borderRadius: 22,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.35)',
+  },
+  heroIconInner: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: C.primary.void,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  heroEyebrow: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: PURPLE_LINK,
+    letterSpacing: 0.8,
+    textTransform: 'uppercase',
+    marginBottom: 4,
+  },
+  heroTitle: {
+    fontSize: 22,
+    fontWeight: '800',
+    color: C.text.primary,
+    letterSpacing: -0.4,
+    marginBottom: T.spacing.xs,
+  },
   heroSubtitle: {
-    ...T.typography.bodyMd,
-    color: T.colors.text.muted,
-    lineHeight: 22,
-    marginBottom: T.spacing.lg,
+    fontSize: 13,
+    color: C.text.secondary,
+    lineHeight: 20,
+    marginBottom: T.spacing.md,
   },
   heroChipRow: {
     flexDirection: 'row',
-    gap: T.spacing.sm,
-    marginBottom: T.spacing.md,
+    gap: T.spacing.xs,
     flexWrap: 'wrap',
   },
   heroChip: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
+    paddingVertical: 4,
     paddingHorizontal: T.spacing.sm,
-    paddingVertical: 6,
-    borderRadius: T.borderRadius.round,
+    borderRadius: 999,
+    backgroundColor: 'rgba(255,255,255,0.08)',
     borderWidth: 1,
-    borderColor: T.colors.border.light,
-    backgroundColor: 'rgba(255,255,255,0.06)',
+    borderColor: 'rgba(255,255,255,0.1)',
+  },
+  heroChipAccent: {
+    backgroundColor: S.accentGold,
+    borderColor: 'rgba(240,216,117,0.25)',
   },
   heroChipText: {
-    ...T.typography.labelSm,
-    color: T.colors.text.secondary,
+    color: C.text.primary,
+    fontSize: 10,
     fontWeight: '700',
   },
-  heroStats: {
+
+  statsBar: {
+    flexDirection: 'row',
+    alignItems: 'stretch',
+    marginBottom: T.spacing.lg,
+    paddingVertical: 11,
+    paddingHorizontal: 4,
+    borderRadius: 14,
+    backgroundColor: 'rgba(255,255,255,0.07)',
+    borderWidth: 1,
+    borderColor: 'rgba(167,139,250,0.22)',
+  },
+  statSeg: {
+    flex: 1,
+    minWidth: 0,
+    alignItems: 'center',
+    paddingHorizontal: 2,
+  },
+  statValue: {
+    fontSize: 17,
+    fontWeight: '800',
+    color: C.text.primary,
+    letterSpacing: -0.4,
+    textAlign: 'center',
+    ...Platform.select({ android: { includeFontPadding: false } }),
+  },
+  statLabelRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(2, 0, 20, 0.45)',
-    borderRadius: T.borderRadius.lg,
-    paddingVertical: T.spacing.md,
-    paddingHorizontal: T.spacing.lg,
-    borderWidth: 1,
-    borderColor: T.colors.border.light,
+    justifyContent: 'center',
+    gap: 4,
+    marginTop: 5,
   },
-  heroStat: {
-    flex: 1,
-    alignItems: 'center',
+  statLabel: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: C.text.muted,
   },
-  heroStatDivider: {
+  statDivider: {
     width: 1,
-    height: 36,
-    backgroundColor: T.colors.border.light,
-    opacity: 0.6,
+    backgroundColor: 'rgba(255,255,255,0.14)',
+    marginVertical: 6,
+    alignSelf: 'stretch',
   },
-  heroStatValue: {
-    ...T.typography.headingSm,
-    color: T.colors.accent.primary,
-    fontWeight: '800',
-  },
-  heroStatLabel: {
-    ...T.typography.labelSm,
-    color: T.colors.text.muted,
-    marginTop: 2,
-  },
+
   content: {
     flex: 1,
   },
   section: {
     marginBottom: T.spacing.sm,
   },
-  mentorsRow: {
-    paddingRight: T.spacing.lg,
-    paddingBottom: T.spacing.xs,
+  secHdrRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: T.spacing.xs,
+    marginBottom: 2,
   },
+  secHdrTitle: {
+    fontSize: 15,
+    fontWeight: '800',
+    color: C.text.primary,
+    flex: 1,
+    minWidth: 0,
+  },
+  secHdrCount: {
+    minWidth: 26,
+    height: 26,
+    paddingHorizontal: 8,
+    borderRadius: 999,
+    backgroundColor: S.accentViolet,
+    borderWidth: 1,
+    borderColor: 'rgba(167,139,250,0.35)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  secHdrCountText: {
+    fontSize: 11,
+    fontWeight: '800',
+    color: PURPLE_LINK,
+  },
+  mentorsRow: {
+    gap: 10,
+    paddingRight: T.spacing.lg,
+    paddingTop: 6,
+    paddingBottom: T.spacing.sm,
+  },
+
   emptyWrap: {
     alignItems: 'center',
     paddingVertical: T.spacing.xxxl,
     paddingHorizontal: T.spacing.lg,
     borderWidth: 1,
-    borderColor: T.colors.border.light,
-    borderRadius: T.borderRadius.lg,
-    backgroundColor: T.colors.component.card,
+    borderColor: 'rgba(167,139,250,0.22)',
+    borderRadius: 16,
+    backgroundColor: 'rgba(255,255,255,0.07)',
   },
-  emptyIconCircle: {
+  emptyIconRing: {
     width: 88,
     height: 88,
     borderRadius: 44,
-    backgroundColor: T.colors.component.card,
+    backgroundColor: S.accentViolet,
     borderWidth: 1,
-    borderColor: T.colors.border.light,
+    borderColor: 'rgba(167,139,250,0.35)',
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: T.spacing.lg,
   },
   emptyTitle: {
-    ...T.typography.headingSm,
-    color: T.colors.text.primary,
+    fontSize: 17,
+    fontWeight: '800',
+    color: C.text.primary,
     marginBottom: T.spacing.sm,
   },
   emptySubtitle: {
-    ...T.typography.bodyMd,
-    color: T.colors.text.muted,
+    fontSize: 13,
+    color: C.text.muted,
     textAlign: 'center',
+    lineHeight: 20,
   },
 });

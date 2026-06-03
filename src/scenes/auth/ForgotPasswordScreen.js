@@ -191,6 +191,7 @@ export default function ForgotPasswordScreen({ navigation }) {
               </View>
               <Button
                 text={loading ? 'Sending Code...' : 'Send Code'}
+                variant="primary"
                 onPress={handleSendOtp}
                 disabled={loading}
                 loading={loading}
@@ -218,6 +219,7 @@ export default function ForgotPasswordScreen({ navigation }) {
 
               <Button
                 text={loading ? 'Verifying...' : 'Verify Code'}
+                variant="primary"
                 onPress={handleVerifyOtp}
                 disabled={loading}
                 loading={loading}
@@ -298,6 +300,7 @@ export default function ForgotPasswordScreen({ navigation }) {
 
               <Button
                 text={loading ? 'Saving...' : 'Save Password'}
+                variant="primary"
                 onPress={handleSavePassword}
                 disabled={loading || password !== confirmPassword || password.length < 6}
                 loading={loading}

@@ -22,6 +22,7 @@ import { useAuth } from '../../hooks/useAuth';
 import { SCREEN_NAMES } from '../../navigators/screenNames';
 
 const T = UNIFIED_THEME;
+const B = T.colors.buttons;
 const MIN_WITHDRAWAL = 5000;
 
 const fmt = (n) =>
@@ -199,8 +200,8 @@ export default function WalletScreen({ navigation }) {
               colors={['rgba(167,139,250,0.12)', 'rgba(167,139,250,0.04)']}
               style={StyleSheet.absoluteFill}
             />
-            <MaterialIcons name="arrow-circle-up" size={22} color={T.colors.component.button} />
-            <Text style={[styles.statVal, { color: T.colors.component.button }]}>{fmt(wallet.total_withdrawn)}</Text>
+            <MaterialIcons name="arrow-circle-up" size={22} color={T.colors.accent.secondary} />
+            <Text style={[styles.statVal, { color: T.colors.accent.secondary }]}>{fmt(wallet.total_withdrawn)}</Text>
             <Text style={styles.statLbl}>Withdrawn</Text>
           </View>
         </View>
@@ -244,7 +245,7 @@ export default function WalletScreen({ navigation }) {
           >
             <LinearGradient
               colors={canWithdraw
-                ? [T.colors.accent.secondary, T.colors.component.button]
+                ? B.nebulaGradient
                 : ['rgba(255,255,255,0.06)', 'rgba(255,255,255,0.04)']}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 0 }}

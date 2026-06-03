@@ -50,7 +50,7 @@ const styles = StyleSheet.create({
     lineHeight: 18,
   },
   countBadge: {
-    backgroundColor: UNIFIED_THEME.colors.component.buttonSecondary,
+    backgroundColor: UNIFIED_THEME.colors.buttons.secondaryBg,
     borderRadius: UNIFIED_THEME.borderRadius.round,
     minWidth: 28,
     height: 28,

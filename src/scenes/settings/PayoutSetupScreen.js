@@ -15,6 +15,7 @@ import Toast from 'react-native-simple-toast';
 import { useFocusEffect } from '@react-navigation/native';
 import { SafeScreen } from '../../components/SafeScreen';
 import { LoadingOverlay } from '../../components/LoadingOverlay';
+import Button from '../../components/Button';
 import { UNIFIED_THEME } from '../../unifiedTheme';
 import { payoutApi } from '../../api/payoutApi';
 import { useAuth } from '../../hooks/useAuth';
@@ -207,16 +208,13 @@ export default function PayoutSetupScreen({ navigation }) {
             )}
 
             {status !== 'active' && kycUrl && accountId && (
-              <TouchableOpacity style={s.kycBtn} onPress={handleOpenKyc} activeOpacity={0.85}>
-                <LinearGradient
-                  colors={[T.colors.accent.warning, '#d97706']}
-                  start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
-                  style={s.kycBtnGrad}
-                >
-                  <MaterialIcons name="open-in-browser" size={18} color="#000" />
-                  <Text style={s.kycBtnText}>Complete KYC on Razorpay</Text>
-                </LinearGradient>
-              </TouchableOpacity>
+              <Button
+                text="Complete KYC on Razorpay"
+                icon="open-in-browser"
+                variant="warning"
+                onPress={handleOpenKyc}
+                style={s.kycBtnThemed}
+              />
             )}
           </View>
         )}
@@ -273,23 +271,15 @@ export default function PayoutSetupScreen({ navigation }) {
               After setup, you'll be taken to Razorpay to complete a quick KYC verification.
             </Text>
 
-            <TouchableOpacity
-              style={[s.setupBtn, submitting && { opacity: 0.5 }]}
+            <Button
+              text={submitting ? 'Setting up…' : 'Create Payout Account'}
+              icon="account-balance"
+              variant="primary"
               onPress={handleSetup}
               disabled={submitting}
-              activeOpacity={0.85}
-            >
-              <LinearGradient
-                colors={[T.colors.accent.secondary, T.colors.component.button]}
-                start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
-                style={s.setupBtnGrad}
-              >
-                <MaterialIcons name="account-balance" size={18} color="#000" />
-                <Text style={s.setupBtnText}>
-                  {submitting ? 'Setting up…' : 'Create Payout Account'}
-                </Text>
-              </LinearGradient>
-            </TouchableOpacity>
+              loading={submitting}
+              style={s.setupBtnThemed}
+            />
           </View>
         )}
       </ScrollView>
@@ -385,12 +375,7 @@ const s = StyleSheet.create({
   },
   activeNoticeText: { ...T.typography.bodySm, color: T.colors.accent.success, flex: 1, lineHeight: 18 },
 
-  kycBtn: { borderRadius: T.borderRadius.md, overflow: 'hidden', marginTop: T.spacing.xs },
-  kycBtnGrad: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
-    gap: T.spacing.sm, paddingVertical: T.spacing.md,
-  },
-  kycBtnText: { ...T.typography.labelLg, color: '#000', fontWeight: '700' },
+  kycBtnThemed: { marginVertical: 0, marginTop: T.spacing.xs },
 
   fieldLabel: { ...T.typography.labelMd, color: T.colors.text.secondary, marginBottom: 2 },
   fieldHint:  { ...T.typography.bodySm, color: T.colors.text.muted, lineHeight: 18, marginTop: T.spacing.xs },
@@ -408,10 +393,5 @@ const s = StyleSheet.create({
     color: T.colors.text.primary, ...T.typography.bodyMd,
   },
 
-  setupBtn: { borderRadius: T.borderRadius.md, overflow: 'hidden', marginTop: T.spacing.sm },
-  setupBtnGrad: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
-    gap: T.spacing.sm, paddingVertical: T.spacing.md,
-  },
-  setupBtnText: { ...T.typography.labelLg, color: '#000', fontWeight: '700' },
+  setupBtnThemed: { marginVertical: 0, marginTop: T.spacing.sm },
 });

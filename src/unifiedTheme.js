@@ -102,10 +102,101 @@ export const UNIFIED_THEME = {
     component: {
       card: 'rgba(255, 255, 255, 0.04)',
       input: 'rgba(255, 255, 255, 0.032)',
-      button: '#a78bfa',
-      buttonSecondary: 'rgba(167, 139, 250, 0.16)',
+      /** @deprecated prefer colors.buttons — kept for legacy backgroundColor overrides */
+      button: '#7c3aed',
+      buttonSecondary: 'rgba(167, 139, 250, 0.18)',
       overlay: 'rgba(0, 0, 6, 0.92)',
-      disabled: 'rgba(255, 255, 255, 0.025)',
+      disabled: 'rgba(255, 255, 255, 0.04)',
+    },
+
+    /** Cosmic button variants — use with <Button variant="primary" /> */
+    buttons: {
+      primaryGradient: ['#f0d875', '#5eead4'],
+      primaryText: '#060412',
+      primaryBorder: 'rgba(240, 216, 117, 0.35)',
+      primaryShadow: 'rgba(94, 234, 212, 0.35)',
+
+      secondaryBg: 'rgba(167, 139, 250, 0.18)',
+      secondaryText: '#c4b5fd',
+      secondaryBorder: 'rgba(167, 139, 250, 0.28)',
+      secondaryPressed: 'rgba(124, 58, 237, 0.28)',
+
+      outlineText: '#5eead4',
+      outlineBorder: 'rgba(94, 234, 212, 0.45)',
+      outlinePressedBg: 'rgba(94, 234, 212, 0.1)',
+
+      successGradient: ['#34d399', '#5eead4'],
+      successText: '#060412',
+      successBorder: 'rgba(52, 211, 153, 0.35)',
+
+      dangerBg: 'rgba(248, 113, 113, 0.15)',
+      dangerText: '#fca5a5',
+      dangerBorder: 'rgba(248, 113, 113, 0.4)',
+      dangerSolid: '#ef4444',
+      dangerSolidText: '#ffffff',
+
+      nebulaGradient: ['#a78bfa', '#5eead4'],
+      nebulaText: '#060412',
+      nebulaBorder: 'rgba(167, 139, 250, 0.4)',
+
+      premiumGradient: ['#7c3aed', '#f0d875'],
+      premiumText: '#f0f0fc',
+      premiumBorder: 'rgba(240, 216, 117, 0.35)',
+
+      infoGradient: ['#38bdf8', '#5eead4'],
+      infoText: '#060412',
+      infoBorder: 'rgba(56, 189, 248, 0.4)',
+
+      warningBg: 'rgba(251, 191, 36, 0.15)',
+      warningText: '#fcd34d',
+      warningBorder: 'rgba(251, 191, 36, 0.4)',
+      warningGradient: ['#fbbf24', '#f0d875'],
+      warningGradientText: '#060412',
+
+      goldOutlineText: '#f0d875',
+      goldOutlineBorder: 'rgba(240, 216, 117, 0.4)',
+      goldOutlinePressedBg: 'rgba(240, 216, 117, 0.08)',
+
+      disabledText: '#545470',
+      disabledBorder: 'rgba(167, 139, 250, 0.12)',
+    },
+
+    /** Reusable translucent surfaces (cards, chips, section accents) */
+    surface: {
+      chip: 'rgba(255, 255, 255, 0.05)',
+      chipStrong: 'rgba(255, 255, 255, 0.06)',
+      heroGradient: [
+        'rgba(124, 58, 237, 0.35)',
+        'rgba(94, 234, 212, 0.15)',
+        'rgba(0, 0, 8, 0.85)',
+      ],
+      previewGradient: ['rgba(124, 58, 237, 0.2)', 'rgba(94, 234, 212, 0.08)'],
+      checkoutBar: 'rgba(0, 0, 8, 0.98)',
+      accentGold: 'rgba(240, 216, 117, 0.12)',
+      accentTeal: 'rgba(94, 234, 212, 0.1)',
+      accentViolet: 'rgba(167, 139, 250, 0.12)',
+      accentSuccess: 'rgba(52, 211, 153, 0.15)',
+      accentWarning: 'rgba(251, 191, 36, 0.12)',
+      dayAvailableBorder: 'rgba(94, 234, 212, 0.25)',
+      slotDot: 'rgba(94, 234, 212, 0.2)',
+      slotDotSelected: 'rgba(6, 4, 18, 0.35)',
+      promptChip: 'rgba(240, 216, 117, 0.1)',
+    },
+
+    /**
+     * Legacy meeting UI scale — maps old colors.primary[n] to cosmic tokens.
+     * Prefer UNIFIED_THEME.colors directly in new code.
+     */
+    meeting: {
+      100: '#f0f0fc',
+      200: '#b8b8d4',
+      400: '#8888a8',
+      500: '#545470',
+      600: 'rgba(255, 255, 255, 0.04)',
+      700: 'rgba(255, 255, 255, 0.032)',
+      800: '#02010c',
+      900: '#000008',
+      accent: '#a78bfa',
     },
 
     border: {

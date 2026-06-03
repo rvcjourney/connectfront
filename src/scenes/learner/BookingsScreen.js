@@ -16,13 +16,13 @@ import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import { SafeScreen } from '../../components/SafeScreen';
 import { UNIFIED_THEME } from '../../unifiedTheme';
 import { BookingCard } from '../../components/BookingCard';
-import { SectionHeader } from '../../components/SectionHeader';
 import { useAuth } from '../../hooks/useAuth';
 import { bookingApi } from '../../api/bookingApi';
 import { playbackUrlFromBooking } from '../../api/recordingsApi';
 import { reviewsApi } from '../../api/reviewsApi';
 import { normalizeRecordingUrl } from '../../api/api';
 import { SCREEN_NAMES } from '../../navigators/screenNames';
+import { saveRecordingToGallery } from '../../utils/recordingActions';
 
 // ─── Skeleton ─────────────────────────────────────────────────────────────────
 function SkeletonBone({ style }) {
@@ -84,7 +84,7 @@ function BookingsSkeleton() {
 
 const sk = StyleSheet.create({
   bone: {
-    backgroundColor: UNIFIED_THEME.colors.border.default,
+    backgroundColor: 'rgba(255,255,255,0.1)',
     borderRadius: UNIFIED_THEME.borderRadius.md,
   },
   wrap: {
@@ -101,10 +101,10 @@ const sk = StyleSheet.create({
   sectionTitle: { height: 14, width: 140, borderRadius: 6 },
   sectionCount: { height: 22, width: 28, borderRadius: 8 },
   card: {
-    backgroundColor: UNIFIED_THEME.colors.component.card,
-    borderRadius: UNIFIED_THEME.borderRadius.lg,
+    backgroundColor: 'rgba(255,255,255,0.07)',
+    borderRadius: 16,
     borderWidth: 1,
-    borderColor: UNIFIED_THEME.colors.border.light,
+    borderColor: 'rgba(255,255,255,0.14)',
     padding: UNIFIED_THEME.spacing.md,
     gap: UNIFIED_THEME.spacing.md,
   },
@@ -130,7 +130,57 @@ const sk = StyleSheet.create({
 });
 
 const T = UNIFIED_THEME;
+const C = T.colors;
+const B = C.buttons;
+const S = C.surface;
+
+const PURPLE_LINK = B.nebulaGradient[0];
+const TEAL = C.accent.secondary;
+
 const PAGE_SIZE = 6;
+
+function SectionHeaderRow({ title, count }) {
+  return (
+    <View style={styles.secHdrRow}>
+      <Text style={styles.secHdrTitle}>{title}</Text>
+      {count != null ? (
+        <View style={styles.secHdrCount}>
+          <Text style={styles.secHdrCountText}>{count}</Text>
+        </View>
+      ) : null}
+    </View>
+  );
+}
+
+function BookingsHero() {
+  return (
+    <View style={styles.hero}>
+      <LinearGradient
+        colors={S.heroGradient}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={StyleSheet.absoluteFill}
+      />
+      <View style={styles.heroIconRing}>
+        <LinearGradient
+          colors={B.premiumGradient}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.heroIconRingGrad}
+        >
+          <View style={styles.heroIconInner}>
+            <MaterialIcons name="event-note" size={24} color={PURPLE_LINK} />
+          </View>
+        </LinearGradient>
+      </View>
+      <Text style={styles.heroEyebrow}>Sessions</Text>
+      <Text style={styles.heroTitle}>My bookings</Text>
+      <Text style={styles.heroSubtitle}>
+        Join calls on time and review your session history here.
+      </Text>
+    </View>
+  );
+}
 
 export default function LearnerBookingsScreen({ navigation }) {
   const { profile } = useAuth();
@@ -282,6 +332,15 @@ export default function LearnerBookingsScreen({ navigation }) {
     navigation.navigate(SCREEN_NAMES.RecordingPlayer, { recordingUrl: url });
   };
 
+  const handleDownloadRecording = rawUrl => {
+    const url = normalizeRecordingUrl(rawUrl);
+    if (!url) {
+      Toast.show('Recording link is unavailable');
+      return;
+    }
+    saveRecordingToGallery(url);
+  };
+
   const renderBooking = (item, isUpcoming) => {
     let statusLabel;
     if (item.isExpired) {
@@ -306,6 +365,9 @@ export default function LearnerBookingsScreen({ navigation }) {
         onPressJoin={isUpcoming ? () => handleJoinCall(item) : null}
         onPressCancel={isUpcoming ? () => handleCancelBooking(item) : null}
         onPressRecording={item.recordingUrl ? () => handleOpenRecording(item.recordingUrl) : null}
+        onPressDownload={
+          item.recordingUrl ? () => handleDownloadRecording(item.recordingUrl) : null
+        }
         onPressRate={
           canRate
             ? () => navigation.navigate(SCREEN_NAMES.Review, {
@@ -360,36 +422,19 @@ export default function LearnerBookingsScreen({ navigation }) {
   const renderItem = ({ item }) => {
     switch (item.type) {
       case 'hero':
-        return (
-          <View style={styles.hero}>
-            <LinearGradient
-              colors={['rgba(94, 234, 212, 0.14)', 'rgba(167, 139, 250, 0.12)', 'rgba(2, 0, 20, 0.5)']}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={StyleSheet.absoluteFill}
-            />
-            <View style={styles.heroRim} pointerEvents="none" />
-            <View style={styles.heroIconRow}>
-              <MaterialIcons name="menu-book" size={22} color={T.colors.accent.secondary} />
-            </View>
-            <Text style={styles.heroTitle}>My bookings</Text>
-            <Text style={styles.heroSubtitle}>
-              Join calls on time, and review your session history here.
-            </Text>
-          </View>
-        );
+        return <BookingsHero />;
 
       case 'section_header':
         return (
           <View style={styles.sectionTop}>
-            <SectionHeader title={item.title} subtitle={item.subtitle} count={item.count} />
+            <SectionHeaderRow title={item.title} count={item.count} />
           </View>
         );
 
       case 'empty_section':
         return (
           <View style={[styles.placeholderCard, styles.sectionItem]}>
-            <MaterialIcons name={item.icon} size={22} color={T.colors.text.muted} />
+            <MaterialIcons name={item.icon} size={22} color={PURPLE_LINK} />
             <Text style={styles.placeholderText}>{item.text}</Text>
           </View>
         );
@@ -404,7 +449,7 @@ export default function LearnerBookingsScreen({ navigation }) {
       case 'load_more_upcoming':
         return (
           <TouchableOpacity style={styles.loadMoreBtn} onPress={loadMoreUpcoming} activeOpacity={0.7}>
-            <MaterialIcons name="expand-more" size={20} color={T.colors.accent.secondary} />
+            <MaterialIcons name="expand-more" size={20} color={PURPLE_LINK} />
             <Text style={styles.loadMoreTxt}>Load more upcoming</Text>
           </TouchableOpacity>
         );
@@ -413,10 +458,10 @@ export default function LearnerBookingsScreen({ navigation }) {
         return (
           <TouchableOpacity style={styles.loadMoreBtn} onPress={loadMoreHistory} activeOpacity={0.7}>
             {loadingMore ? (
-              <ActivityIndicator size="small" color={T.colors.accent.secondary} />
+              <ActivityIndicator size="small" color={TEAL} />
             ) : (
               <>
-                <MaterialIcons name="expand-more" size={20} color={T.colors.accent.secondary} />
+                <MaterialIcons name="expand-more" size={20} color={PURPLE_LINK} />
                 <Text style={styles.loadMoreTxt}>Load more history</Text>
               </>
             )}
@@ -426,12 +471,12 @@ export default function LearnerBookingsScreen({ navigation }) {
       case 'empty':
         return (
           <View style={styles.emptyWrap}>
-            <View style={styles.emptyIconCircle}>
-              <MaterialIcons name="calendar-month" size={40} color={T.colors.accent.primary} />
+            <View style={styles.emptyIconRing}>
+              <MaterialIcons name="calendar-month" size={40} color={PURPLE_LINK} />
             </View>
             <Text style={styles.emptyTitle}>No bookings yet</Text>
             <Text style={styles.emptySubtitle}>
-              Browse mentors from Search and book your first session.
+              Browse mentors from Discover and book your first session.
             </Text>
           </View>
         );
@@ -441,24 +486,7 @@ export default function LearnerBookingsScreen({ navigation }) {
     }
   };
 
-  const HeroCard = (
-    <View style={styles.hero}>
-      <LinearGradient
-        colors={['rgba(94, 234, 212, 0.14)', 'rgba(167, 139, 250, 0.12)', 'rgba(2, 0, 20, 0.5)']}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={StyleSheet.absoluteFill}
-      />
-      <View style={styles.heroRim} pointerEvents="none" />
-      <View style={styles.heroIconRow}>
-        <MaterialIcons name="menu-book" size={22} color={T.colors.accent.secondary} />
-      </View>
-      <Text style={styles.heroTitle}>My bookings</Text>
-      <Text style={styles.heroSubtitle}>
-        Join calls on time, and review your session history here.
-      </Text>
-    </View>
-  );
+  const HeroCard = <BookingsHero />;
 
   return (
     <SafeScreen scrollable={false} padding={0} hasBottomTabs={false} includeTopInset={false}>
@@ -479,7 +507,7 @@ export default function LearnerBookingsScreen({ navigation }) {
             <RefreshControl
               refreshing={refreshing}
               onRefresh={handleRefresh}
-              tintColor={T.colors.accent.secondary}
+              tintColor={TEAL}
             />
           }
         />
@@ -494,41 +522,86 @@ const styles = StyleSheet.create({
     paddingBottom: T.spacing.xxxl,
   },
   hero: {
-    borderRadius: T.borderRadius.xl,
+    borderRadius: 16,
     overflow: 'hidden',
     padding: T.spacing.lg,
     marginBottom: T.spacing.lg,
     borderWidth: 1,
-    borderColor: T.colors.border.light,
-    backgroundColor: T.colors.primary.dark,
-    ...Platform.select({
-      ios: T.shadows.medium,
-      android: { elevation: 6 },
-    }),
+    borderColor: 'rgba(167,139,250,0.22)',
+    backgroundColor: 'rgba(255,255,255,0.07)',
+    alignItems: 'flex-start',
+    ...Platform.select({ ios: T.shadows.medium, android: { elevation: 6 } }),
   },
-  heroRim: {
-    ...StyleSheet.absoluteFillObject,
-    borderRadius: T.borderRadius.xl,
-    borderWidth: 1,
-    borderColor: T.colors.tabBar.rimBorder,
-    margin: 1,
-  },
-  heroIconRow: {
+  heroIconRing: {
     marginBottom: T.spacing.sm,
+  },
+  heroIconRingGrad: {
+    padding: 2,
+    borderRadius: 22,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.35)',
+  },
+  heroIconInner: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: C.primary.void,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  heroEyebrow: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: PURPLE_LINK,
+    letterSpacing: 0.8,
+    textTransform: 'uppercase',
+    marginBottom: 4,
   },
   heroTitle: {
-    ...T.typography.headingMd,
-    color: T.colors.text.primary,
-    marginBottom: T.spacing.sm,
+    fontSize: 22,
+    fontWeight: '800',
+    color: C.text.primary,
+    letterSpacing: -0.4,
+    marginBottom: T.spacing.xs,
   },
   heroSubtitle: {
-    ...T.typography.bodyMd,
-    color: T.colors.text.muted,
-    lineHeight: 22,
+    fontSize: 13,
+    color: C.text.secondary,
+    lineHeight: 20,
   },
   sectionTop: {
     marginTop: T.spacing.md,
     marginBottom: T.spacing.sm,
+  },
+  secHdrRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: T.spacing.xs,
+    marginBottom: 2,
+  },
+  secHdrTitle: {
+    fontSize: 15,
+    fontWeight: '800',
+    color: C.text.primary,
+    flex: 1,
+    minWidth: 0,
+  },
+  secHdrCount: {
+    minWidth: 26,
+    height: 26,
+    paddingHorizontal: 8,
+    borderRadius: 999,
+    backgroundColor: S.accentViolet,
+    borderWidth: 1,
+    borderColor: 'rgba(167,139,250,0.35)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  secHdrCountText: {
+    fontSize: 11,
+    fontWeight: '800',
+    color: PURPLE_LINK,
   },
   sectionItem: {
     marginBottom: T.spacing.md,
@@ -537,17 +610,18 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: T.spacing.md,
-    backgroundColor: T.colors.component.card,
-    borderRadius: T.borderRadius.lg,
+    backgroundColor: 'rgba(255,255,255,0.07)',
+    borderRadius: 16,
     paddingVertical: T.spacing.lg,
     paddingHorizontal: T.spacing.lg,
     borderWidth: 1,
-    borderColor: T.colors.border.light,
+    borderColor: 'rgba(167,139,250,0.22)',
   },
   placeholderText: {
-    ...T.typography.bodyMd,
-    color: T.colors.text.muted,
+    fontSize: 14,
+    color: C.text.muted,
     flex: 1,
+    fontWeight: '600',
   },
   loadMoreBtn: {
     flexDirection: 'row',
@@ -557,40 +631,46 @@ const styles = StyleSheet.create({
     paddingVertical: T.spacing.md,
     marginTop: T.spacing.sm,
     marginBottom: T.spacing.lg,
-    borderRadius: T.borderRadius.lg,
+    borderRadius: 14,
     borderWidth: 1,
-    borderColor: T.colors.border.light,
-    backgroundColor: T.colors.component.card,
+    borderColor: 'rgba(167,139,250,0.22)',
+    backgroundColor: 'rgba(255,255,255,0.07)',
   },
   loadMoreTxt: {
-    ...T.typography.bodySm,
-    color: T.colors.accent.secondary,
+    fontSize: 13,
+    color: PURPLE_LINK,
+    fontWeight: '700',
   },
   emptyWrap: {
     alignItems: 'center',
     paddingVertical: T.spacing.xxxl,
     paddingHorizontal: T.spacing.lg,
+    borderWidth: 1,
+    borderColor: 'rgba(167,139,250,0.22)',
+    borderRadius: 16,
+    backgroundColor: 'rgba(255,255,255,0.07)',
   },
-  emptyIconCircle: {
+  emptyIconRing: {
     width: 88,
     height: 88,
     borderRadius: 44,
-    backgroundColor: T.colors.component.card,
+    backgroundColor: S.accentViolet,
     borderWidth: 1,
-    borderColor: T.colors.border.light,
+    borderColor: 'rgba(167,139,250,0.35)',
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: T.spacing.lg,
   },
   emptyTitle: {
-    ...T.typography.headingSm,
-    color: T.colors.text.primary,
+    fontSize: 17,
+    fontWeight: '800',
+    color: C.text.primary,
     marginBottom: T.spacing.sm,
   },
   emptySubtitle: {
-    ...T.typography.bodyMd,
-    color: T.colors.text.muted,
+    fontSize: 13,
+    color: C.text.muted,
     textAlign: 'center',
-    lineHeight: 22,
+    lineHeight: 20,
   },
 });

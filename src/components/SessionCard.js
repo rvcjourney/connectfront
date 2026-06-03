@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
+import CosmicButton from './CosmicButton';
 import { UNIFIED_THEME } from '../unifiedTheme';
 import { formatDate, formatTime } from '../utils/dateHelpers';
 
@@ -60,18 +61,14 @@ export const SessionCard = ({ session, onJoinPress, onMorePress }) => {
 
       <View style={styles.actions}>
         {canJoinNow && onJoinPress && (
-          <TouchableOpacity
-            style={styles.joinButton}
+          <CosmicButton
+            label="Start"
+            icon="videocam"
+            variant="success"
+            size="compact"
             onPress={onJoinPress}
-            activeOpacity={0.7}
-          >
-            <MaterialIcons
-              name="videocam"
-              size={18}
-              color={UNIFIED_THEME.colors.primary.light}
-            />
-            <Text style={styles.joinButtonText}>Start</Text>
-          </TouchableOpacity>
+            style={styles.joinBtnThemed}
+          />
         )}
         {onMorePress && (
           <TouchableOpacity
@@ -155,20 +152,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginLeft: UNIFIED_THEME.spacing.md,
   },
-  joinButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: UNIFIED_THEME.colors.primary.light,
-    paddingHorizontal: UNIFIED_THEME.spacing.md,
-    paddingVertical: 6,
-    borderRadius: 6,
-  },
-  joinButtonText: {
-    ...UNIFIED_THEME.typography.bodySm,
-    color: UNIFIED_THEME.colors.primary.light,
-    fontWeight: '600',
-    marginLeft: 4,
-  },
+  joinBtnThemed: { marginVertical: 0, minWidth: 88 },
   moreButton: {
     padding: UNIFIED_THEME.spacing.sm,
   },

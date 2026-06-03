@@ -130,6 +130,7 @@ export default function ResetPasswordScreen({ route, navigation }) {
 
           <Button
             text={loading ? 'Resetting...' : 'Reset Password'}
+            variant="primary"
             onPress={handleReset}
             disabled={loading}
             loading={loading}

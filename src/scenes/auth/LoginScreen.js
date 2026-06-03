@@ -12,10 +12,18 @@ import {
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import Toast from 'react-native-simple-toast';
 import CosmicBackground from '../../components/CosmicBackground';
+import CosmicButton from '../../components/CosmicButton';
 import { UNIFIED_THEME } from '../../unifiedTheme';
-import Button from '../../components/Button';
 import { authApi } from '../../api/authApi';
 import { SCREEN_NAMES } from '../../navigators/screenNames';
+
+const T = UNIFIED_THEME;
+const C = T.colors;
+const B = C.buttons;
+const S = C.surface;
+
+const PURPLE_LINK = B.nebulaGradient[0];
+const GOLD = C.accent.primary;
 
 export default function LoginScreen({ navigation }) {
   const [email, setEmail] = useState('');
@@ -35,18 +43,14 @@ export default function LoginScreen({ navigation }) {
 
     setLoading(true);
     try {
-      console.log('🔵 Login attempt:', { email });
-
       await authApi.signIn({
         email: email.trim().toLowerCase(),
         password,
       });
 
-      console.log('✅ Login successful');
       Toast.show('Signed in successfully!');
-      // AuthContext will handle navigation automatically
     } catch (error) {
-      console.error('❌ Login error:', error);
+      console.error('Login error:', error);
       let message = error.message || 'Something went wrong. Please try again.';
 
       if (error.message?.includes('Invalid login credentials')) {
@@ -65,61 +69,43 @@ export default function LoginScreen({ navigation }) {
         <ScrollView
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
         >
-          {/* Header */}
           <View style={styles.header}>
-            <MaterialIcons
-              name="videocam"
-              size={40}
-              color={UNIFIED_THEME.colors.accent.primary}
-              style={styles.logoIcon}
-            />
+            <MaterialIcons name="videocam" size={40} color={GOLD} style={styles.logoIcon} />
             <Text style={styles.title}>Welcome Back</Text>
             <Text style={styles.subtitle}>Sign in to continue</Text>
           </View>
 
-          {/* Form */}
           <View style={styles.formContainer}>
-            {/* Email Input */}
             <View style={styles.inputWrapper}>
-              <MaterialIcons
-                name="email"
-                size={20}
-                color={UNIFIED_THEME.colors.text.secondary}
-                style={styles.inputIcon}
-              />
+              <MaterialIcons name="email" size={20} color={C.text.secondary} style={styles.inputIcon} />
               <TextInput
                 placeholder="Email Address"
-                placeholderTextColor={UNIFIED_THEME.colors.text.secondary}
+                placeholderTextColor={C.text.muted}
                 style={styles.input}
                 value={email}
                 onChangeText={setEmail}
                 autoCapitalize="none"
                 keyboardType="email-address"
                 editable={!loading}
-                cursorColor={UNIFIED_THEME.colors.accent.secondary}
-                selectionColor={UNIFIED_THEME.colors.accent.secondary}
+                cursorColor={PURPLE_LINK}
+                selectionColor={PURPLE_LINK}
               />
             </View>
 
-            {/* Password Input */}
             <View style={styles.inputWrapper}>
-              <MaterialIcons
-                name="lock"
-                size={20}
-                color={UNIFIED_THEME.colors.text.secondary}
-                style={styles.inputIcon}
-              />
+              <MaterialIcons name="lock" size={20} color={C.text.secondary} style={styles.inputIcon} />
               <TextInput
                 placeholder="Password"
-                placeholderTextColor={UNIFIED_THEME.colors.text.secondary}
+                placeholderTextColor={C.text.muted}
                 style={styles.input}
                 value={password}
                 onChangeText={setPassword}
                 secureTextEntry={!showPassword}
                 editable={!loading}
-                cursorColor={UNIFIED_THEME.colors.accent.secondary}
-                selectionColor={UNIFIED_THEME.colors.accent.secondary}
+                cursorColor={PURPLE_LINK}
+                selectionColor={PURPLE_LINK}
               />
               <TouchableOpacity
                 onPress={() => setShowPassword(!showPassword)}
@@ -129,12 +115,11 @@ export default function LoginScreen({ navigation }) {
                 <MaterialIcons
                   name={showPassword ? 'visibility' : 'visibility-off'}
                   size={20}
-                  color={UNIFIED_THEME.colors.text.secondary}
+                  color={C.text.secondary}
                 />
               </TouchableOpacity>
             </View>
 
-            {/* Forgot Password */}
             <TouchableOpacity
               onPress={() => navigation.navigate(SCREEN_NAMES.ForgotPassword)}
               disabled={loading}
@@ -143,9 +128,9 @@ export default function LoginScreen({ navigation }) {
               <Text style={styles.forgotText}>Forgot Password?</Text>
             </TouchableOpacity>
 
-            {/* Login Button */}
-            <Button
-              text={loading ? 'Loading data...' : 'Sign In'}
+            <CosmicButton
+              label={loading ? 'Signing in…' : 'Sign In'}
+              variant="nebula"
               onPress={handleLogin}
               disabled={loading}
               loading={loading}
@@ -153,7 +138,6 @@ export default function LoginScreen({ navigation }) {
             />
           </View>
 
-          {/* Footer */}
           <View style={styles.footer}>
             <Text style={styles.footerText}>Don't have an account?</Text>
             <TouchableOpacity
@@ -164,7 +148,6 @@ export default function LoginScreen({ navigation }) {
             </TouchableOpacity>
           </View>
 
-          {/* Back Button */}
           <TouchableOpacity
             onPress={() => navigation.goBack()}
             disabled={loading}
@@ -174,124 +157,100 @@ export default function LoginScreen({ navigation }) {
           </TouchableOpacity>
         </ScrollView>
       </SafeAreaView>
-
     </CosmicBackground>
   );
 }
 
 const styles = StyleSheet.create({
-  background: {
-    flex: 1,
-  },
-
-  overlay: {
-    flex: 1,
-  },
-
+  background: { flex: 1 },
+  overlay: { flex: 1 },
   scrollContent: {
     flexGrow: 1,
     justifyContent: 'center',
-    paddingHorizontal: UNIFIED_THEME.spacing.lg,
-    paddingVertical: UNIFIED_THEME.spacing.lg,
+    paddingHorizontal: T.spacing.lg,
+    paddingVertical: T.spacing.lg,
   },
-
   header: {
     alignItems: 'center',
-    marginBottom: UNIFIED_THEME.spacing.xxxl,
+    marginBottom: T.spacing.xxxl,
   },
-
   logoIcon: {
-    marginBottom: UNIFIED_THEME.spacing.lg,
+    marginBottom: T.spacing.lg,
   },
-
   title: {
-    ...UNIFIED_THEME.typography.headingLg,
-    color: UNIFIED_THEME.colors.text.primary,
+    ...T.typography.headingLg,
+    color: C.text.primary,
     textAlign: 'center',
-    fontWeight: '700',
-    marginBottom: UNIFIED_THEME.spacing.sm,
+    fontWeight: '800',
+    marginBottom: T.spacing.sm,
   },
-
   subtitle: {
-    ...UNIFIED_THEME.typography.bodySm,
-    color: UNIFIED_THEME.colors.text.secondary,
+    ...T.typography.bodySm,
+    color: C.text.secondary,
     textAlign: 'center',
   },
-
   formContainer: {
-    marginBottom: UNIFIED_THEME.spacing.xxxl,
+    marginBottom: T.spacing.xxxl,
   },
-
   inputWrapper: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: UNIFIED_THEME.colors.component.input,
-    borderColor: UNIFIED_THEME.colors.border.light,
+    backgroundColor: S.chip,
+    borderColor: C.border.light,
     borderWidth: 1,
     borderRadius: 12,
-    paddingHorizontal: UNIFIED_THEME.spacing.md,
-    marginBottom: UNIFIED_THEME.spacing.lg,
+    paddingHorizontal: T.spacing.md,
+    marginBottom: T.spacing.lg,
     height: 50,
   },
-
   inputIcon: {
-    marginRight: UNIFIED_THEME.spacing.md,
+    marginRight: T.spacing.md,
   },
-
   input: {
     flex: 1,
-    color: UNIFIED_THEME.colors.text.primary,
-    ...UNIFIED_THEME.typography.bodySm,
+    color: C.text.primary,
+    ...T.typography.bodySm,
     padding: 0,
   },
-
   eyeIcon: {
-    padding: UNIFIED_THEME.spacing.sm,
+    padding: T.spacing.sm,
   },
-
   forgotWrap: {
     alignSelf: 'flex-end',
-    marginBottom: UNIFIED_THEME.spacing.lg,
-    marginTop: UNIFIED_THEME.spacing.sm,
+    marginBottom: T.spacing.lg,
+    marginTop: T.spacing.sm,
   },
-
   forgotText: {
-    ...UNIFIED_THEME.typography.bodySm,
-    color: UNIFIED_THEME.colors.accent.primary,
+    ...T.typography.bodySm,
+    color: GOLD,
     fontWeight: '600',
   },
-
   loginBtn: {
-    marginTop: UNIFIED_THEME.spacing.lg,
+    marginTop: T.spacing.lg,
   },
-
   footer: {
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: UNIFIED_THEME.spacing.xl,
-    gap: UNIFIED_THEME.spacing.sm,
+    marginBottom: T.spacing.xl,
+    gap: T.spacing.sm,
   },
-
   footerText: {
-    ...UNIFIED_THEME.typography.bodySm,
-    color: UNIFIED_THEME.colors.text.secondary,
+    ...T.typography.bodySm,
+    color: C.text.secondary,
   },
-
   signupLink: {
-    ...UNIFIED_THEME.typography.bodySm,
-    color: UNIFIED_THEME.colors.accent.primary,
+    ...T.typography.bodySm,
+    color: PURPLE_LINK,
     fontWeight: '600',
   },
-
   backButton: {
     alignSelf: 'center',
-    paddingVertical: UNIFIED_THEME.spacing.md,
+    paddingVertical: T.spacing.md,
   },
-
   backButtonText: {
-    ...UNIFIED_THEME.typography.bodySm,
-    color: UNIFIED_THEME.colors.accent.secondary,
+    ...T.typography.bodySm,
+    color: PURPLE_LINK,
     fontWeight: '600',
   },
 });

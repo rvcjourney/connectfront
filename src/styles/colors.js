@@ -1,17 +1,24 @@
+/**
+ * @deprecated Import UNIFIED_THEME from '../unifiedTheme' in new code.
+ * Kept for meeting module compatibility — values map to cosmic theme.
+ */
+import { UNIFIED_THEME } from '../unifiedTheme';
+
+const M = UNIFIED_THEME.colors.meeting;
+
 const colors = {
   primary: {
-    100: "#FFFFFF",
-    200: "#EFEFEF",
-    300: "#DADADA",
-    400: "#818181",
-    500: "#6F767E",
-    600: "#404B53",
-    700: "#232830",
-    800: "#1A1C22",
-    900: "#030608",
+    100: M[100],
+    200: M[200],
+    400: M[400],
+    500: M[500],
+    600: M[600],
+    700: M[700],
+    800: M[800],
+    900: M[900],
   },
-  black: "#000",
-  purple: "#5568FE",
+  black: UNIFIED_THEME.colors.primary.void,
+  purple: M.accent,
 };
 
 export default colors;

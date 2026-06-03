@@ -30,6 +30,7 @@ import {
   recordingsApi,
 } from '../../api/recordingsApi';
 import { SCREEN_NAMES } from '../../navigators/screenNames';
+import { saveRecordingToGallery } from '../../utils/recordingActions';
 
 const T = UNIFIED_THEME;
 const TopTab = createMaterialTopTabNavigator();
@@ -102,7 +103,8 @@ const tabIcon =
     );
 
 function MentorRecordingsTab() {
-  const { mentorWithRecordings, refreshing, onRefresh, openRecording } = useRecordingsContext();
+  const { mentorWithRecordings, refreshing, onRefresh, openRecording, downloadRecording } =
+    useRecordingsContext();
 
   return (
     <ScrollView
@@ -125,6 +127,7 @@ function MentorRecordingsTab() {
               onPressJoin={null}
               onPressCancel={null}
               onPressRecording={() => openRecording(item.recordingUrl)}
+              onPressDownload={() => downloadRecording(item.recordingUrl)}
               statusLabel="Recorded"
             />
           ))}
@@ -140,7 +143,8 @@ function MentorRecordingsTab() {
 }
 
 function LearnerRecordingsTab() {
-  const { learnerWithRecordings, refreshing, onRefresh, openRecording } = useRecordingsContext();
+  const { learnerWithRecordings, refreshing, onRefresh, openRecording, downloadRecording } =
+    useRecordingsContext();
 
   return (
     <ScrollView
@@ -162,6 +166,7 @@ function LearnerRecordingsTab() {
               onPressJoin={null}
               onPressCancel={null}
               onPressRecording={() => openRecording(item.recordingUrl)}
+              onPressDownload={() => downloadRecording(item.recordingUrl)}
               statusLabel="Recorded"
             />
           ))}
@@ -266,6 +271,15 @@ export default function RecordedLecturesScreen({ navigation }) {
     [navigation],
   );
 
+  const downloadRecording = useCallback(rawUrl => {
+    const url = normalizeRecordingUrl(rawUrl);
+    if (!url) {
+      Toast.show('Recording link is unavailable');
+      return;
+    }
+    saveRecordingToGallery(url);
+  }, []);
+
   const contextValue = useMemo(
     () => ({
       mentorWithRecordings,
@@ -273,8 +287,16 @@ export default function RecordedLecturesScreen({ navigation }) {
       refreshing,
       onRefresh,
       openRecording,
+      downloadRecording,
     }),
-    [mentorWithRecordings, learnerWithRecordings, refreshing, onRefresh, openRecording],
+    [
+      mentorWithRecordings,
+      learnerWithRecordings,
+      refreshing,
+      onRefresh,
+      openRecording,
+      downloadRecording,
+    ],
   );
 
   return (

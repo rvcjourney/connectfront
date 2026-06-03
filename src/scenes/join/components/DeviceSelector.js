@@ -78,8 +78,8 @@ const styles = StyleSheet.create({
     color: UNIFIED_THEME.colors.text.primary,
   },
   selectedDeviceButton: {
-    backgroundColor: UNIFIED_THEME.colors.component.button,
-    borderColor: UNIFIED_THEME.colors.accent.primary,
+    backgroundColor: UNIFIED_THEME.colors.buttons.secondaryBg,
+    borderColor: UNIFIED_THEME.colors.buttons.secondaryBorder,
     borderWidth: 2,
   },
 });

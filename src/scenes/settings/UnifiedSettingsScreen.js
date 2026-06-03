@@ -298,7 +298,7 @@ export default function UnifiedSettingsScreen({ navigation }) {
         <Button
           text="Sign Out"
           onPress={handleLogout}
-          variant="ghost"
+          variant="goldOutline"
           style={styles.signOutBtn}
         />
       </ScrollView>

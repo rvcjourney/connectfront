@@ -15,6 +15,15 @@ import { Image } from 'react-native';
 import CosmicBackground from '../../components/CosmicBackground';
 import { UNIFIED_THEME } from '../../unifiedTheme';
 
+const T = UNIFIED_THEME;
+const C = T.colors;
+const B = C.buttons;
+const S = C.surface;
+
+const PURPLE_LINK = B.nebulaGradient[0];
+const GOLD = C.accent.primary;
+const TEAL = C.accent.secondary;
+
 const ENTRANCE = {
   duration: 520,
   easing: Easing.out(Easing.cubic),
@@ -178,11 +187,20 @@ export default function WelcomeScreen({ navigation }) {
             <Animated.View
               style={[styles.logoContainer, { transform: [{ scale: logoPulse }] }]}
             >
-              <Image
-                source={require('../../assets/images/logo.png')}
-                style={styles.logoImage}
-                resizeMode="contain"
-              />
+              <LinearGradient
+                colors={B.premiumGradient}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={styles.logoRingGrad}
+              >
+                <View style={styles.logoInner}>
+                  <Image
+                    source={require('../../assets/images/logo.png')}
+                    style={styles.logoImage}
+                    resizeMode="contain"
+                  />
+                </View>
+              </LinearGradient>
             </Animated.View>
           </Animated.View>
 
@@ -228,23 +246,15 @@ export default function WelcomeScreen({ navigation }) {
 
           <View style={styles.chipsRow}>
             <Animated.View
-              style={[styles.chip, { opacity: subO, transform: [{ translateY: subY }] }]}
+              style={[styles.chip, styles.chipAccent, { opacity: subO, transform: [{ translateY: subY }] }]}
             >
-              <MaterialIcons
-                name="bolt"
-                size={14}
-                color={UNIFIED_THEME.colors.accent.secondary}
-              />
+              <MaterialIcons name="bolt" size={14} color={GOLD} />
               <Text style={styles.chipText}>Live sessions</Text>
             </Animated.View>
             <Animated.View
               style={[styles.chip, { opacity: subO, transform: [{ translateY: subY }] }]}
             >
-              <MaterialIcons
-                name="verified"
-                size={14}
-                color={UNIFIED_THEME.colors.accent.primary}
-              />
+              <MaterialIcons name="verified" size={14} color={TEAL} />
               <Text style={styles.chipText}>Trusted mentors</Text>
             </Animated.View>
           </View>
@@ -265,16 +275,13 @@ export default function WelcomeScreen({ navigation }) {
               style={({ pressed }) => [styles.button, pressed && styles.buttonPressed]}
             >
               <LinearGradient
-                colors={[
-                  UNIFIED_THEME.colors.accent.primary,
-                  UNIFIED_THEME.colors.accent.secondary,
-                ]}
+                colors={B.nebulaGradient}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 1 }}
                 style={styles.buttonGradient}
               >
                 <Text style={styles.buttonText}>Get started</Text>
-                <MaterialIcons name="arrow-forward" size={22} color="#0a0520" />
+                <MaterialIcons name="arrow-forward" size={22} color={B.nebulaText} />
               </LinearGradient>
             </Pressable>
           </Animated.View>
@@ -297,21 +304,21 @@ export default function WelcomeScreen({ navigation }) {
             ]}
           >
             <View style={styles.statItem}>
-              <MaterialIcons name="verified-user" size={20} color={UNIFIED_THEME.colors.accent.primary} style={styles.statIcon} />
+              <MaterialIcons name="verified-user" size={20} color={GOLD} style={styles.statIcon} />
               <Text style={styles.statText}>Expert Mentors</Text>
             </View>
 
             <View style={styles.divider} />
 
             <View style={styles.statItem}>
-              <MaterialIcons name="videocam" size={20} color={UNIFIED_THEME.colors.accent.secondary} style={styles.statIcon} />
+              <MaterialIcons name="videocam" size={20} color={PURPLE_LINK} style={styles.statIcon} />
               <Text style={styles.statText}>Live 1-on-1</Text>
             </View>
 
             <View style={styles.divider} />
 
             <View style={styles.statItem}>
-              <MaterialIcons name="lock" size={20} color={UNIFIED_THEME.colors.accent.primary} style={styles.statIcon} />
+              <MaterialIcons name="lock" size={20} color={TEAL} style={styles.statIcon} />
               <Text style={styles.statText}>Secure Payments</Text>
             </View>
           </Animated.View>
@@ -334,8 +341,8 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: UNIFIED_THEME.spacing.lg,
-    paddingVertical: UNIFIED_THEME.spacing.xl,
+    paddingHorizontal: T.spacing.lg,
+    paddingVertical: T.spacing.xl,
   },
 
   logoOrbitWrap: {
@@ -343,7 +350,7 @@ const styles = StyleSheet.create({
     height: 140,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: UNIFIED_THEME.spacing.xl,
+    marginBottom: T.spacing.xl,
   },
 
   orbitRing: {
@@ -366,108 +373,124 @@ const styles = StyleSheet.create({
   },
 
   logoContainer: {
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+
+  logoRingGrad: {
+    padding: 3,
+    borderRadius: 48,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.35)',
+    ...T.shadows.medium,
+  },
+
+  logoInner: {
     width: 88,
     height: 88,
-    borderRadius: 20,
+    borderRadius: 44,
+    backgroundColor: C.primary.void,
+    justifyContent: 'center',
+    alignItems: 'center',
     overflow: 'hidden',
   },
 
   logoImage: {
-    width: 88,
-    height: 88,
-    borderRadius: 44
+    width: 56,
+    height: 56,
   },
 
   eyebrow: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: UNIFIED_THEME.colors.accent.secondary,
-    letterSpacing: 2,
+    fontSize: 11,
+    fontWeight: '700',
+    color: PURPLE_LINK,
+    letterSpacing: 0.8,
     textTransform: 'uppercase',
-    marginBottom: UNIFIED_THEME.spacing.sm,
+    marginBottom: T.spacing.sm,
     textAlign: 'center',
   },
 
   title: {
-    ...UNIFIED_THEME.typography.headingSm,
-    color: UNIFIED_THEME.colors.text.secondary,
+    fontSize: 16,
+    color: C.text.secondary,
     textAlign: 'center',
-    marginBottom: UNIFIED_THEME.spacing.xs,
-    letterSpacing: 0.3,
-    textTransform: 'lowercase',
+    marginBottom: T.spacing.xs,
+    fontWeight: '600',
   },
 
   appNameContainer: {
-    marginBottom: UNIFIED_THEME.spacing.lg,
+    marginBottom: T.spacing.lg,
     alignItems: 'center',
   },
 
   appName: {
     fontSize: 42,
     fontWeight: '800',
-    color: UNIFIED_THEME.colors.text.primary,
+    color: C.text.primary,
     textAlign: 'center',
     letterSpacing: -0.5,
     lineHeight: 50,
-    textShadowColor: 'rgba(167, 139, 250, 0.45)',
-    textShadowOffset: { width: 0, height: 0 },
-    textShadowRadius: 16,
   },
 
   nameUnderline: {
-    marginTop: UNIFIED_THEME.spacing.sm,
+    marginTop: T.spacing.sm,
     height: 3,
     width: 56,
     borderRadius: 2,
-    backgroundColor: UNIFIED_THEME.colors.accent.primary,
+    backgroundColor: GOLD,
     opacity: 0.9,
   },
 
   subtitle: {
-    ...UNIFIED_THEME.typography.bodyLg,
-    color: UNIFIED_THEME.colors.text.secondary,
+    fontSize: 15,
+    color: C.text.secondary,
     textAlign: 'center',
-    marginBottom: UNIFIED_THEME.spacing.md,
-    lineHeight: 26,
-    paddingHorizontal: UNIFIED_THEME.spacing.sm,
+    marginBottom: T.spacing.md,
+    lineHeight: 24,
+    paddingHorizontal: T.spacing.sm,
   },
 
   chipsRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'center',
-    gap: UNIFIED_THEME.spacing.sm,
-    marginBottom: UNIFIED_THEME.spacing.xl,
+    gap: T.spacing.xs,
+    marginBottom: T.spacing.xl,
   },
 
   chip: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    paddingVertical: 8,
-    paddingHorizontal: UNIFIED_THEME.spacing.md,
-    borderRadius: UNIFIED_THEME.borderRadius.round,
-    backgroundColor: 'rgba(255, 255, 255, 0.06)',
+    paddingVertical: 4,
+    paddingHorizontal: T.spacing.sm,
+    borderRadius: 999,
+    backgroundColor: 'rgba(255,255,255,0.08)',
     borderWidth: 1,
-    borderColor: UNIFIED_THEME.colors.border.light,
+    borderColor: 'rgba(255,255,255,0.1)',
+  },
+
+  chipAccent: {
+    backgroundColor: S.accentGold,
+    borderColor: 'rgba(240,216,117,0.25)',
   },
 
   chipText: {
-    ...UNIFIED_THEME.typography.labelSm,
-    color: UNIFIED_THEME.colors.text.secondary,
-    fontWeight: '600',
+    fontSize: 10,
+    color: C.text.primary,
+    fontWeight: '700',
   },
 
   buttonWrap: {
     width: '100%',
-    marginBottom: UNIFIED_THEME.spacing.md,
+    marginBottom: T.spacing.md,
   },
 
   button: {
     width: '100%',
-    borderRadius: UNIFIED_THEME.borderRadius.lg,
+    borderRadius: 12,
     overflow: 'hidden',
-    ...UNIFIED_THEME.shadows.medium,
+    ...T.shadows.medium,
   },
 
   buttonPressed: {
@@ -475,51 +498,51 @@ const styles = StyleSheet.create({
   },
 
   buttonGradient: {
-    paddingVertical: UNIFIED_THEME.spacing.lg,
-    paddingHorizontal: UNIFIED_THEME.spacing.xl,
+    paddingVertical: T.spacing.lg,
+    paddingHorizontal: T.spacing.xl,
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    gap: UNIFIED_THEME.spacing.sm,
+    gap: T.spacing.sm,
   },
 
   buttonText: {
-    ...UNIFIED_THEME.typography.labelLg,
-    color: '#0a0520',
-    fontWeight: '700',
-    letterSpacing: 0.4,
+    fontSize: 16,
+    color: B.nebulaText,
+    fontWeight: '800',
+    letterSpacing: 0.3,
   },
 
   signInRow: {
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: UNIFIED_THEME.spacing.xl,
-    paddingVertical: UNIFIED_THEME.spacing.sm,
+    marginBottom: T.spacing.xl,
+    paddingVertical: T.spacing.sm,
   },
 
   signInMuted: {
-    ...UNIFIED_THEME.typography.bodyMd,
-    color: UNIFIED_THEME.colors.text.muted,
+    fontSize: 14,
+    color: C.text.muted,
   },
 
   signInLink: {
-    ...UNIFIED_THEME.typography.bodyMd,
-    color: UNIFIED_THEME.colors.accent.secondary,
+    fontSize: 14,
+    color: PURPLE_LINK,
     fontWeight: '700',
   },
 
   statsContainer: {
     flexDirection: 'row',
     justifyContent: 'space-around',
-    alignItems: 'center',
+    alignItems: 'stretch',
     width: '100%',
-    paddingHorizontal: UNIFIED_THEME.spacing.md,
-    paddingVertical: UNIFIED_THEME.spacing.lg,
-    backgroundColor: 'rgba(255, 255, 255, 0.05)',
-    borderRadius: UNIFIED_THEME.borderRadius.lg,
+    paddingHorizontal: 4,
+    paddingVertical: 11,
+    backgroundColor: 'rgba(255,255,255,0.07)',
+    borderRadius: 14,
     borderWidth: 1,
-    borderColor: UNIFIED_THEME.colors.border.light,
+    borderColor: 'rgba(167,139,250,0.22)',
   },
 
   statItem: {
@@ -533,16 +556,16 @@ const styles = StyleSheet.create({
   },
 
   statText: {
-    ...UNIFIED_THEME.typography.bodySm,
-    color: UNIFIED_THEME.colors.text.secondary,
+    fontSize: 10,
+    color: C.text.muted,
     textAlign: 'center',
-    fontWeight: '600',
+    fontWeight: '700',
   },
 
   divider: {
     width: 1,
-    height: 36,
-    backgroundColor: UNIFIED_THEME.colors.border.light,
-    marginHorizontal: UNIFIED_THEME.spacing.xs,
+    backgroundColor: 'rgba(255,255,255,0.14)',
+    marginVertical: 6,
+    alignSelf: 'stretch',
   },
 });

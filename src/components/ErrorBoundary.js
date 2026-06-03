@@ -1,5 +1,6 @@
 import React from "react";
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from "react-native";
+import { View, Text, StyleSheet, ScrollView } from "react-native";
+import Button from "./Button";
 import { UNIFIED_THEME } from "../unifiedTheme";
 
 export class ErrorBoundary extends React.Component {
@@ -113,19 +114,18 @@ export class ErrorBoundary extends React.Component {
 
           {/* Action Buttons */}
           <View style={styles.buttonsContainer}>
-            <TouchableOpacity
-              style={[styles.button, styles.retryButton]}
+            <Button
+              text="Try Again"
+              variant="primary"
               onPress={this.handleReset}
-            >
-              <Text style={styles.retryButtonText}>Try Again</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={[styles.button, styles.homeButton]}
+              style={styles.actionBtn}
+            />
+            <Button
+              text="Go Home"
+              variant="outline"
               onPress={this.handleGoHome}
-            >
-              <Text style={styles.homeButtonText}>Go Home</Text>
-            </TouchableOpacity>
+              style={styles.actionBtn}
+            />
           </View>
         </View>
       );
@@ -198,28 +198,5 @@ const styles = StyleSheet.create({
     gap: UNIFIED_THEME.spacing.md,
     marginTop: UNIFIED_THEME.spacing.xl,
   },
-  button: {
-    flex: 1,
-    paddingVertical: UNIFIED_THEME.spacing.md,
-    paddingHorizontal: UNIFIED_THEME.spacing.md,
-    borderRadius: UNIFIED_THEME.borderRadius.md,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  retryButton: {
-    backgroundColor: UNIFIED_THEME.colors.accent.primary,
-  },
-  retryButtonText: {
-    ...UNIFIED_THEME.typography.labelLg,
-    color: UNIFIED_THEME.colors.text.onAccent,
-  },
-  homeButton: {
-    backgroundColor: UNIFIED_THEME.colors.primary.dark,
-    borderWidth: 2,
-    borderColor: UNIFIED_THEME.colors.accent.primary,
-  },
-  homeButtonText: {
-    ...UNIFIED_THEME.typography.labelLg,
-    color: UNIFIED_THEME.colors.accent.primary,
-  },
+  actionBtn: { flex: 1, marginVertical: 0 },
 });

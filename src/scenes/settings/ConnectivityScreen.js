@@ -5,6 +5,7 @@ import LinearGradient from 'react-native-linear-gradient';
 import Toast from 'react-native-simple-toast';
 import { REACT_APP_AUTH_URL, AUTH_URL, VIDEO_SDK_AUTH_URL } from '@env';
 import { SafeScreen } from '../../components/SafeScreen';
+import Button from '../../components/Button';
 import { UNIFIED_THEME } from '../../unifiedTheme';
 import { SUPABASE_URL } from '../../lib/supabase';
 
@@ -93,19 +94,13 @@ export default function ConnectivityScreen({ navigation }) {
           />
         </View>
 
-        <TouchableOpacity
-          style={styles.checkBtn}
+        <Button
+          text="Run check (placeholder)"
+          icon="sync"
+          variant="info"
           onPress={() => Toast.show('Wire NetInfo + health checks when backend is ready', Toast.SHORT)}
-          activeOpacity={0.85}
-        >
-          <LinearGradient
-            colors={['rgba(94,234,212,0.35)', 'rgba(167,139,250,0.25)']}
-            style={styles.checkBtnInner}
-          >
-            <MaterialIcons name="sync" size={18} color={T.colors.text.primary} />
-            <Text style={styles.checkBtnTxt}>Run check (placeholder)</Text>
-          </LinearGradient>
-        </TouchableOpacity>
+          style={styles.checkBtnThemed}
+        />
       </ScrollView>
     </SafeScreen>
   );
@@ -176,19 +171,5 @@ const styles = StyleSheet.create({
     marginVertical: T.spacing.md,
     marginLeft: 44 + T.spacing.md,
   },
-  checkBtn: {
-    borderRadius: 14,
-    overflow: 'hidden',
-    marginTop: T.spacing.sm,
-    borderWidth: 1,
-    borderColor: T.colors.border.light,
-  },
-  checkBtnInner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    paddingVertical: 14,
-  },
-  checkBtnTxt: { fontSize: 14, fontWeight: '700', color: T.colors.text.primary },
+  checkBtnThemed: { marginVertical: T.spacing.sm },
 });
