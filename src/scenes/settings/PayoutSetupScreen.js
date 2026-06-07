@@ -15,11 +15,21 @@ import Toast from 'react-native-simple-toast';
 import { useFocusEffect } from '@react-navigation/native';
 import { SafeScreen } from '../../components/SafeScreen';
 import { LoadingOverlay } from '../../components/LoadingOverlay';
+import Button from '../../components/Button';
 import { UNIFIED_THEME } from '../../unifiedTheme';
 import { payoutApi } from '../../api/payoutApi';
 import { useAuth } from '../../hooks/useAuth';
 
 const T = UNIFIED_THEME;
+const C = T.colors;
+const B = C.buttons;
+const S = C.surface;
+
+const PURPLE_LINK = B.nebulaGradient[0];
+const GOLD = C.accent.primary;
+const TEAL = C.accent.secondary;
+const PANEL_BG = '#161432';
+const INPUT_BG = '#0f0e2a';
 
 function StatusBadge({ status }) {
   const map = {
@@ -131,21 +141,14 @@ export default function PayoutSetupScreen({ navigation }) {
           <View style={{ width: 38 }} />
         </View>
 
-        {/* Hero */}
-        <View style={s.heroCard}>
-          <LinearGradient
-            colors={['rgba(94,234,212,0.15)', 'rgba(124,58,237,0.18)', 'rgba(2,0,20,0.9)']}
-            start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
-            style={StyleSheet.absoluteFill}
-          />
-          <View style={s.heroIconWrap}>
-            <MaterialIcons name="account-balance" size={28} color={T.colors.accent.secondary} />
+        <View style={s.card}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: T.spacing.sm }}>
+            <Text style={s.cardTitle}>Payout account</Text>
+            <StatusBadge status={status} />
           </View>
-          <Text style={s.heroTitle}>Receive your earnings</Text>
-          <Text style={s.heroSub}>
+          <Text style={s.cardSub}>
             Set up your UPI ID to get paid directly after each session. KYC is required by Razorpay to activate payouts.
           </Text>
-          <StatusBadge status={status} />
         </View>
 
         {/* How it works */}
@@ -207,16 +210,13 @@ export default function PayoutSetupScreen({ navigation }) {
             )}
 
             {status !== 'active' && kycUrl && accountId && (
-              <TouchableOpacity style={s.kycBtn} onPress={handleOpenKyc} activeOpacity={0.85}>
-                <LinearGradient
-                  colors={[T.colors.accent.warning, '#d97706']}
-                  start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
-                  style={s.kycBtnGrad}
-                >
-                  <MaterialIcons name="open-in-browser" size={18} color="#000" />
-                  <Text style={s.kycBtnText}>Complete KYC on Razorpay</Text>
-                </LinearGradient>
-              </TouchableOpacity>
+              <Button
+                text="Complete KYC on Razorpay"
+                icon="open-in-browser"
+                variant="warning"
+                onPress={handleOpenKyc}
+                style={s.kycBtnThemed}
+              />
             )}
           </View>
         )}
@@ -273,23 +273,15 @@ export default function PayoutSetupScreen({ navigation }) {
               After setup, you'll be taken to Razorpay to complete a quick KYC verification.
             </Text>
 
-            <TouchableOpacity
-              style={[s.setupBtn, submitting && { opacity: 0.5 }]}
+            <Button
+              text={submitting ? 'Setting up…' : 'Create Payout Account'}
+              icon="account-balance"
+              variant="primary"
               onPress={handleSetup}
               disabled={submitting}
-              activeOpacity={0.85}
-            >
-              <LinearGradient
-                colors={[T.colors.accent.secondary, T.colors.component.button]}
-                start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
-                style={s.setupBtnGrad}
-              >
-                <MaterialIcons name="account-balance" size={18} color="#000" />
-                <Text style={s.setupBtnText}>
-                  {submitting ? 'Setting up…' : 'Create Payout Account'}
-                </Text>
-              </LinearGradient>
-            </TouchableOpacity>
+              loading={submitting}
+              style={s.setupBtnThemed}
+            />
           </View>
         )}
       </ScrollView>
@@ -308,63 +300,44 @@ const s = StyleSheet.create({
     justifyContent: 'space-between', marginBottom: T.spacing.lg,
   },
   backBtn: {
-    width: 38, height: 38, borderRadius: 19,
-    backgroundColor: T.colors.component.card,
-    borderWidth: 1, borderColor: T.colors.border.light,
+    width: 40, height: 40, borderRadius: 20,
+    backgroundColor: PANEL_BG,
+    borderWidth: 1, borderColor: 'rgba(167,139,250,0.22)',
     justifyContent: 'center', alignItems: 'center',
   },
-  headerTitle: { ...T.typography.headingMd, color: T.colors.text.primary, fontWeight: '700' },
-
-  heroCard: {
-    borderRadius: T.borderRadius.lg,
-    overflow: 'hidden',
-    padding: T.spacing.lg,
-    marginBottom: T.spacing.lg,
-    borderWidth: 1,
-    borderColor: 'rgba(94,234,212,0.2)',
-    gap: T.spacing.sm,
-  },
-  heroIconWrap: {
-    width: 52, height: 52, borderRadius: 26,
-    backgroundColor: 'rgba(94,234,212,0.15)',
-    borderWidth: 1, borderColor: 'rgba(94,234,212,0.25)',
-    justifyContent: 'center', alignItems: 'center',
-    marginBottom: T.spacing.xs,
-  },
-  heroTitle: { ...T.typography.headingMd, color: T.colors.text.primary, fontWeight: '800' },
-  heroSub:   { ...T.typography.bodySm, color: T.colors.text.secondary, lineHeight: 20 },
+  headerTitle: { fontSize: 18, color: C.text.primary, fontWeight: '800' },
 
   card: {
-    backgroundColor: T.colors.component.card,
-    borderRadius: T.borderRadius.lg,
+    backgroundColor: PANEL_BG,
+    borderRadius: 16,
     borderWidth: 1,
-    borderColor: T.colors.border.light,
+    borderColor: 'rgba(167,139,250,0.22)',
     padding: T.spacing.lg,
     marginBottom: T.spacing.lg,
     gap: T.spacing.sm,
   },
-  cardTitle: { ...T.typography.headingSm, color: T.colors.text.primary, fontWeight: '700', marginBottom: 2 },
-  cardSub:   { ...T.typography.bodySm, color: T.colors.text.muted, lineHeight: 19, marginBottom: T.spacing.xs },
+  cardTitle: { fontSize: 16, color: C.text.primary, fontWeight: '800', marginBottom: 2 },
+  cardSub:   { fontSize: 13, color: C.text.muted, lineHeight: 19, marginBottom: T.spacing.xs },
 
   stepRow: { flexDirection: 'row', alignItems: 'flex-start', gap: T.spacing.md, paddingVertical: 4 },
   stepIcon: {
-    width: 36, height: 36, borderRadius: 18,
-    backgroundColor: 'rgba(94,234,212,0.1)',
-    borderWidth: 1, borderColor: 'rgba(94,234,212,0.18)',
+    width: 36, height: 36, borderRadius: 10,
+    backgroundColor: S.accentTeal,
+    borderWidth: 1, borderColor: 'rgba(94,234,212,0.25)',
     justifyContent: 'center', alignItems: 'center',
     flexShrink: 0,
   },
-  stepText: { ...T.typography.bodyMd, color: T.colors.text.secondary, flex: 1, lineHeight: 22 },
+  stepText: { fontSize: 14, color: C.text.secondary, flex: 1, lineHeight: 22 },
 
   infoRow: {
     flexDirection: 'row', alignItems: 'center',
     justifyContent: 'space-between',
     paddingVertical: T.spacing.xs,
     borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: T.colors.border.light,
+    borderTopColor: 'rgba(167,139,250,0.15)',
   },
-  infoLabel: { ...T.typography.bodySm, color: T.colors.text.muted },
-  infoValue: { ...T.typography.bodySm, color: T.colors.text.primary, fontWeight: '600', maxWidth: '60%' },
+  infoLabel: { fontSize: 13, color: C.text.muted },
+  infoValue: { fontSize: 13, color: C.text.primary, fontWeight: '700', maxWidth: '60%' },
 
   kycNotice: {
     flexDirection: 'row', gap: T.spacing.sm,
@@ -385,33 +358,23 @@ const s = StyleSheet.create({
   },
   activeNoticeText: { ...T.typography.bodySm, color: T.colors.accent.success, flex: 1, lineHeight: 18 },
 
-  kycBtn: { borderRadius: T.borderRadius.md, overflow: 'hidden', marginTop: T.spacing.xs },
-  kycBtnGrad: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
-    gap: T.spacing.sm, paddingVertical: T.spacing.md,
-  },
-  kycBtnText: { ...T.typography.labelLg, color: '#000', fontWeight: '700' },
+  kycBtnThemed: { marginVertical: 0, marginTop: T.spacing.xs },
 
-  fieldLabel: { ...T.typography.labelMd, color: T.colors.text.secondary, marginBottom: 2 },
-  fieldHint:  { ...T.typography.bodySm, color: T.colors.text.muted, lineHeight: 18, marginTop: T.spacing.xs },
+  fieldLabel: { fontSize: 11, fontWeight: '700', color: PURPLE_LINK, textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 2 },
+  fieldHint:  { fontSize: 13, color: C.text.muted, lineHeight: 18, marginTop: T.spacing.xs },
   inputWrap: {
     flexDirection: 'row', alignItems: 'center',
-    backgroundColor: T.colors.component.input,
-    borderRadius: T.borderRadius.md,
-    borderWidth: 1, borderColor: T.colors.border.light,
+    backgroundColor: INPUT_BG,
+    borderRadius: 12,
+    borderWidth: 1, borderColor: 'rgba(167,139,250,0.22)',
     paddingHorizontal: T.spacing.md,
     marginBottom: T.spacing.sm,
   },
   inputIcon: { marginRight: T.spacing.sm },
   input: {
     flex: 1, paddingVertical: T.spacing.sm + 2,
-    color: T.colors.text.primary, ...T.typography.bodyMd,
+    color: C.text.primary, fontSize: 15,
   },
 
-  setupBtn: { borderRadius: T.borderRadius.md, overflow: 'hidden', marginTop: T.spacing.sm },
-  setupBtnGrad: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
-    gap: T.spacing.sm, paddingVertical: T.spacing.md,
-  },
-  setupBtnText: { ...T.typography.labelLg, color: '#000', fontWeight: '700' },
+  setupBtnThemed: { marginVertical: 0, marginTop: T.spacing.sm },
 });

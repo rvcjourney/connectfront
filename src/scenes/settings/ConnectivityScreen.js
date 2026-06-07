@@ -1,14 +1,23 @@
 import React, { useMemo } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
-import LinearGradient from 'react-native-linear-gradient';
 import Toast from 'react-native-simple-toast';
 import { REACT_APP_AUTH_URL, AUTH_URL, VIDEO_SDK_AUTH_URL } from '@env';
 import { SafeScreen } from '../../components/SafeScreen';
+import Button from '../../components/Button';
 import { UNIFIED_THEME } from '../../unifiedTheme';
 import { SUPABASE_URL } from '../../lib/supabase';
 
 const T = UNIFIED_THEME;
+const C = T.colors;
+const B = C.buttons;
+const S = C.surface;
+
+const PURPLE_LINK = B.nebulaGradient[0];
+const GOLD = C.accent.primary;
+const TEAL = C.accent.secondary;
+const PANEL_BG = '#161432';
+const INPUT_BG = '#0f0e2a';
 
 function tokenServerUrl() {
   const raw = REACT_APP_AUTH_URL || AUTH_URL || VIDEO_SDK_AUTH_URL || '';
@@ -25,12 +34,12 @@ function maskHost(url) {
   }
 }
 
-function Row({ icon, title, subtitle, accent }) {
+function Row({ icon, title, subtitle, accent, accentBg }) {
   return (
     <View style={styles.row}>
-      <LinearGradient colors={[`${accent}22`, 'transparent']} style={styles.rowIconBg}>
+      <View style={[styles.rowIconBg, { backgroundColor: accentBg }]}>
         <MaterialIcons name={icon} size={22} color={accent} />
-      </LinearGradient>
+      </View>
       <View style={styles.rowBody}>
         <Text style={styles.rowTitle}>{title}</Text>
         <Text style={styles.rowSub} numberOfLines={2}>
@@ -54,7 +63,7 @@ export default function ConnectivityScreen({ navigation }) {
     <SafeScreen scrollable={false} padding={T.spacing.lg} hasBottomTabs={false}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn} hitSlop={12}>
-          <MaterialIcons name="arrow-back" size={22} color={T.colors.text.primary} />
+          <MaterialIcons name="arrow-back" size={22} color={C.text.primary} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Connectivity</Text>
         <View style={styles.headerSpacer} />
@@ -62,8 +71,7 @@ export default function ConnectivityScreen({ navigation }) {
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scroll}>
         <Text style={styles.intro}>
-          Overview of endpoints this build talks to. Add real reachability checks (e.g. NetInfo + ping) when you wire
-          the backend.
+          Overview of endpoints this build talks to. Add real reachability checks when you wire the backend.
         </Text>
 
         <View style={styles.card}>
@@ -72,14 +80,16 @@ export default function ConnectivityScreen({ navigation }) {
             icon="cloud"
             title="Supabase"
             subtitle={endpoints.supabase}
-            accent={T.colors.accent.secondary}
+            accent={TEAL}
+            accentBg={S.accentTeal}
           />
           <View style={styles.divider} />
           <Row
             icon="vpn-key"
             title="Token / auth server"
             subtitle={endpoints.tokenServer}
-            accent={T.colors.accent.primary}
+            accent={GOLD}
+            accentBg={S.accentGold}
           />
         </View>
 
@@ -89,23 +99,18 @@ export default function ConnectivityScreen({ navigation }) {
             icon="wifi-tethering"
             title="Network status"
             subtitle="Not monitored yet — install @react-native-community/netinfo to show online / offline."
-            accent={T.colors.text.muted}
+            accent={PURPLE_LINK}
+            accentBg={S.accentViolet}
           />
         </View>
 
-        <TouchableOpacity
-          style={styles.checkBtn}
+        <Button
+          text="Run check (placeholder)"
+          icon="sync"
+          variant="info"
           onPress={() => Toast.show('Wire NetInfo + health checks when backend is ready', Toast.SHORT)}
-          activeOpacity={0.85}
-        >
-          <LinearGradient
-            colors={['rgba(94,234,212,0.35)', 'rgba(167,139,250,0.25)']}
-            style={styles.checkBtnInner}
-          >
-            <MaterialIcons name="sync" size={18} color={T.colors.text.primary} />
-            <Text style={styles.checkBtnTxt}>Run check (placeholder)</Text>
-          </LinearGradient>
-        </TouchableOpacity>
+          style={styles.checkBtnThemed}
+        />
       </ScrollView>
     </SafeScreen>
   );
@@ -122,30 +127,30 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: T.colors.component.input,
+    backgroundColor: PANEL_BG,
     borderWidth: 1,
-    borderColor: T.colors.border.light,
+    borderColor: 'rgba(167,139,250,0.22)',
     justifyContent: 'center',
     alignItems: 'center',
   },
   headerTitle: {
-    ...T.typography.bodyLg,
-    color: T.colors.text.primary,
+    fontSize: 17,
+    color: C.text.primary,
     fontWeight: '800',
   },
   headerSpacer: { width: 40 },
   scroll: { paddingBottom: T.spacing.xxxl },
   intro: {
-    ...T.typography.bodySm,
-    color: T.colors.text.secondary,
+    fontSize: 13,
+    color: C.text.secondary,
     lineHeight: 20,
     marginBottom: T.spacing.lg,
   },
   card: {
-    backgroundColor: T.colors.component.input,
+    backgroundColor: PANEL_BG,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: T.colors.border.light,
+    borderColor: 'rgba(167,139,250,0.22)',
     padding: T.spacing.lg,
     marginBottom: T.spacing.md,
   },
@@ -153,7 +158,7 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontWeight: '800',
     letterSpacing: 1.2,
-    color: T.colors.text.muted,
+    color: PURPLE_LINK,
     textTransform: 'uppercase',
     marginBottom: T.spacing.md,
   },
@@ -165,30 +170,16 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: T.colors.border.light,
+    borderColor: 'rgba(167,139,250,0.15)',
   },
   rowBody: { flex: 1, minWidth: 0 },
-  rowTitle: { fontSize: 15, fontWeight: '700', color: T.colors.text.primary, marginBottom: 4 },
-  rowSub: { fontSize: 12, color: T.colors.text.secondary, lineHeight: 18 },
+  rowTitle: { fontSize: 15, fontWeight: '700', color: C.text.primary, marginBottom: 4 },
+  rowSub: { fontSize: 12, color: C.text.secondary, lineHeight: 18 },
   divider: {
     height: StyleSheet.hairlineWidth,
-    backgroundColor: T.colors.border.light,
+    backgroundColor: 'rgba(167,139,250,0.15)',
     marginVertical: T.spacing.md,
     marginLeft: 44 + T.spacing.md,
   },
-  checkBtn: {
-    borderRadius: 14,
-    overflow: 'hidden',
-    marginTop: T.spacing.sm,
-    borderWidth: 1,
-    borderColor: T.colors.border.light,
-  },
-  checkBtnInner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    paddingVertical: 14,
-  },
-  checkBtnTxt: { fontSize: 14, fontWeight: '700', color: T.colors.text.primary },
+  checkBtnThemed: { marginVertical: T.spacing.sm },
 });

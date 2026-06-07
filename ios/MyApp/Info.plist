@@ -39,6 +39,10 @@
 	<string></string>
 	<key>NSMicrophoneUsageDescription</key>
 	<string>Microphone permission description</string>
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>Save session recordings to your photo gallery</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Save session recordings to your photo gallery</string>
 	<key>RTCAppGroupIdentifier</key>
 	<string>group.com.ZujoNow.ScreenBroadcast</string>
 	<key>RTCScreenSharingExtension</key>

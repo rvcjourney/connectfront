@@ -37,7 +37,6 @@ import colors from "../../../styles/colors";
 import IconContainer from "../../../components/IconContainer";
 import LocalViewContainer from "./LocalViewContainer";
 import LargeView from "./LargeView";
-import MiniView from "./MiniView";
 import LocalParticipantPresenter from "../Components/LocalParticipantPresenter";
 import Menu from "../../../components/Menu";
 import MenuItem from "../Components/MenuItem";
@@ -92,10 +91,16 @@ export default function OneToOneMeetingViewer({ isHost }) {
   const pendingRecordingRequestRef = useRef(null);
   const recordingTimerRef = useRef(null);
   const recordingStartedAtRef = useRef(null);
+  const meetingTimerRef = useRef(null);
+  const meetingStartedAtRef = useRef(null);
   const frontCameraIdRef = useRef(null);
+  const webcamAutoEnabledRef = useRef(false);
 
   const participantIds = [...participants.keys()];
   const localParticipantId = meeting?.localParticipant?.id;
+  const remoteParticipantId =
+    participantIds.find((id) => id !== localParticipantId) ??
+    participantIds[1];
 
   const participantCount = participantIds ? participantIds.length : null;
 
@@ -107,6 +112,7 @@ export default function OneToOneMeetingViewer({ isHost }) {
   const [audioDevice, setAudioDevice] = useState([]);
   const [statParticipantId, setstatParticipantId] = useState("");
   const [recordingElapsedSeconds, setRecordingElapsedSeconds] = useState(0);
+  const [meetingElapsedSeconds, setMeetingElapsedSeconds] = useState(0);
 
   async function updateAudioDeviceList() {
     const devices = await getAudioDeviceList();
@@ -140,6 +146,59 @@ export default function OneToOneMeetingViewer({ isHost }) {
     const t = setTimeout(() => fetchFrontCamera(), 800);
     return () => { cancelled = true; clearTimeout(t); };
   }, []);
+
+  useEffect(() => {
+    meetingStartedAtRef.current = Date.now();
+    setMeetingElapsedSeconds(0);
+    meetingTimerRef.current = setInterval(() => {
+      const elapsed = Math.floor(
+        (Date.now() - meetingStartedAtRef.current) / 1000
+      );
+      setMeetingElapsedSeconds(elapsed);
+    }, 1000);
+
+    return () => {
+      if (meetingTimerRef.current) {
+        clearInterval(meetingTimerRef.current);
+        meetingTimerRef.current = null;
+      }
+    };
+  }, []);
+
+  useEffect(() => {
+    if (webcamAutoEnabledRef.current) return;
+
+    const enableFrontWebcam = async () => {
+      try {
+        let frontId = frontCameraIdRef.current;
+        if (!frontId) {
+          const cams = await getWebcams?.();
+          if (cams?.length) {
+            const front =
+              cams.find(
+                (c) =>
+                  c.label?.toLowerCase().includes("front") ||
+                  c.facingMode === "user"
+              ) || cams[0];
+            frontId = front?.deviceId ?? null;
+            frontCameraIdRef.current = frontId;
+          }
+        }
+
+        if (!localWebcamOn) {
+          toggleWebcam();
+          if (frontId) {
+            setTimeout(() => changeWebcam(frontId), 400);
+          }
+        } else if (frontId) {
+          changeWebcam(frontId);
+        }
+        webcamAutoEnabledRef.current = true;
+      } catch (_) {}
+    };
+
+    enableFrontWebcam();
+  }, [localWebcamOn]);
 
   const formatDuration = (seconds) => {
     const mins = Math.floor(seconds / 60)
@@ -356,6 +415,9 @@ export default function OneToOneMeetingViewer({ isHost }) {
       if (recordingTimerRef.current) {
         clearInterval(recordingTimerRef.current);
       }
+      if (meetingTimerRef.current) {
+        clearInterval(meetingTimerRef.current);
+      }
     };
   }, []);
 
@@ -446,7 +508,26 @@ export default function OneToOneMeetingViewer({ isHost }) {
                 : 0,
           }}
         >
-          <View style={{ flexDirection: "row" }}>
+          <View style={{ flexDirection: "row", alignItems: "center" }}>
+            <View
+              style={{
+                backgroundColor: "rgba(0, 0, 0, 0.45)",
+                paddingHorizontal: 10,
+                paddingVertical: 4,
+                borderRadius: 8,
+                marginRight: 10,
+              }}
+            >
+              <Text
+                style={{
+                  fontSize: 14,
+                  fontFamily: ROBOTO_FONTS.RobotoBold,
+                  color: colors.primary[100],
+                }}
+              >
+                {formatDuration(meetingElapsedSeconds)}
+              </Text>
+            </View>
             <Text
               style={{
                 fontSize: 16,
@@ -502,27 +583,35 @@ export default function OneToOneMeetingViewer({ isHost }) {
       <View style={{ flex: 1, marginTop: 8, marginBottom: 12 }}>
         {participantCount > 1 ? (
           splitMode ? (
-            <View style={{ flex: 1, gap: 6 }}>
-              <View style={{ flex: 1 }}>
-                <LargeView
-                  participantId={participantIds[1]}
-                  openStatsBottomSheet={openStatsBottomSheet}
-                />
+            localScreenShareOn ? (
+              <LocalParticipantPresenter />
+            ) : (
+              <View style={{ flex: 1, gap: 8 }}>
+                <View style={{ flex: 1 }}>
+                  {remoteParticipantId ? (
+                    <LargeView
+                      participantId={remoteParticipantId}
+                      openStatsBottomSheet={openStatsBottomSheet}
+                    />
+                  ) : null}
+                </View>
+                <View style={{ flex: 1 }}>
+                  {localParticipantId ? (
+                    <LargeView
+                      participantId={localParticipantId}
+                      openStatsBottomSheet={openStatsBottomSheet}
+                    />
+                  ) : null}
+                </View>
               </View>
-              <View style={{ flex: 1 }}>
-                <LargeView
-                  participantId={participantIds[0]}
-                  openStatsBottomSheet={openStatsBottomSheet}
-                />
-              </View>
-            </View>
+            )
           ) : (
             <>
               {localScreenShareOn ? (
                 <LocalParticipantPresenter />
               ) : (
                 <LargeView
-                  participantId={participantIds[1]}
+                  participantId={remoteParticipantId ?? participantIds[1]}
                   openStatsBottomSheet={openStatsBottomSheet}
                 />
               )}

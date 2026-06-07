@@ -22,6 +22,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Toast from 'react-native-simple-toast';
 import Video from 'react-native-video';
 import { SafeScreen } from '../../components/SafeScreen';
+import CosmicButton from '../../components/CosmicButton';
 import { UNIFIED_THEME } from '../../unifiedTheme';
 import { profileApi } from '../../api/profileApi';
 import { videoApi } from '../../api/videoApi';
@@ -928,69 +929,49 @@ export default function MentorProfileScreen({ navigation, route }) {
 
               <View style={styles.dualCtas}>
                 {showSubscribeCta ? (
-                  <TouchableOpacity
-                    style={styles.ctaHalf}
+                  <CosmicButton
+                    label={`Subscribe · ₹${unlockPrice}/mo`}
+                    variant="nebula"
+                    size="compact"
+                    icon="star"
                     onPress={() => setShowSubSheet(true)}
-                    activeOpacity={0.92}
-                  >
-                    <LinearGradient
-                      colors={['#facc15', '#f59e0b']}
-                      start={{ x: 0, y: 0 }}
-                      end={{ x: 1, y: 0 }}
-                      style={[styles.ctaHalfInner, styles.ctaHalfInnerCompact, unlocking && { opacity: 0.75 }]}
-                    >
-                      {unlocking ? (
-                        <ActivityIndicator color="#0c1228" />
-                      ) : (
-                        <>
-                          <MaterialIcons name="star" size={16} color="#0c1228" />
-                          <Text style={styles.ctaHalfTxtDark} numberOfLines={1}>Subscribe · ₹{unlockPrice}/mo</Text>
-                        </>
-                      )}
-                    </LinearGradient>
-                  </TouchableOpacity>
+                    loading={unlocking}
+                    style={styles.ctaHalf}
+                  />
                 ) : libraryUnlocked && hasLockedVideos && !isOwnProfile ? (
-                  <TouchableOpacity
-                    style={styles.ctaHalf}
+                  <CosmicButton
+                    label="Subscribed"
+                    variant="success"
+                    size="compact"
+                    icon="check-circle"
                     onPress={() => Toast.show('You are subscribed.', Toast.SHORT)}
-                    activeOpacity={0.92}
-                  >
-                    <LinearGradient
-                      colors={['#34d399', '#059669']}
-                      start={{ x: 0, y: 0 }}
-                      end={{ x: 1, y: 1 }}
-                      style={[styles.ctaHalfInner, styles.ctaHalfInnerCompact]}
-                    >
-                      <MaterialIcons name="check-circle" size={16} color="#fff" />
-                      <Text style={styles.ctaHalfTxtDark} numberOfLines={1}>Subscribed</Text>
-                    </LinearGradient>
-                  </TouchableOpacity>
-                ) : (
-                  <TouchableOpacity
                     style={styles.ctaHalf}
-                    onPress={() => Toast.show(isOwnProfile ? 'This is your channel.' : 'Nothing to subscribe here.', Toast.SHORT)}
-                    activeOpacity={0.92}
-                  >
-                    <View style={[styles.ctaHalfMuted, styles.ctaHalfInnerCompact]}>
-                      <MaterialIcons name="star" size={16} color={C.text.muted} />
-                      <Text style={styles.ctaHalfTxtMuted} numberOfLines={1}>
-                        {isOwnProfile ? 'Your channel' : 'Subscribe'}
-                      </Text>
-                    </View>
-                  </TouchableOpacity>
+                  />
+                ) : (
+                  <CosmicButton
+                    label={isOwnProfile ? 'Your channel' : 'Subscribe'}
+                    variant="secondary"
+                    size="compact"
+                    icon="star"
+                    onPress={() =>
+                      Toast.show(
+                        isOwnProfile ? 'This is your channel.' : 'Nothing to subscribe here.',
+                        Toast.SHORT,
+                      )
+                    }
+                    style={styles.ctaHalf}
+                  />
                 )}
 
-                <TouchableOpacity
-                  style={styles.ctaHalf}
-                  onPress={isOwnProfile ? undefined : goBook}
-                  activeOpacity={isOwnProfile ? 1 : 0.92}
+                <CosmicButton
+                  label="Book 1-on-1"
+                  variant="premium"
+                  size="compact"
+                  icon="calendar-today"
+                  onPress={goBook}
                   disabled={isOwnProfile}
-                >
-                  <View style={[styles.bookBtn, styles.ctaHalfInnerCompact, isOwnProfile && { opacity: 0.45 }]}>
-                    <MaterialIcons name="calendar-today" size={16} color={TEAL} />
-                    <Text style={styles.bookBtnTxt} numberOfLines={1}>Book 1-on-1</Text>
-                  </View>
-                </TouchableOpacity>
+                  style={[styles.ctaHalf, isOwnProfile && { opacity: 0.45 }]}
+                />
               </View>
 
               {memberVideos.length > 0 && (
@@ -1129,28 +1110,25 @@ export default function MentorProfileScreen({ navigation, route }) {
             ))}
           </View>
 
-          <TouchableOpacity
-            style={[sheet.payBtn, unlocking && { opacity: 0.6 }]}
-            onPress={() => { setShowSubSheet(false); handleUnlock(); }}
+          <CosmicButton
+            label={`Subscribe · ₹${unlockPrice}/mo`}
+            variant="nebula"
+            onPress={() => {
+              setShowSubSheet(false);
+              handleUnlock();
+            }}
+            loading={unlocking}
             disabled={unlocking}
-            activeOpacity={0.85}
-          >
-            <LinearGradient
-              colors={[C.accent.secondary, C.accent.primary]}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 0 }}
-              style={sheet.payBtnInner}
-            >
-              {unlocking
-                ? <ActivityIndicator color="#000" size="small" />
-                : <Text style={sheet.payBtnText}>Subscribe · ₹{unlockPrice}/mo</Text>
-              }
-            </LinearGradient>
-          </TouchableOpacity>
+            style={sheet.payBtn}
+          />
 
-          <TouchableOpacity onPress={() => setShowSubSheet(false)} style={sheet.cancelBtn}>
-            <Text style={sheet.cancelText}>Maybe later</Text>
-          </TouchableOpacity>
+          <CosmicButton
+            label="Maybe later"
+            variant="goldOutline"
+            size="compact"
+            onPress={() => setShowSubSheet(false)}
+            style={sheet.cancelBtnWrap}
+          />
         </View>
       </Modal>
 
@@ -1183,11 +1161,8 @@ const sheet = StyleSheet.create({
   perks: { gap: 10, marginBottom: 24 },
   perkRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   perkText: { color: C.text.secondary, fontSize: 13 },
-  payBtn: { borderRadius: 14, overflow: 'hidden', marginBottom: 12 },
-  payBtnInner: { paddingVertical: 15, alignItems: 'center' },
-  payBtnText: { color: '#000', fontSize: 15, fontWeight: '800' },
-  cancelBtn: { alignItems: 'center', paddingVertical: 8 },
-  cancelText: { color: C.text.muted, fontSize: 13 },
+  payBtn: { marginBottom: 8, marginVertical: 0 },
+  cancelBtnWrap: { marginVertical: 0 },
 });
 
 const styles = StyleSheet.create({

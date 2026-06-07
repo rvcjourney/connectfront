@@ -119,11 +119,12 @@ export default function JoinContainer({ navigation }) {
               <>
                 <Button
                   text="Create a meeting"
+                  variant="premium"
                   onPress={() => setIsVisibleCreateMeeting(true)}
                 />
                 <Button
                   text="Join a meeting"
-                  backgroundColor={UNIFIED_THEME.colors.component.buttonSecondary}
+                  variant="secondary"
                   onPress={() => setIsVisibleJoinMeeting(true)}
                 />
               </>

@@ -8,6 +8,7 @@ import {
   RefreshControl,
   Dimensions,
   ActivityIndicator,
+  Platform,
 } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
@@ -22,6 +23,13 @@ import { formatCurrency } from '../../utils/formatCurrency';
 import { formatDate } from '../../utils/dateHelpers';
 
 const T = UNIFIED_THEME;
+const C = T.colors;
+const B = C.buttons;
+const S = C.surface;
+
+const PURPLE_LINK = B.nebulaGradient[0];
+const TEAL = C.accent.secondary;
+const GOLD = C.accent.primary;
 const PERIODS = ['week', 'month', 'year'];
 const CHART_HEIGHT = 160;
 const screenWidth = Dimensions.get('window').width;
@@ -67,7 +75,7 @@ function CustomBarChart({ data }) {
                   <View style={[chart.barEmpty, { width: barWidth }]} />
                 ) : (
                   <LinearGradient
-                    colors={['#5eead4', '#a78bfa']}
+                    colors={B.nebulaGradient}
                     start={{ x: 0, y: 0 }}
                     end={{ x: 0, y: 1 }}
                     style={[chart.bar, { height: barH, width: barWidth }]}
@@ -86,6 +94,22 @@ function CustomBarChart({ data }) {
 }
 
 // ──────────────────────────────────────────────────────────────────────────────
+
+function StatSegment({ icon, iconColor, value, label }) {
+  return (
+    <View style={styles.statSeg}>
+      <Text style={styles.statValue} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.72}>
+        {value}
+      </Text>
+      <View style={styles.statLabelRow}>
+        <MaterialIcons name={icon} size={12} color={iconColor} />
+        <Text style={styles.statLabel} numberOfLines={1}>
+          {label}
+        </Text>
+      </View>
+    </View>
+  );
+}
 
 export default function MentorEarningsScreen() {
   const { profile } = useAuth();
@@ -185,27 +209,35 @@ export default function MentorEarningsScreen() {
     <SafeScreen hasBottomTabs={false} padding={T.spacing.lg} includeTopInset={false}>
       <ScrollView
         showsVerticalScrollIndicator={false}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={T.colors.accent.secondary} />}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={TEAL} />}
       >
-        {/* ── Total + KPI row ── */}
-        <View style={styles.topRow}>
-          <View style={styles.totalCard}>
-            <Text style={styles.totalLabel}>Total Earnings</Text>
-            <Text style={styles.totalAmount}>{formatCurrency(totalEarnings)}</Text>
-            <Text style={styles.totalNote}>All completed sessions</Text>
-          </View>
-          <View style={styles.kpiCol}>
-            <View style={styles.kpiCard}>
-              <MaterialIcons name="receipt-long" size={16} color={T.colors.accent.secondary} />
-              <Text style={styles.kpiVal}>{totalPayouts}</Text>
-              <Text style={styles.kpiLbl}>Payouts</Text>
-            </View>
-            <View style={styles.kpiCard}>
-              <MaterialIcons name="star" size={16} color={T.colors.accent.primary} />
-              <Text style={styles.kpiVal}>{formatCurrency(bestPoint)}</Text>
-              <Text style={styles.kpiLbl}>Peak</Text>
-            </View>
-          </View>
+        <View style={styles.totalHighlight}>
+          <Text style={styles.totalLabel}>Total earnings</Text>
+          <Text style={styles.totalAmount}>{formatCurrency(totalEarnings)}</Text>
+          <Text style={styles.totalNote}>All completed sessions</Text>
+        </View>
+
+        <View style={styles.statsBar}>
+          <StatSegment
+            icon="receipt-long"
+            iconColor={PURPLE_LINK}
+            value={String(totalPayouts)}
+            label="Payouts"
+          />
+          <View style={styles.statDivider} />
+          <StatSegment
+            icon="star"
+            iconColor={GOLD}
+            value={formatCurrency(bestPoint)}
+            label="Peak"
+          />
+          <View style={styles.statDivider} />
+          <StatSegment
+            icon="trending-up"
+            iconColor={TEAL}
+            value={String(allEarnings.length)}
+            label="Entries"
+          />
         </View>
 
         {/* ── Period Selector ── */}
@@ -228,13 +260,13 @@ export default function MentorEarningsScreen() {
         <View style={styles.chartCard}>
           {periodLoading ? (
             <View style={styles.emptyChart}>
-              <ActivityIndicator color={T.colors.accent.secondary} />
+              <ActivityIndicator color={TEAL} />
             </View>
           ) : chartData ? (
             <CustomBarChart data={chartData} />
           ) : (
             <View style={styles.emptyChart}>
-              <MaterialIcons name="bar-chart" size={36} color={T.colors.text.muted} />
+              <MaterialIcons name="bar-chart" size={36} color={PURPLE_LINK} />
               <Text style={styles.emptyTxt}>No data for this period</Text>
               <Text style={styles.emptyHint}>Complete sessions to see trends</Text>
             </View>
@@ -242,7 +274,14 @@ export default function MentorEarningsScreen() {
         </View>
 
         {/* ── Recent Activity ── */}
-        <Text style={styles.sectionTitle}>Recent Activity</Text>
+        <View style={styles.secHdrRow}>
+          <Text style={styles.secHdrTitle}>Recent Activity</Text>
+          {allEarnings.length > 0 ? (
+            <View style={styles.secHdrCount}>
+              <Text style={styles.secHdrCountText}>{allEarnings.length}</Text>
+            </View>
+          ) : null}
+        </View>
         <View style={styles.txnCard}>
           {allEarnings.length > 0 ? (
             allEarnings.slice(0, shownCount).map((item, index) => {
@@ -254,7 +293,7 @@ export default function MentorEarningsScreen() {
                   style={[styles.txnRow, isLast && { borderBottomWidth: 0 }]}
                 >
                   <View style={styles.txnIcon}>
-                    <MaterialIcons name="trending-up" size={18} color={T.colors.accent.success} />
+                    <MaterialIcons name="trending-up" size={18} color={TEAL} />
                   </View>
                   <View style={styles.txnInfo}>
                     <Text style={styles.txnDate}>{item.created_at ? formatDate(item.created_at) : '—'}</Text>
@@ -270,7 +309,7 @@ export default function MentorEarningsScreen() {
             })
           ) : (
             <View style={styles.emptyTxn}>
-              <MaterialIcons name="receipt-long" size={28} color={T.colors.text.muted} />
+              <MaterialIcons name="receipt-long" size={28} color={PURPLE_LINK} />
               <Text style={styles.emptyTxt}>No transactions yet</Text>
             </View>
           )}
@@ -281,7 +320,7 @@ export default function MentorEarningsScreen() {
             onPress={() => setShownCount(prev => prev + 6)}
             activeOpacity={0.7}
           >
-            <MaterialIcons name="expand-more" size={20} color={T.colors.accent.secondary} />
+            <MaterialIcons name="expand-more" size={20} color={PURPLE_LINK} />
             <Text style={styles.loadMoreTxt}>Load more</Text>
           </TouchableOpacity>
         )}
@@ -319,7 +358,7 @@ const chart = StyleSheet.create({
   valueLabel: {
     fontSize: 10,
     fontWeight: '700',
-    color: T.colors.accent.secondary,
+    color: PURPLE_LINK,
     marginBottom: 4,
   },
   barTrack: {
@@ -335,76 +374,173 @@ const chart = StyleSheet.create({
   },
   xLabel: {
     fontSize: 11,
-    color: T.colors.text.muted,
+    color: C.text.muted,
     marginTop: 6,
     fontWeight: '600',
   },
 });
 
-// ─── Screen styles ─────────────────────────────────────────────────────────────
 const styles = StyleSheet.create({
-  topRow: { flexDirection: 'row', gap: T.spacing.sm, marginBottom: T.spacing.lg },
-  totalCard: {
-    flex: 1,
-    backgroundColor: T.colors.component.card,
-    borderRadius: T.borderRadius.lg,
+  totalHighlight: {
+    borderRadius: 16,
     borderWidth: 1,
-    borderColor: T.colors.border.light,
+    borderColor: 'rgba(167,139,250,0.22)',
+    backgroundColor: S.accentSuccess,
     padding: T.spacing.lg,
-    justifyContent: 'center',
-  },
-  totalLabel: { fontSize: 11, fontWeight: '700', color: T.colors.text.muted, textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: T.spacing.xs },
-  totalAmount: { fontSize: 26, fontWeight: '800', color: T.colors.accent.success, letterSpacing: -0.3 },
-  totalNote: { fontSize: 12, color: T.colors.text.muted, marginTop: 2 },
-
-  kpiCol: { gap: T.spacing.sm },
-  kpiCard: {
-    backgroundColor: T.colors.component.card,
-    borderRadius: T.borderRadius.md,
-    borderWidth: 1,
-    borderColor: T.colors.border.light,
-    paddingVertical: T.spacing.sm,
-    paddingHorizontal: T.spacing.md,
+    marginBottom: T.spacing.md,
     alignItems: 'center',
-    gap: 2,
-    minWidth: 90,
   },
-  kpiVal: { fontSize: 13, fontWeight: '800', color: T.colors.text.primary },
-  kpiLbl: { fontSize: 11, color: T.colors.text.muted },
-
+  totalLabel: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: PURPLE_LINK,
+    textTransform: 'uppercase',
+    letterSpacing: 0.8,
+    marginBottom: T.spacing.xs,
+  },
+  totalAmount: {
+    fontSize: 32,
+    fontWeight: '800',
+    color: C.accent.success,
+    letterSpacing: -0.5,
+  },
+  totalNote: {
+    fontSize: 12,
+    color: C.text.muted,
+    marginTop: 4,
+  },
+  statsBar: {
+    flexDirection: 'row',
+    alignItems: 'stretch',
+    marginBottom: T.spacing.lg,
+    paddingVertical: 11,
+    paddingHorizontal: 4,
+    borderRadius: 14,
+    backgroundColor: 'rgba(255,255,255,0.07)',
+    borderWidth: 1,
+    borderColor: 'rgba(167,139,250,0.22)',
+  },
+  statSeg: {
+    flex: 1,
+    minWidth: 0,
+    alignItems: 'center',
+    paddingHorizontal: 2,
+  },
+  statValue: {
+    fontSize: 15,
+    fontWeight: '800',
+    color: C.text.primary,
+    letterSpacing: -0.4,
+    textAlign: 'center',
+    ...Platform.select({ android: { includeFontPadding: false } }),
+  },
+  statLabelRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 4,
+    marginTop: 5,
+  },
+  statLabel: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: C.text.muted,
+  },
+  statDivider: {
+    width: 1,
+    backgroundColor: 'rgba(255,255,255,0.14)',
+    marginVertical: 6,
+    alignSelf: 'stretch',
+  },
   periodRow: {
     flexDirection: 'row',
-    backgroundColor: T.colors.component.card,
-    borderRadius: T.borderRadius.round,
+    backgroundColor: 'rgba(255,255,255,0.07)',
+    borderRadius: 999,
     borderWidth: 1,
-    borderColor: T.colors.border.light,
+    borderColor: 'rgba(167,139,250,0.22)',
     padding: 3,
     marginBottom: T.spacing.lg,
   },
-  periodTab: { flex: 1, paddingVertical: T.spacing.sm, borderRadius: T.borderRadius.round, alignItems: 'center' },
-  periodTabActive: { backgroundColor: T.colors.component.buttonSecondary },
-  periodTxt: { fontSize: 13, fontWeight: '600', color: T.colors.text.muted },
-  periodTxtActive: { color: T.colors.accent.primary, fontWeight: '700' },
-
-  chartCard: {
-    backgroundColor: T.colors.component.card,
-    borderRadius: T.borderRadius.lg,
+  periodTab: {
+    flex: 1,
+    paddingVertical: T.spacing.sm,
+    borderRadius: 999,
+    alignItems: 'center',
+  },
+  periodTabActive: {
+    backgroundColor: S.accentViolet,
     borderWidth: 1,
-    borderColor: T.colors.border.light,
+    borderColor: 'rgba(167,139,250,0.35)',
+  },
+  periodTxt: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: C.text.muted,
+  },
+  periodTxtActive: {
+    color: PURPLE_LINK,
+    fontWeight: '800',
+  },
+  chartCard: {
+    backgroundColor: 'rgba(255,255,255,0.07)',
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(167,139,250,0.22)',
     paddingHorizontal: T.spacing.lg,
     marginBottom: T.spacing.lg,
     overflow: 'hidden',
+    ...Platform.select({ ios: T.shadows.small, android: { elevation: 3 } }),
   },
-  emptyChart: { height: 200, justifyContent: 'center', alignItems: 'center', gap: T.spacing.sm },
-  emptyTxt: { fontSize: 14, fontWeight: '600', color: T.colors.text.primary },
-  emptyHint: { fontSize: 12, color: T.colors.text.muted },
-
-  sectionTitle: { fontSize: 13, fontWeight: '700', color: T.colors.text.secondary, textTransform: 'uppercase', letterSpacing: 1, marginBottom: T.spacing.sm },
-  txnCard: {
-    backgroundColor: 'rgba(255,255,255,0.06)',
-    borderRadius: T.borderRadius.lg,
+  emptyChart: {
+    height: 200,
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: T.spacing.sm,
+  },
+  emptyTxt: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: C.text.primary,
+  },
+  emptyHint: {
+    fontSize: 12,
+    color: C.text.muted,
+  },
+  secHdrRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: T.spacing.xs,
+    marginBottom: T.spacing.sm,
+  },
+  secHdrTitle: {
+    fontSize: 15,
+    fontWeight: '800',
+    color: C.text.primary,
+    flex: 1,
+    minWidth: 0,
+  },
+  secHdrCount: {
+    minWidth: 26,
+    height: 26,
+    paddingHorizontal: 8,
+    borderRadius: 999,
+    backgroundColor: S.accentViolet,
     borderWidth: 1,
-    borderColor: T.colors.border.default,
+    borderColor: 'rgba(167,139,250,0.35)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  secHdrCountText: {
+    fontSize: 11,
+    fontWeight: '800',
+    color: PURPLE_LINK,
+  },
+  txnCard: {
+    backgroundColor: 'rgba(255,255,255,0.07)',
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.14)',
     overflow: 'hidden',
     marginBottom: T.spacing.lg,
   },
@@ -414,20 +550,40 @@ const styles = StyleSheet.create({
     paddingVertical: T.spacing.md + 2,
     paddingHorizontal: T.spacing.lg,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: T.colors.border.light,
+    borderBottomColor: 'rgba(255,255,255,0.1)',
     gap: T.spacing.md,
   },
   txnIcon: {
-    width: 40, height: 40, borderRadius: 20,
-    backgroundColor: 'rgba(52,211,153,0.12)',
-    borderWidth: 1, borderColor: 'rgba(52,211,153,0.25)',
-    justifyContent: 'center', alignItems: 'center',
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: S.accentTeal,
+    borderWidth: 1,
+    borderColor: 'rgba(94,234,212,0.25)',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   txnInfo: { flex: 1, gap: 3 },
-  txnDate: { fontSize: 14, fontWeight: '700', color: T.colors.text.primary },
-  txnSub: { fontSize: 12, color: T.colors.text.secondary, fontWeight: '500' },
-  txnAmt: { fontSize: 15, color: T.colors.accent.success, fontWeight: '800' },
-  emptyTxn: { alignItems: 'center', paddingVertical: T.spacing.xl, gap: T.spacing.sm },
+  txnDate: {
+    fontSize: 14,
+    fontWeight: '800',
+    color: C.text.primary,
+  },
+  txnSub: {
+    fontSize: 12,
+    color: C.text.secondary,
+    fontWeight: '500',
+  },
+  txnAmt: {
+    fontSize: 15,
+    color: C.accent.success,
+    fontWeight: '800',
+  },
+  emptyTxn: {
+    alignItems: 'center',
+    paddingVertical: T.spacing.xl,
+    gap: T.spacing.sm,
+  },
   loadMoreBtn: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -436,10 +592,14 @@ const styles = StyleSheet.create({
     paddingVertical: T.spacing.md,
     marginTop: -T.spacing.sm,
     marginBottom: T.spacing.lg,
-    borderRadius: T.borderRadius.lg,
+    borderRadius: 14,
     borderWidth: 1,
-    borderColor: T.colors.border.light,
-    backgroundColor: T.colors.component.card,
+    borderColor: 'rgba(167,139,250,0.22)',
+    backgroundColor: 'rgba(255,255,255,0.07)',
   },
-  loadMoreTxt: { fontSize: 13, color: T.colors.accent.secondary, fontWeight: '600' },
+  loadMoreTxt: {
+    fontSize: 13,
+    color: PURPLE_LINK,
+    fontWeight: '700',
+  },
 });

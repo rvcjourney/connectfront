@@ -13,7 +13,6 @@ import {
   useWindowDimensions,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import LinearGradient from 'react-native-linear-gradient';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import Toast from 'react-native-simple-toast';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -26,6 +25,14 @@ import { useAuth } from '../../hooks/useAuth';
 import { SCREEN_NAMES } from '../../navigators/screenNames';
 
 const T = UNIFIED_THEME;
+const C = T.colors;
+const B = C.buttons;
+const S = C.surface;
+
+const PURPLE_LINK = B.nebulaGradient[0];
+const GOLD = C.accent.primary;
+const TEAL = C.accent.secondary;
+
 const PAGE_SIZE = 12;
 
 const SORT_OPTIONS = [
@@ -80,11 +87,11 @@ const skeletonStyles = StyleSheet.create({
     gap: UNIFIED_THEME.spacing.md,
   },
   card: {
-    borderRadius: UNIFIED_THEME.borderRadius.lg,
+    borderRadius: 16,
   },
   bone: {
-    backgroundColor: UNIFIED_THEME.colors.border.default,
-    borderRadius: UNIFIED_THEME.borderRadius.lg,
+    backgroundColor: 'rgba(255,255,255,0.1)',
+    borderRadius: 16,
   },
 });
 
@@ -187,33 +194,18 @@ export default function CategoryMentorsScreen({ route, navigation }) {
 
   const ListHeader = (
     <>
-      {/* ── Header card ── */}
-      <View style={styles.headerCard}>
-        <LinearGradient
-          colors={['rgba(94,234,212,0.12)', 'rgba(167,139,250,0.10)', 'rgba(2,0,20,0.5)']}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={StyleSheet.absoluteFill}
-        />
-        <View style={styles.headerTop}>
-          <View style={styles.categoryBadge}>
-            <MaterialIcons name="category" size={14} color={T.colors.accent.secondary} />
-            <Text style={styles.categoryBadgeTxt}>Category</Text>
-          </View>
+      <Text style={styles.headerTitle}>{category}</Text>
+      <View style={styles.headerStats}>
+        <View style={styles.headerStat}>
+          <MaterialIcons name="people" size={15} color={TEAL} />
+          <Text style={styles.headerStatTxt}>
+            {totalCount}{hasMore ? '+' : ''} mentor{totalCount !== 1 ? 's' : ''}
+          </Text>
         </View>
-        <Text style={styles.headerTitle}>{category}</Text>
-        <View style={styles.headerStats}>
-          <View style={styles.headerStat}>
-            <MaterialIcons name="people" size={15} color={T.colors.accent.secondary} />
-            <Text style={styles.headerStatTxt}>
-              {totalCount}{hasMore ? '+' : ''} mentor{totalCount !== 1 ? 's' : ''}
-            </Text>
-          </View>
-          <View style={styles.headerStatDot} />
-          <View style={styles.headerStat}>
-            <MaterialIcons name="sort" size={15} color={T.colors.text.muted} />
-            <Text style={styles.headerStatMuted}>{activeSortLabel}</Text>
-          </View>
+        <View style={styles.headerStatDot} />
+        <View style={styles.headerStat}>
+          <MaterialIcons name="sort" size={15} color={PURPLE_LINK} />
+          <Text style={styles.headerStatMuted}>{activeSortLabel}</Text>
         </View>
       </View>
 
@@ -235,7 +227,7 @@ export default function CategoryMentorsScreen({ route, navigation }) {
               <MaterialIcons
                 name={opt.icon}
                 size={14}
-                color={active ? T.colors.primary.dark : T.colors.text.muted}
+                color={active ? B.nebulaText : C.text.muted}
               />
               <Text style={[styles.sortChipTxt, active && styles.sortChipTxtActive]}>
                 {opt.label}
@@ -252,10 +244,10 @@ export default function CategoryMentorsScreen({ route, navigation }) {
     return (
       <TouchableOpacity style={styles.loadMoreBtn} onPress={loadMore} activeOpacity={0.7}>
         {loadingMore ? (
-          <ActivityIndicator size="small" color={T.colors.accent.secondary} />
+          <ActivityIndicator size="small" color={TEAL} />
         ) : (
           <>
-            <MaterialIcons name="expand-more" size={20} color={T.colors.accent.secondary} />
+            <MaterialIcons name="expand-more" size={20} color={PURPLE_LINK} />
             <Text style={styles.loadMoreTxt}>Load more</Text>
           </>
         )}
@@ -289,7 +281,7 @@ export default function CategoryMentorsScreen({ route, navigation }) {
             ListHeaderComponent={ListHeader}
             ListEmptyComponent={
               <View style={styles.empty}>
-                <MaterialIcons name="person-search" size={36} color={T.colors.text.muted} />
+                <MaterialIcons name="person-search" size={36} color={PURPLE_LINK} />
                 <Text style={styles.emptyTxt}>No mentors in this category</Text>
               </View>
             }
@@ -305,7 +297,7 @@ export default function CategoryMentorsScreen({ route, navigation }) {
               <RefreshControl
                 refreshing={refreshing}
                 onRefresh={handleRefresh}
-                tintColor={T.colors.accent.secondary}
+                tintColor={TEAL}
               />
             }
           />
@@ -331,19 +323,22 @@ const styles = StyleSheet.create({
     paddingHorizontal: T.spacing.md,
     paddingBottom: T.spacing.sm,
     borderBottomWidth: 1,
-    borderBottomColor: T.colors.border.light,
+    borderBottomColor: 'rgba(167,139,250,0.22)',
   },
   backBtn: {
     width: 40,
     height: 40,
-    borderRadius: T.borderRadius.sm,
+    borderRadius: 20,
     justifyContent: 'center',
     alignItems: 'center',
+    backgroundColor: 'rgba(12,12,40,0.55)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.12)',
   },
   topBarTitle: {
-    ...T.typography.headingSm,
-    color: T.colors.text.primary,
-    fontWeight: '700',
+    fontSize: 15,
+    color: C.text.primary,
+    fontWeight: '800',
     flex: 1,
     textAlign: 'center',
   },
@@ -351,53 +346,18 @@ const styles = StyleSheet.create({
     padding: T.spacing.lg,
     paddingBottom: T.spacing.xxxl,
   },
-  headerCard: {
-    borderRadius: T.borderRadius.sm,
-    overflow: 'hidden',
-    padding: T.spacing.lg,
-    marginBottom: T.spacing.md,
-    borderWidth: 1,
-    borderColor: T.colors.border.light,
-    borderLeftWidth: 3,
-    borderLeftColor: T.colors.accent.secondary,
-    backgroundColor: T.colors.primary.dark,
-    ...Platform.select({
-      ios: T.shadows.small,
-      android: { elevation: 3 },
-    }),
-  },
-  headerTop: {
-    marginBottom: T.spacing.sm,
-  },
-  categoryBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
-    alignSelf: 'flex-start',
-    paddingHorizontal: T.spacing.sm,
-    paddingVertical: 4,
-    borderRadius: T.borderRadius.sm,
-    backgroundColor: T.colors.component.input,
-    borderWidth: 1,
-    borderColor: T.colors.border.light,
-  },
-  categoryBadgeTxt: {
-    ...T.typography.labelSm,
-    color: T.colors.accent.secondary,
-    fontWeight: '700',
-    textTransform: 'uppercase',
-    letterSpacing: 0.8,
-  },
   headerTitle: {
-    ...T.typography.headingMd,
-    color: T.colors.text.primary,
+    fontSize: 22,
+    color: C.text.primary,
     fontWeight: '800',
-    marginBottom: T.spacing.md,
+    letterSpacing: -0.4,
+    marginBottom: T.spacing.sm,
   },
   headerStats: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: T.spacing.sm,
+    marginBottom: T.spacing.md,
   },
   headerStat: {
     flexDirection: 'row',
@@ -405,19 +365,19 @@ const styles = StyleSheet.create({
     gap: 5,
   },
   headerStatTxt: {
-    ...T.typography.bodySm,
-    color: T.colors.accent.secondary,
+    fontSize: 13,
+    color: TEAL,
     fontWeight: '600',
   },
   headerStatMuted: {
-    ...T.typography.bodySm,
-    color: T.colors.text.muted,
+    fontSize: 13,
+    color: C.text.muted,
   },
   headerStatDot: {
     width: 3,
     height: 3,
     borderRadius: 2,
-    backgroundColor: T.colors.border.default,
+    backgroundColor: 'rgba(255,255,255,0.25)',
   },
   sortBar: {
     gap: T.spacing.sm,
@@ -429,22 +389,23 @@ const styles = StyleSheet.create({
     gap: 5,
     paddingHorizontal: T.spacing.md,
     paddingVertical: T.spacing.sm,
-    borderRadius: T.borderRadius.lg,
+    borderRadius: 999,
     borderWidth: 1,
-    borderColor: T.colors.border.light,
-    backgroundColor: T.colors.component.card,
+    borderColor: 'rgba(255,255,255,0.1)',
+    backgroundColor: 'rgba(255,255,255,0.08)',
   },
   sortChipActive: {
-    backgroundColor: T.colors.accent.secondary,
-    borderColor: T.colors.accent.secondary,
+    backgroundColor: S.accentViolet,
+    borderColor: 'rgba(167,139,250,0.35)',
   },
   sortChipTxt: {
-    ...T.typography.labelSm,
-    color: T.colors.text.muted,
+    fontSize: 12,
+    color: C.text.muted,
     fontWeight: '600',
   },
   sortChipTxtActive: {
-    color: T.colors.primary.dark,
+    color: PURPLE_LINK,
+    fontWeight: '800',
   },
   row: {
     gap: T.spacing.md,
@@ -457,22 +418,28 @@ const styles = StyleSheet.create({
     gap: T.spacing.sm,
     paddingVertical: T.spacing.md,
     marginTop: T.spacing.sm,
-    borderRadius: T.borderRadius.lg,
+    borderRadius: 14,
     borderWidth: 1,
-    borderColor: T.colors.border.light,
-    backgroundColor: T.colors.component.card,
+    borderColor: 'rgba(167,139,250,0.22)',
+    backgroundColor: 'rgba(255,255,255,0.07)',
   },
   loadMoreTxt: {
-    ...T.typography.bodySm,
-    color: T.colors.accent.secondary,
+    fontSize: 13,
+    color: PURPLE_LINK,
+    fontWeight: '700',
   },
   empty: {
     alignItems: 'center',
     paddingVertical: T.spacing.xxxl,
     gap: T.spacing.md,
+    borderWidth: 1,
+    borderColor: 'rgba(167,139,250,0.22)',
+    borderRadius: 16,
+    backgroundColor: 'rgba(255,255,255,0.07)',
   },
   emptyTxt: {
-    ...T.typography.bodyMd,
-    color: T.colors.text.muted,
+    fontSize: 14,
+    color: C.text.muted,
+    fontWeight: '600',
   },
 });

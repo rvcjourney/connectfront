@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import {
   View,
   Text,
@@ -12,17 +12,29 @@ import Video from 'react-native-video';
 import LinearGradient from 'react-native-linear-gradient';
 import { UNIFIED_THEME } from '../../unifiedTheme';
 import { normalizeRecordingUrl } from '../../api/api';
+import { saveRecordingToGallery } from '../../utils/recordingActions';
 
 const T = UNIFIED_THEME;
 
 export default function RecordingPlayerScreen({ navigation, route }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
+  const [downloading, setDownloading] = useState(false);
 
   const sourceUrl = useMemo(() => {
     const rawUrl = route?.params?.recordingUrl;
     return normalizeRecordingUrl(rawUrl);
   }, [route?.params?.recordingUrl]);
+
+  const handleDownload = useCallback(async () => {
+    if (!sourceUrl || downloading) return;
+    setDownloading(true);
+    try {
+      await saveRecordingToGallery(sourceUrl);
+    } finally {
+      setDownloading(false);
+    }
+  }, [downloading, sourceUrl]);
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
@@ -39,7 +51,27 @@ export default function RecordingPlayerScreen({ navigation, route }) {
           <Text style={styles.title}>Session Recording</Text>
           <Text style={styles.subtitle}>Watch and review this session</Text>
         </View>
-        <View style={styles.headerRightPad} />
+        {sourceUrl ? (
+          <TouchableOpacity
+            style={[styles.downloadButton, downloading && styles.downloadButtonDisabled]}
+            onPress={handleDownload}
+            disabled={downloading}
+            activeOpacity={0.85}
+            accessibilityLabel="Download recording to gallery"
+          >
+            {downloading ? (
+              <ActivityIndicator size="small" color={T.colors.accent.secondary} />
+            ) : (
+              <MaterialIcons
+                name="file-download"
+                size={22}
+                color={T.colors.accent.secondary}
+              />
+            )}
+          </TouchableOpacity>
+        ) : (
+          <View style={styles.headerRightPad} />
+        )}
       </View>
 
       <View style={styles.playerCard}>
@@ -154,6 +186,19 @@ const styles = StyleSheet.create({
   },
   headerRightPad: {
     width: 36,
+  },
+  downloadButton: {
+    width: 40,
+    height: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: T.borderRadius.sm,
+    borderWidth: 1,
+    borderColor: T.colors.border.light,
+    backgroundColor: T.colors.component.card,
+  },
+  downloadButtonDisabled: {
+    opacity: 0.6,
   },
   playerCard: {
     flex: 1,

@@ -28,65 +28,57 @@ import LinearGradient from 'react-native-linear-gradient';
 
 const T = UNIFIED_THEME;
 const C = T.colors;
+const B = C.buttons;
 const TB = C.tabBar;
 
+/** Match mentor profile accent cycle (reserved for future category chips) */
+const PURPLE_LINK = B.nebulaGradient[0];
+const GOLD = C.accent.primary;
+const RAIL_CARD_W = 138;
+const THUMB_PLACEHOLDER = ['#3d3666', '#16122c'];
 
+function VideoTileCard({ item, onPress }) {
+  const thumbH = Math.round(RAIL_CARD_W * 1.35);
 
-// Accent colours cycle across session tiles (DB has no accent column)
-const TILE_ACCENTS = ['#a78bfa', '#5eead4', '#f0d875', '#f9a8d4'];
-
-function VideoTileCard({ item, accent, onPress }) {
   return (
     <TouchableOpacity
-      style={styles.tile}
+      style={[styles.tile, { width: RAIL_CARD_W }]}
       onPress={() => onPress(item)}
-      activeOpacity={0.85}
+      activeOpacity={0.88}
       accessibilityRole="button"
       accessibilityLabel={`Browse ${item.label}`}
     >
-      {item.thumbnail_url ? (
-        <Image
-          source={{ uri: item.thumbnail_url }}
-          style={StyleSheet.absoluteFill}
-          resizeMode="cover"
-        />
-      ) : (
+      <View style={[styles.tileThumb, { height: thumbH }]}>
+        {item.thumbnail_url ? (
+          <Image
+            source={{ uri: item.thumbnail_url }}
+            style={styles.tileThumbImg}
+            resizeMode="cover"
+          />
+        ) : (
+          <LinearGradient
+            colors={THUMB_PLACEHOLDER}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.tileThumbPlaceholder}
+          >
+            <MaterialIcons name="videocam" size={32} color="rgba(255,255,255,0.38)" />
+          </LinearGradient>
+        )}
         <LinearGradient
-          colors={[`${accent}33`, C.primary.dark]}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 0, y: 1 }}
-          style={StyleSheet.absoluteFill}
+          colors={['transparent', 'rgba(3,2,12,0.92)']}
+          style={styles.tileThumbFade}
+          pointerEvents="none"
         />
-      )}
-
-      {/* Dark scrim */}
-      <LinearGradient
-        colors={['rgba(2,0,20,0.18)', 'rgba(2,0,20,0.45)', 'rgba(2,0,20,0.88)']}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 0, y: 1 }}
-        style={StyleSheet.absoluteFill}
-      />
-
-      {/* Accent tint */}
-      <LinearGradient
-        colors={[`${accent}30`, 'transparent']}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 0.6 }}
-        style={StyleSheet.absoluteFill}
-      />
-
-      {/* Category icon badge */}
-      <View style={[styles.tileBadge, { backgroundColor: `${accent}33`, borderColor: `${accent}66` }]}>
-        <MaterialIcons name="play-circle-filled" size={13} color={accent} />
+        <View style={styles.tilePlayBadge}>
+          <MaterialIcons name="play-arrow" size={18} color={C.text.primary} />
+        </View>
       </View>
-
-      {/* Centered play button */}
-      <View style={styles.tilePlayWrap}></View>
-
-      {/* Bottom label */}
-      <View style={styles.tileBottom}>
-        <Text style={styles.tileTitle} numberOfLines={2}>{item.title || item.label}</Text>
-        <Text style={[styles.tileSub, { color: `${accent}cc` }]} numberOfLines={1}>
+      <View style={styles.tileBody}>
+        <Text style={styles.tileTitle} numberOfLines={2}>
+          {item.title || item.label}
+        </Text>
+        <Text style={styles.tileSub} numberOfLines={1}>
           {item.profiles?.name || 'Featured'}
         </Text>
       </View>
@@ -94,7 +86,18 @@ function VideoTileCard({ item, accent, onPress }) {
   );
 }
 
-// ─── Hero slider ─────────────────────────────────────────────────────────────
+function SectionHeaderRow({ title, onSeeAll }) {
+  return (
+    <View style={styles.secHdrRow}>
+      <Text style={styles.secHdrTitle}>{title}</Text>
+      {onSeeAll ? (
+        <TouchableOpacity onPress={onSeeAll} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+          <Text style={styles.secHdrLink}>See all &gt;</Text>
+        </TouchableOpacity>
+      ) : null}
+    </View>
+  );
+}
 const SLIDE_H = 200;
 const SLIDE_GAP = T.spacing.md;
 const SLIDE_SIDE = T.spacing.lg;
@@ -200,7 +203,7 @@ function HeroSlide({ slide, slideWidth, isRemote }) {
       ) : null}
 
       <LinearGradient
-        colors={['transparent', 'rgba(1,0,14,0.55)', 'rgba(1,0,14,0.92)']}
+        colors={['transparent', 'rgba(3,3,8,0.55)', 'rgba(3,3,8,0.92)']}
         locations={[0.35, 0.72, 1]}
         style={StyleSheet.absoluteFill}
         pointerEvents="none"
@@ -478,13 +481,15 @@ export default function HomeScreen() {
 
         {/* ── APP BAR ── */}
         <Animated.View style={[styles.appBar, s0.style]}>
-          <View style={styles.logoTile}>
-            <Image
-              source={require('../../assets/images/logo.png')}
-              style={styles.logoMark}
-              resizeMode="contain"
-            />
-          </View>
+          <LinearGradient colors={B.premiumGradient} style={styles.logoRing}>
+            <View style={styles.logoTile}>
+              <Image
+                source={require('../../assets/images/logo.png')}
+                style={styles.logoMark}
+                resizeMode="contain"
+              />
+            </View>
+          </LinearGradient>
           <View style={styles.appBarTitles}>
             <Text style={styles.appName} numberOfLines={1}>
               Connectiqo
@@ -500,7 +505,7 @@ export default function HomeScreen() {
             accessibilityRole="button"
             accessibilityLabel="Settings"
           >
-            <MaterialIcons name="bolt" size={22} color={C.accent.primary} />
+            <MaterialIcons name="bolt" size={22} color={C.text.primary} />
           </TouchableOpacity>
         </Animated.View>
 
@@ -525,40 +530,26 @@ export default function HomeScreen() {
               setPlayerVisible(true);
             }}
           >
-            <LinearGradient
-              colors={['rgba(167,139,250,0.12)', 'rgba(2,0,20,0.85)']}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 0 }}
-              style={StyleSheet.absoluteFill}
-            />
-            <LinearGradient
-              colors={TB.flatBarEdge}
-              locations={[0, 0.35, 0.65, 1]}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 0 }}
-              style={styles.videoCardBeam}
-              pointerEvents="none"
-            />
             <View style={styles.videoCardInner}>
               <View style={styles.videoPlayBtn}>
                 <LinearGradient
-                  colors={[C.accent.primary, C.accent.secondary]}
+                  colors={B.nebulaGradient}
                   start={{ x: 0, y: 0 }}
                   end={{ x: 1, y: 1 }}
                   style={styles.videoPlayGrad}
                 >
-                  <MaterialIcons name="play-arrow" size={28} color={C.text.onAccent} style={{ marginLeft: 3 }} />
+                  <MaterialIcons name="play-arrow" size={28} color={B.nebulaText} style={{ marginLeft: 3 }} />
                 </LinearGradient>
               </View>
               <View style={styles.videoCardText}>
                 <Text style={styles.videoCardTitle} numberOfLines={1}>
-                  {introVideo.title}{' '}
-                  <Text style={{ color: '#f0d875', fontWeight: '800' }}>
-                    {introVideo.label}
-                  </Text>
+                  {introVideo.title}
+                </Text>
+                <Text style={styles.videoCardLabel} numberOfLines={1}>
+                  {introVideo.label}
                 </Text>
               </View>
-              <Text style={styles.videoCardArrows}>{'>>>'}</Text>
+              <MaterialIcons name="chevron-right" size={22} color={PURPLE_LINK} />
             </View>
           </TouchableOpacity>
         </Animated.View>
@@ -567,26 +558,25 @@ export default function HomeScreen() {
         {/* ── VIDEO CATEGORIES ── */}
         {sessionVideos.length > 0 && (
         <Animated.View style={[styles.catSection, s2b.style]}>
-          <View style={styles.catHeader}>
-            <View style={styles.catHeaderLeft}>
-              <View style={[styles.sectionDot, { backgroundColor: C.accent.primary }]} />
-              <Text style={styles.sectionLabel}>Recent Sessions</Text>
-            </View>
-            <TouchableOpacity onPress={() => navigation.navigate(SCREEN_NAMES.LearnerSection, { screen: SCREEN_NAMES.LearnerVideos, params: { filterMentorId: null } })} activeOpacity={0.7}>
-              <Text style={styles.seeAll}>See all</Text>
-            </TouchableOpacity>
-          </View>
+          <SectionHeaderRow
+            title="Recent Sessions"
+            onSeeAll={() =>
+              navigation.navigate(SCREEN_NAMES.LearnerSection, {
+                screen: SCREEN_NAMES.LearnerVideos,
+                params: { filterMentorId: null },
+              })
+            }
+          />
 
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
             contentContainerStyle={styles.tileRow}
           >
-            {sessionVideos.map((item, index) => (
+            {sessionVideos.map(item => (
               <VideoTileCard
                 key={item.id}
                 item={item}
-                accent={TILE_ACCENTS[index % TILE_ACCENTS.length]}
                 onPress={cat => {
                   navigation.navigate(SCREEN_NAMES.LearnerSection, {
                     screen: SCREEN_NAMES.LearnerVideos,
@@ -602,12 +592,6 @@ export default function HomeScreen() {
 
         {/* ── TRUST STRIP ── */}
         <Animated.View style={[styles.trustStrip, s5.style]}>
-          <LinearGradient
-            colors={['rgba(255,255,255,0.05)', 'rgba(255,255,255,0.02)']}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-            style={StyleSheet.absoluteFill}
-          />
           {TRUST.map((t, i) => (
             <React.Fragment key={t.label}>
               <View style={styles.trustItem}>
@@ -654,7 +638,7 @@ export default function HomeScreen() {
             }}
             activeOpacity={0.85}
           >
-            <MaterialIcons name="close" size={20} color="#fff" />
+            <MaterialIcons name="close" size={20} color={C.text.primary} />
           </TouchableOpacity>
 
           {playerError ? (
@@ -685,13 +669,18 @@ const styles = StyleSheet.create({
     marginBottom: T.spacing.md,
     gap: T.spacing.md,
   },
+  logoRing: {
+    padding: 2,
+    borderRadius: T.borderRadius.md + 2,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.35)',
+    ...Platform.select({ ios: T.shadows.small, android: { elevation: 4 } }),
+  },
   logoTile: {
     width: 44,
     height: 44,
     borderRadius: T.borderRadius.md,
-    backgroundColor: C.component.card,
-    borderWidth: 1,
-    borderColor: C.border.light,
+    backgroundColor: C.primary.void,
     justifyContent: 'center',
     alignItems: 'center',
     overflow: 'hidden',
@@ -713,10 +702,9 @@ const styles = StyleSheet.create({
   },
   appTagline: {
     ...T.typography.bodyXs,
-    color: C.accent.secondary,
-    fontWeight: '700',
-    letterSpacing: 1.2,
-    textTransform: 'uppercase',
+    color: PURPLE_LINK,
+    fontWeight: '600',
+    letterSpacing: 0.2,
     marginTop: 2,
   },
   appBarBtn: {
@@ -725,9 +713,9 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: C.component.card,
+    backgroundColor: 'rgba(12,12,40,0.55)',
     borderWidth: 1,
-    borderColor: C.border.light,
+    borderColor: 'rgba(255,255,255,0.12)',
   },
 
   heroSection: {
@@ -738,15 +726,12 @@ const styles = StyleSheet.create({
   },
   heroSlide: {
     height: SLIDE_H,
-    borderRadius: T.borderRadius.lg,
+    borderRadius: 16,
     overflow: 'hidden',
     borderWidth: 1,
-    borderColor: C.border.light,
+    borderColor: 'rgba(167,139,250,0.22)',
     backgroundColor: C.primary.dark,
-    ...Platform.select({
-      ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.35, shadowRadius: 12 },
-      android: { elevation: 8 },
-    }),
+    ...Platform.select({ ios: T.shadows.medium, android: { elevation: 8 } }),
   },
   heroSlideImage: {
     ...StyleSheet.absoluteFillObject,
@@ -812,101 +797,108 @@ const styles = StyleSheet.create({
     height: 7,
     borderRadius: 4,
     borderWidth: 1,
-    borderColor: C.border.light,
+    borderColor: 'rgba(167,139,250,0.35)',
   },
-  sectionDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
+
+  secHdrRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: T.spacing.xs,
+    marginBottom: 2,
   },
-  seeAll: {
-    fontSize: 12, fontWeight: '700',
-    color: C.accent.secondary,
-    letterSpacing: 0.2,
+  secHdrTitle: {
+    fontSize: 15,
+    fontWeight: '800',
+    color: C.text.primary,
+  },
+  secHdrLink: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: PURPLE_LINK,
   },
 
   // Video categories
   catSection: {
     marginBottom: T.spacing.xl,
   },
-  catHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: T.spacing.md,
-  },
-  catHeaderLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
-  sectionLabel: {
-    color: '#ffffff',
-  },
   tileRow: {
-    gap: T.spacing.md,
+    gap: 10,
     paddingRight: T.spacing.xs,
+    paddingTop: 6,
+    paddingBottom: T.spacing.sm,
   },
   tile: {
-    width: 148,
-    height: 186,
-    borderRadius: T.borderRadius.lg,
+    borderRadius: 16,
     overflow: 'hidden',
+    backgroundColor: 'rgba(255,255,255,0.07)',
     borderWidth: 1,
-    borderColor: C.border.light,
-    backgroundColor: C.primary.dark,
-    justifyContent: 'space-between',
+    borderColor: 'rgba(255,255,255,0.14)',
     ...Platform.select({
-      ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.25, shadowRadius: 10 },
-      android: { elevation: 6 },
+      ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.25, shadowRadius: 6 },
+      android: { elevation: 4 },
     }),
   },
-  tileBadge: {
+  tileThumb: {
+    width: '100%',
+    overflow: 'hidden',
+    position: 'relative',
+  },
+  tileThumbImg: {
+    ...StyleSheet.absoluteFillObject,
+  },
+  tileThumbPlaceholder: {
+    ...StyleSheet.absoluteFillObject,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  tileThumbFade: {
     position: 'absolute',
-    top: T.spacing.sm,
-    left: T.spacing.sm,
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 7,
-    paddingVertical: 4,
-    borderRadius: 6,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    top: '35%',
+  },
+  tilePlayBadge: {
+    position: 'absolute',
+    alignSelf: 'center',
+    top: '38%',
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    backgroundColor: 'rgba(0,0,0,0.45)',
     borderWidth: 1,
-    gap: 4,
-    zIndex: 2,
-  },
-  tilePlayWrap: {
-    flex: 1,
-    justifyContent: 'flex-end',
+    borderColor: 'rgba(255,255,255,0.25)',
+    justifyContent: 'center',
     alignItems: 'center',
-    paddingBottom: 5,
   },
-  tileBottom: {
-    padding: T.spacing.sm,
-    paddingBottom: T.spacing.md,
+  tileBody: {
+    paddingHorizontal: 8,
+    paddingVertical: 10,
   },
   tileTitle: {
-    color: '#ffffff',
+    color: C.text.primary,
     fontWeight: '700',
-    fontSize: 13,
-    lineHeight: 17,
+    fontSize: 12,
+    lineHeight: 16,
     marginBottom: 3,
   },
   tileSub: {
     fontSize: 10,
-    color: 'rgba(255,255,255,0.42)',
-    fontWeight: '500',
+    color: C.text.muted,
+    fontWeight: '600',
   },
 
-  // Trust strip
+  // Trust strip (mentor profile stats bar pattern)
   trustStrip: {
     flexDirection: 'row',
-    alignItems: 'center',
-    borderRadius: T.borderRadius.sm,
+    alignItems: 'stretch',
+    borderRadius: 14,
     borderWidth: 1,
-    borderColor: C.border.light,
-    backgroundColor: C.component.card,
-    overflow: 'hidden',
-    paddingVertical: T.spacing.md,
+    borderColor: 'rgba(167,139,250,0.22)',
+    backgroundColor: 'rgba(255,255,255,0.07)',
+    paddingVertical: 11,
+    paddingHorizontal: 4,
   },
   trustItem: {
     flex: 1,
@@ -922,29 +914,20 @@ const styles = StyleSheet.create({
   },
   trustDivider: {
     width: 1,
-    height: 28,
-    backgroundColor: C.border.light,
-    opacity: 0.5,
+    backgroundColor: 'rgba(255,255,255,0.14)',
+    marginVertical: 6,
+    alignSelf: 'stretch',
   },
 
   // Video card
   videoCard: {
-    borderRadius: T.borderRadius.md,
+    borderRadius: 14,
     overflow: 'hidden',
-    borderWidth: 0,
-    borderColor: 'transparent',
-    backgroundColor: 'transparent',
+    borderWidth: 1,
+    borderColor: 'rgba(167,139,250,0.22)',
+    backgroundColor: 'rgba(255,255,255,0.07)',
     marginBottom: T.spacing.lg,
-    position: 'relative',
-    ...Platform.select({ ios: T.shadows.small, android: { elevation: 4 } }),
-  },
-  videoCardBeam: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    top: 0,
-    height: 2,
-    opacity: 0.85,
+    ...Platform.select({ ios: T.shadows.small, android: { elevation: 3 } }),
   },
   videoCardInner: {
     flexDirection: 'row',
@@ -977,19 +960,18 @@ const styles = StyleSheet.create({
   videoCardTitle: {
     ...T.typography.labelMd,
     color: C.text.primary,
-    fontWeight: '700',
+    fontWeight: '800',
   },
-  videoCardArrows: {
-    fontSize: 14,
-    fontWeight: '900',
-    color: C.accent.primary,
-    letterSpacing: 2,
-    marginLeft: 4,
+  videoCardLabel: {
+    marginTop: 2,
+    color: GOLD,
+    fontWeight: '700',
+    fontSize: 12,
   },
   // Player modal
   playerScreen: {
     flex: 1,
-    backgroundColor: '#000',
+    backgroundColor: C.primary.void,
     justifyContent: 'center',
   },
   playerCloseOverlay: {

@@ -9,7 +9,9 @@ import {
   StyleSheet,
   Alert,
   ActivityIndicator,
+  Platform,
 } from 'react-native';
+import LinearGradient from 'react-native-linear-gradient';
 import { useFocusEffect } from '@react-navigation/native';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import Toast from 'react-native-simple-toast';
@@ -22,6 +24,49 @@ import { profileApi } from '../../api/profileApi';
 import { videoApi } from '../../api/videoApi';
 import { SCREEN_NAMES } from '../../navigators/screenNames';
 import { formatDate } from '../../utils/dateHelpers';
+
+const T = UNIFIED_THEME;
+const C = T.colors;
+const B = C.buttons;
+const S = C.surface;
+
+const PURPLE_LINK = B.nebulaGradient[0];
+const GOLD = C.accent.primary;
+const TEAL = C.accent.secondary;
+
+const PANEL_BG = '#161432';
+const SHEET_BG = '#0f0e2a';
+
+function SectionHeaderRow({ title, count }) {
+  return (
+    <View style={styles.secHdrRow}>
+      <Text style={styles.secHdrTitle}>{title}</Text>
+      {count != null ? (
+        <View style={styles.secHdrCount}>
+          <Text style={styles.secHdrCountText}>{count}</Text>
+        </View>
+      ) : null}
+    </View>
+  );
+}
+
+function MenuRow({ icon, accent, label, onPress, noBorder }) {
+  const iconColor = accent === 'gold' ? GOLD : accent === 'teal' ? TEAL : PURPLE_LINK;
+
+  return (
+    <TouchableOpacity
+      style={[styles.menuItem, noBorder && styles.noBorder]}
+      onPress={onPress}
+      activeOpacity={onPress ? 0.75 : 1}
+    >
+      <View style={styles.menuLeft}>
+        <MaterialIcons name={icon} size={20} color={iconColor} />
+        <Text style={styles.menuLabel}>{label}</Text>
+      </View>
+      <MaterialIcons name="chevron-right" size={22} color={C.text.muted} />
+    </TouchableOpacity>
+  );
+}
 
 export default function UnifiedSettingsScreen({ navigation }) {
   const { profile, signOut, refreshProfile } = useAuth();
@@ -116,23 +161,28 @@ export default function UnifiedSettingsScreen({ navigation }) {
   };
 
   return (
-    <SafeScreen scrollable={false} padding={UNIFIED_THEME.spacing.lg} hasBottomTabs={false}>
-      <ScrollView showsVerticalScrollIndicator={false}>
+    <SafeScreen scrollable={false} padding={T.spacing.lg} hasBottomTabs={false}>
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
 
-        <Text style={styles.title}>Settings</Text> 
+        <Text style={styles.screenTitle}>Settings</Text>
+
         {/* Profile Card */}
         <View style={styles.profileCard}>
           <View style={styles.avatarRow}>
             <View style={styles.avatarWrapper}>
-              {avatarUrl ? (
-                <Image key={avatarUrl} source={{ uri: avatarUrl, cache: 'reload' }} style={styles.avatar} />
-              ) : (
-                <View style={[styles.avatar, styles.avatarPlaceholder]}>
-                  <MaterialIcons name="person" size={40} color="#FFF" />
+              <LinearGradient colors={B.premiumGradient} style={styles.avatarRing}>
+                <View style={styles.avatarInner}>
+                  {avatarUrl ? (
+                    <Image key={avatarUrl} source={{ uri: avatarUrl, cache: 'reload' }} style={styles.avatar} />
+                  ) : (
+                    <View style={[styles.avatar, styles.avatarPlaceholder]}>
+                      <MaterialIcons name="person" size={36} color={PURPLE_LINK} />
+                    </View>
+                  )}
                 </View>
-              )}
+              </LinearGradient>
               <TouchableOpacity style={styles.cameraBtn} onPress={handlePickImage} disabled={loading}>
-                <MaterialIcons name="camera-alt" size={14} color="#FFF" />
+                <MaterialIcons name="camera-alt" size={14} color={C.text.primary} />
               </TouchableOpacity>
             </View>
             <View style={styles.profileMeta}>
@@ -142,25 +192,28 @@ export default function UnifiedSettingsScreen({ navigation }) {
               ) : null}
               <Text style={styles.profileEmail}>{profile?.email}</Text>
               <View style={styles.badge}>
-                <MaterialIcons name="workspace-premium" size={12} color={UNIFIED_THEME.colors.accent.primary} />
+                <MaterialIcons name="workspace-premium" size={12} color={GOLD} />
                 <Text style={styles.badgeText}>Mentor & Learner</Text>
               </View>
             </View>
           </View>
         </View>
 
-        <Text style={styles.sectionTitle}>Video subscriptions</Text>
+        <SectionHeaderRow title="Video subscriptions" count={subscriptions.length || null} />
         <View style={styles.subsCard}>
           {subsLoading ? (
             <View style={styles.subsLoading}>
-              <ActivityIndicator size="small" color={UNIFIED_THEME.colors.accent.primary} />
+              <ActivityIndicator size="small" color={TEAL} />
               <Text style={styles.subsLoadingText}>Checking subscriptions…</Text>
             </View>
           ) : subscriptions.length === 0 ? (
-            <Text style={styles.subsEmpty}>
-              No active video library subscriptions. Subscribe from a mentor’s profile or open{' '}
-              <Text style={styles.subsEmptyEm}>Learner → Videos</Text>.
-            </Text>
+            <View style={styles.subsEmptyWrap}>
+              <MaterialIcons name="subscriptions" size={28} color={PURPLE_LINK} />
+              <Text style={styles.subsEmpty}>
+                No active video library subscriptions. Subscribe from a mentor’s profile or open{' '}
+                <Text style={styles.subsEmptyEm}>Learner → Videos</Text>.
+              </Text>
+            </View>
           ) : (
             subscriptions.map(row => {
               const m = row.profiles;
@@ -175,130 +228,81 @@ export default function UnifiedSettingsScreen({ navigation }) {
                   onPress={() => openMentor(row.mentor_id)}
                   activeOpacity={0.75}
                 >
-                  <View style={styles.subsAvatarWrap}>
-                    {m?.avatar_url ? (
-                      <Image source={{ uri: m.avatar_url }} style={styles.subsAvatar} />
-                    ) : (
-                      <View style={[styles.subsAvatar, styles.subsAvatarPh]}>
-                        <MaterialIcons name="person" size={22} color={UNIFIED_THEME.colors.accent.secondary} />
-                      </View>
-                    )}
-                  </View>
+                  <LinearGradient colors={B.premiumGradient} style={styles.subsAvatarRing}>
+                    <View style={styles.subsAvatarInner}>
+                      {m?.avatar_url ? (
+                        <Image source={{ uri: m.avatar_url }} style={styles.subsAvatar} />
+                      ) : (
+                        <View style={[styles.subsAvatar, styles.subsAvatarPh]}>
+                          <MaterialIcons name="person" size={20} color={PURPLE_LINK} />
+                        </View>
+                      )}
+                    </View>
+                  </LinearGradient>
                   <View style={styles.subsMeta}>
                     <Text style={styles.subsName} numberOfLines={1}>{name}</Text>
                     <Text style={styles.subsExpiry} numberOfLines={1}>{expLabel}</Text>
                   </View>
-                  <MaterialIcons name="chevron-right" size={22} color={UNIFIED_THEME.colors.text.secondary} />
+                  <MaterialIcons name="chevron-right" size={22} color={C.text.muted} />
                 </TouchableOpacity>
               );
             })
           )}
           {!subsLoading && (
             <TouchableOpacity style={styles.subsExplore} onPress={goToVideos} activeOpacity={0.8}>
-              <MaterialIcons name="play-circle-outline" size={18} color={UNIFIED_THEME.colors.accent.secondary} />
+              <MaterialIcons name="play-circle-outline" size={18} color={TEAL} />
               <Text style={styles.subsExploreText}>Open Videos tab</Text>
             </TouchableOpacity>
           )}
         </View>
 
-        {/* Menu Items */}
-        <Text style={styles.sectionTitle}>Account</Text>
+        <SectionHeaderRow title="Account" />
         <View style={styles.card}>
-          <TouchableOpacity
-            style={styles.menuItem}
+          <MenuRow
+            icon="edit"
+            accent="gold"
+            label="Edit Profile"
             onPress={() => navigation.navigate(SCREEN_NAMES.EditProfile)}
-          >
-            <View style={styles.menuLeft}>
-              <MaterialIcons name="edit" size={20} color={UNIFIED_THEME.colors.accent.primary} />
-              <Text style={styles.menuLabel}>Edit Profile</Text>
-            </View>
-            <MaterialIcons name="chevron-right" size={22} color={UNIFIED_THEME.colors.text.secondary} />
-          </TouchableOpacity>
-
-          <TouchableOpacity style={styles.menuItem}>
-            <View style={styles.menuLeft}>
-              <MaterialIcons name="notifications" size={20} color={UNIFIED_THEME.colors.accent.primary} />
-              <Text style={styles.menuLabel}>Notifications</Text>
-            </View>
-            <MaterialIcons name="chevron-right" size={22} color={UNIFIED_THEME.colors.text.secondary} />
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={styles.menuItem}
+          />
+          <MenuRow icon="notifications" accent="purple" label="Notifications" />
+          <MenuRow
+            icon="account-balance-wallet"
+            accent="gold"
+            label="My Wallet"
             onPress={() => navigation.navigate(SCREEN_NAMES.Wallet)}
-          >
-            <View style={styles.menuLeft}>
-              <MaterialIcons name="account-balance-wallet" size={20} color={UNIFIED_THEME.colors.accent.primary} />
-              <Text style={styles.menuLabel}>My Wallet</Text>
-            </View>
-            <MaterialIcons name="chevron-right" size={22} color={UNIFIED_THEME.colors.text.secondary} />
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={styles.menuItem}
+          />
+          <MenuRow
+            icon="account-balance"
+            accent="teal"
+            label="Payout Setup"
             onPress={() => navigation.navigate(SCREEN_NAMES.PayoutSetup)}
-          >
-            <View style={styles.menuLeft}>
-              <MaterialIcons name="account-balance" size={20} color={UNIFIED_THEME.colors.accent.secondary} />
-              <Text style={styles.menuLabel}>Payout Setup</Text>
-            </View>
-            <MaterialIcons name="chevron-right" size={22} color={UNIFIED_THEME.colors.text.secondary} />
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={styles.menuItem}
+          />
+          <MenuRow
+            icon="history"
+            accent="purple"
+            label="Transaction history"
             onPress={() => navigation.navigate(SCREEN_NAMES.TransactionHistory)}
-          >
-            <View style={styles.menuLeft}>
-              <MaterialIcons name="history" size={20} color={UNIFIED_THEME.colors.accent.primary} />
-              <Text style={styles.menuLabel}>Transaction history</Text>
-            </View>
-            <MaterialIcons name="chevron-right" size={22} color={UNIFIED_THEME.colors.text.secondary} />
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={styles.menuItem}
+          />
+          <MenuRow
+            icon="video-library"
+            accent="gold"
+            label="Recorded lectures"
             onPress={() => navigation.navigate(SCREEN_NAMES.RecordedLectures)}
-          >
-            <View style={styles.menuLeft}>
-              <MaterialIcons name="video-library" size={20} color={UNIFIED_THEME.colors.accent.primary} />
-              <Text style={styles.menuLabel}>Recorded lectures</Text>
-            </View>
-            <MaterialIcons name="chevron-right" size={22} color={UNIFIED_THEME.colors.text.secondary} />
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={styles.menuItem}
+          />
+          <MenuRow
+            icon="video-camera-back"
+            accent="teal"
+            label="My Videos"
             onPress={() => navigation.navigate(SCREEN_NAMES.MentorVideos)}
-          >
-            <View style={styles.menuLeft}>
-              <MaterialIcons name="video-camera-back" size={20} color={UNIFIED_THEME.colors.accent.secondary} />
-              <Text style={styles.menuLabel}>My Videos</Text>
-            </View>
-            <MaterialIcons name="chevron-right" size={22} color={UNIFIED_THEME.colors.text.secondary} />
-          </TouchableOpacity>
-
-          <TouchableOpacity style={styles.menuItem}>
-            <View style={styles.menuLeft}>
-              <MaterialIcons name="privacy-tip" size={20} color={UNIFIED_THEME.colors.accent.primary} />
-              <Text style={styles.menuLabel}>Privacy Policy</Text>
-            </View>
-            <MaterialIcons name="chevron-right" size={22} color={UNIFIED_THEME.colors.text.secondary} />
-          </TouchableOpacity>
-
-          <TouchableOpacity style={[styles.menuItem, styles.noBorder]}>
-            <View style={styles.menuLeft}>
-              <MaterialIcons name="contact-support" size={20} color={UNIFIED_THEME.colors.accent.primary} />
-              <Text style={styles.menuLabel}>Help & Support</Text>
-            </View>
-            <MaterialIcons name="chevron-right" size={22} color={UNIFIED_THEME.colors.text.secondary} />
-          </TouchableOpacity>
+          />
+          <MenuRow icon="privacy-tip" accent="purple" label="Privacy Policy" />
+          <MenuRow icon="contact-support" accent="gold" label="Help & Support" noBorder />
         </View>
 
         <Button
           text="Sign Out"
           onPress={handleLogout}
-          variant="ghost"
+          variant="goldOutline"
           style={styles.signOutBtn}
         />
       </ScrollView>
@@ -309,52 +313,75 @@ export default function UnifiedSettingsScreen({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-  header: {
-    marginBottom: UNIFIED_THEME.spacing.lg,
-    borderRadius: 14,
+  scrollContent: {
+    paddingBottom: T.spacing.xxxl,
+  },
+  screenTitle: {
+    fontSize: 22,
+    color: C.text.primary,
+    fontWeight: '800',
+    marginBottom: T.spacing.lg,
+  },
+  secHdrRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: T.spacing.sm,
+    paddingHorizontal: T.spacing.xs,
+  },
+  secHdrTitle: {
+    fontSize: 15,
+    color: C.text.primary,
+    fontWeight: '800',
+  },
+  secHdrCount: {
+    minWidth: 26,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 999,
+    backgroundColor: S.accentViolet,
     borderWidth: 1,
-    borderColor: UNIFIED_THEME.colors.border.light,
-    backgroundColor: UNIFIED_THEME.colors.component.input,
-    padding: UNIFIED_THEME.spacing.lg,
-    overflow: 'hidden',
+    borderColor: 'rgba(167,139,250,0.35)',
+    alignItems: 'center',
   },
-  eyebrow: {
-    ...UNIFIED_THEME.typography.labelSm,
-    color: UNIFIED_THEME.colors.accent.secondary,
-    textTransform: 'uppercase',
-    letterSpacing: 1.2,
-    marginBottom: UNIFIED_THEME.spacing.xs,
-  },
-  title: {
-    ...UNIFIED_THEME.typography.headingMd,
-    color: UNIFIED_THEME.colors.text.primary,
-    fontWeight: '700',
-    marginBottom: UNIFIED_THEME.spacing.sm,
-  },
-  subtitle: {
-    ...UNIFIED_THEME.typography.bodySm,
-    color: UNIFIED_THEME.colors.text.secondary,
-    lineHeight: 20,
+  secHdrCountText: {
+    fontSize: 12,
+    color: PURPLE_LINK,
+    fontWeight: '800',
   },
   profileCard: {
-    backgroundColor: UNIFIED_THEME.colors.component.input,
+    backgroundColor: PANEL_BG,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: UNIFIED_THEME.colors.border.light,
-    padding: UNIFIED_THEME.spacing.lg,
-    marginBottom: UNIFIED_THEME.spacing.lg,
+    borderColor: 'rgba(167,139,250,0.22)',
+    padding: T.spacing.lg,
+    marginBottom: T.spacing.lg,
   },
   avatarRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: UNIFIED_THEME.spacing.lg,
+    gap: T.spacing.lg,
   },
   avatarWrapper: { position: 'relative' },
+  avatarRing: {
+    padding: 2,
+    borderRadius: 40,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.35)',
+  },
+  avatarInner: {
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    backgroundColor: C.primary.void,
+    overflow: 'hidden',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   avatar: {
     width: 72,
     height: 72,
     borderRadius: 36,
-    backgroundColor: UNIFIED_THEME.colors.primary.light,
   },
   avatarPlaceholder: { justifyContent: 'center', alignItems: 'center' },
   cameraBtn: {
@@ -364,124 +391,129 @@ const styles = StyleSheet.create({
     width: 28,
     height: 28,
     borderRadius: 14,
-    backgroundColor: UNIFIED_THEME.colors.accent.primary,
+    backgroundColor: PANEL_BG,
     justifyContent: 'center',
     alignItems: 'center',
-    borderWidth: 2,
-    borderColor: UNIFIED_THEME.colors.primary.dark,
+    borderWidth: 1,
+    borderColor: 'rgba(167,139,250,0.35)',
   },
   profileMeta: { flex: 1 },
   profileName: {
-    ...UNIFIED_THEME.typography.bodyLg,
-    color: UNIFIED_THEME.colors.text.primary,
-    fontWeight: '700',
-    marginBottom: UNIFIED_THEME.spacing.xs,
+    fontSize: 18,
+    color: C.text.primary,
+    fontWeight: '800',
+    marginBottom: T.spacing.xs,
   },
   profileUsername: {
-    ...UNIFIED_THEME.typography.bodySm,
-    color: UNIFIED_THEME.colors.accent.primary,
-    fontWeight: '500',
-    marginBottom: UNIFIED_THEME.spacing.xs,
+    fontSize: 13,
+    color: GOLD,
+    fontWeight: '600',
+    marginBottom: T.spacing.xs,
   },
   profileEmail: {
-    ...UNIFIED_THEME.typography.bodySm,
-    color: UNIFIED_THEME.colors.text.secondary,
-    marginBottom: UNIFIED_THEME.spacing.sm,
+    fontSize: 13,
+    color: C.text.secondary,
+    marginBottom: T.spacing.sm,
   },
   badge: {
     alignSelf: 'flex-start',
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    backgroundColor: UNIFIED_THEME.colors.primary.light,
-    paddingHorizontal: UNIFIED_THEME.spacing.md,
-    paddingVertical: UNIFIED_THEME.spacing.xs,
-    borderRadius: 10,
+    backgroundColor: S.accentGold,
+    paddingHorizontal: T.spacing.md,
+    paddingVertical: T.spacing.xs,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: 'rgba(240,216,117,0.25)',
   },
   badgeText: {
-    ...UNIFIED_THEME.typography.bodySm,
-    color: UNIFIED_THEME.colors.accent.primary,
-    fontWeight: '600',
-  },
-  sectionTitle: {
-    ...UNIFIED_THEME.typography.bodySm,
-    color: UNIFIED_THEME.colors.text.secondary,
+    fontSize: 12,
+    color: GOLD,
     fontWeight: '700',
-    marginBottom: UNIFIED_THEME.spacing.sm,
-    marginLeft: UNIFIED_THEME.spacing.xs,
-    textTransform: 'uppercase',
-    letterSpacing: 1,
-    fontSize: 11,
   },
   card: {
-    backgroundColor: UNIFIED_THEME.colors.component.input,
+    backgroundColor: PANEL_BG,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: UNIFIED_THEME.colors.border.light,
-    paddingHorizontal: UNIFIED_THEME.spacing.lg,
-    marginBottom: UNIFIED_THEME.spacing.lg,
+    borderColor: 'rgba(167,139,250,0.22)',
+    paddingHorizontal: T.spacing.md,
+    marginBottom: T.spacing.lg,
   },
   menuItem: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingVertical: UNIFIED_THEME.spacing.md,
+    paddingVertical: T.spacing.md,
     borderBottomWidth: 1,
-    borderBottomColor: UNIFIED_THEME.colors.border.light,
+    borderBottomColor: 'rgba(167,139,250,0.15)',
   },
   noBorder: { borderBottomWidth: 0 },
   menuLeft: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: UNIFIED_THEME.spacing.md,
+    gap: T.spacing.md,
   },
   menuLabel: {
-    ...UNIFIED_THEME.typography.bodyMd,
-    color: UNIFIED_THEME.colors.text.primary,
-    fontWeight: '500',
+    fontSize: 15,
+    color: C.text.primary,
+    fontWeight: '600',
   },
-  signOutBtn: { marginBottom: UNIFIED_THEME.spacing.xxxl },
+  signOutBtn: { marginBottom: T.spacing.xxxl },
   subsCard: {
-    backgroundColor: UNIFIED_THEME.colors.component.input,
+    backgroundColor: PANEL_BG,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: UNIFIED_THEME.colors.border.light,
-    padding: UNIFIED_THEME.spacing.lg,
-    marginBottom: UNIFIED_THEME.spacing.lg,
+    borderColor: 'rgba(167,139,250,0.22)',
+    padding: T.spacing.lg,
+    marginBottom: T.spacing.lg,
   },
   subsLoading: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: UNIFIED_THEME.spacing.sm,
-    paddingVertical: UNIFIED_THEME.spacing.sm,
+    gap: T.spacing.sm,
+    paddingVertical: T.spacing.sm,
   },
   subsLoadingText: {
-    ...UNIFIED_THEME.typography.bodySm,
-    color: UNIFIED_THEME.colors.text.secondary,
+    fontSize: 13,
+    color: C.text.secondary,
+  },
+  subsEmptyWrap: {
+    alignItems: 'center',
+    gap: T.spacing.sm,
+    paddingVertical: T.spacing.sm,
   },
   subsEmpty: {
-    ...UNIFIED_THEME.typography.bodySm,
-    color: UNIFIED_THEME.colors.text.secondary,
+    fontSize: 13,
+    color: C.text.secondary,
     lineHeight: 20,
+    textAlign: 'center',
   },
   subsEmptyEm: {
-    color: UNIFIED_THEME.colors.accent.secondary,
-    fontWeight: '600',
+    color: TEAL,
+    fontWeight: '700',
   },
   subsRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: UNIFIED_THEME.spacing.md,
+    paddingVertical: T.spacing.md,
     borderBottomWidth: 1,
-    borderBottomColor: UNIFIED_THEME.colors.border.light,
-    gap: UNIFIED_THEME.spacing.md,
+    borderBottomColor: 'rgba(167,139,250,0.15)',
+    gap: T.spacing.md,
   },
-  subsAvatarWrap: {},
+  subsAvatarRing: {
+    padding: 2,
+    borderRadius: 24,
+  },
+  subsAvatarInner: {
+    borderRadius: 22,
+    overflow: 'hidden',
+  },
   subsAvatar: {
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: UNIFIED_THEME.colors.primary.light,
+    backgroundColor: C.primary.void,
   },
   subsAvatarPh: {
     justifyContent: 'center',
@@ -489,13 +521,13 @@ const styles = StyleSheet.create({
   },
   subsMeta: { flex: 1, minWidth: 0 },
   subsName: {
-    ...UNIFIED_THEME.typography.bodyMd,
-    color: UNIFIED_THEME.colors.text.primary,
-    fontWeight: '600',
+    fontSize: 15,
+    color: C.text.primary,
+    fontWeight: '700',
   },
   subsExpiry: {
-    ...UNIFIED_THEME.typography.bodySm,
-    color: UNIFIED_THEME.colors.text.muted,
+    fontSize: 12,
+    color: C.text.muted,
     marginTop: 2,
   },
   subsExplore: {
@@ -503,12 +535,16 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
-    marginTop: UNIFIED_THEME.spacing.md,
-    paddingVertical: UNIFIED_THEME.spacing.sm,
+    marginTop: T.spacing.md,
+    paddingVertical: T.spacing.sm,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(94,234,212,0.25)',
+    backgroundColor: S.accentTeal,
   },
   subsExploreText: {
-    ...UNIFIED_THEME.typography.bodySm,
-    color: UNIFIED_THEME.colors.accent.secondary,
-    fontWeight: '600',
+    fontSize: 13,
+    color: TEAL,
+    fontWeight: '700',
   },
 });

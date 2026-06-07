@@ -18,6 +18,7 @@ import { reviewsApi } from '../../api/reviewsApi';
 import { useAuth } from '../../hooks/useAuth';
 
 const T = UNIFIED_THEME;
+const B = T.colors.buttons;
 
 const LABELS = ['', 'Poor', 'Fair', 'Good', 'Great', 'Excellent'];
 
@@ -122,7 +123,7 @@ export default function ReviewScreen({ navigation, route }) {
           activeOpacity={0.8}
         >
           <LinearGradient
-            colors={rating > 0 ? [T.colors.accent.secondary, T.colors.component.button] : ['rgba(255,255,255,0.06)', 'rgba(255,255,255,0.04)']}
+            colors={rating > 0 ? B.nebulaGradient : [T.colors.component.input, T.colors.component.disabled]}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 0 }}
             style={styles.submitGrad}

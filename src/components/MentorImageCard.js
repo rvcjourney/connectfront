@@ -13,6 +13,11 @@ import { UNIFIED_THEME } from '../unifiedTheme';
 
 const T = UNIFIED_THEME;
 const C = T.colors;
+const B = C.buttons;
+const S = C.surface;
+
+const PURPLE_LINK = B.nebulaGradient[0];
+const GOLD = C.accent.primary;
 
 export function MentorImageCard({ mentor, onPress, style }) {
   const name       = mentor.profiles?.name || 'Unknown';
@@ -42,14 +47,14 @@ export function MentorImageCard({ mentor, onPress, style }) {
       {/* Top-right: rating badge */}
       {rating ? (
         <View style={styles.ratingBadge}>
-          <MaterialIcons name="star" size={10} color={C.accent.warning} />
+          <MaterialIcons name="star" size={10} color={GOLD} />
           <Text style={styles.ratingBadgeTxt}>{rating}</Text>
         </View>
       ) : null}
 
       {/* Bottom gradient info strip */}
       <LinearGradient
-        colors={['transparent', 'rgba(2,0,20,0.65)', 'rgba(2,0,20,0.97)']}
+        colors={['transparent', 'rgba(3,2,12,0.65)', 'rgba(3,2,12,0.97)']}
         style={styles.strip}
         pointerEvents="none"
       >
@@ -58,7 +63,7 @@ export function MentorImageCard({ mentor, onPress, style }) {
           <Text style={styles.spec} numberOfLines={1}>{spec}</Text>
         ) : null}
         <View style={styles.metaRow}>
-          <MaterialIcons name="history-edu" size={10} color="rgba(255,255,255,0.5)" />
+          <MaterialIcons name="history-edu" size={10} color={C.text.muted} />
           <Text style={styles.sessions}>{sessions} sessions</Text>
         </View>
       </LinearGradient>
@@ -70,19 +75,19 @@ const styles = StyleSheet.create({
   card: {
     width: 120,
     height: 172,
-    borderRadius: T.borderRadius.lg,
+    borderRadius: 16,
     overflow: 'hidden',
-    backgroundColor: C.component.card,
+    backgroundColor: 'rgba(255,255,255,0.07)',
     borderWidth: 1,
-    borderColor: C.border.light,
+    borderColor: 'rgba(255,255,255,0.14)',
     ...Platform.select({
       ios: {
         shadowColor: '#000',
         shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.2,
-        shadowRadius: 8,
+        shadowOpacity: 0.25,
+        shadowRadius: 6,
       },
-      android: { elevation: 5 },
+      android: { elevation: 4 },
     }),
   },
   img: {
@@ -90,14 +95,15 @@ const styles = StyleSheet.create({
   },
   imgPlaceholder: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: C.component.input,
+    backgroundColor: S.accentViolet,
     justifyContent: 'center',
     alignItems: 'center',
   },
   initial: {
     fontSize: 52,
     fontWeight: '700',
-    color: 'rgba(94,234,212,0.3)',
+    color: PURPLE_LINK,
+    opacity: 0.45,
   },
   ratingBadge: {
     position: 'absolute',
@@ -106,18 +112,17 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 3,
-    backgroundColor: 'rgba(2,0,20,0.75)',
-    borderRadius: 6,
-    paddingHorizontal: 5,
+    backgroundColor: S.accentGold,
+    borderRadius: 999,
+    paddingHorizontal: 6,
     paddingVertical: 2,
     borderWidth: 1,
     borderColor: 'rgba(240,216,117,0.25)',
   },
   ratingBadgeTxt: {
-    ...T.typography.labelSm,
-    color: C.accent.warning,
-    fontWeight: '700',
     fontSize: 10,
+    color: GOLD,
+    fontWeight: '700',
   },
   strip: {
     position: 'absolute',
@@ -129,16 +134,16 @@ const styles = StyleSheet.create({
     paddingBottom: T.spacing.sm,
   },
   name: {
-    color: '#ffffff',
-    fontWeight: '700',
+    color: C.text.primary,
+    fontWeight: '800',
     fontSize: 12,
     lineHeight: 16,
     marginBottom: 2,
   },
   spec: {
     fontSize: 10,
-    color: 'rgba(255,255,255,0.65)',
-    fontWeight: '500',
+    color: GOLD,
+    fontWeight: '700',
     lineHeight: 14,
     marginBottom: 4,
   },
@@ -149,7 +154,7 @@ const styles = StyleSheet.create({
   },
   sessions: {
     fontSize: 10,
-    color: 'rgba(255,255,255,0.45)',
-    fontWeight: '500',
+    color: C.text.muted,
+    fontWeight: '600',
   },
 });

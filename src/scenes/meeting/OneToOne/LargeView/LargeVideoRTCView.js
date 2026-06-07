@@ -8,7 +8,7 @@ export default LargeVideoRTCView = ({
   displayName,
   isOn,
   objectFit,
-  isLocal = { isLocal },
+  isLocal,
 }) => {
   return isOn && stream ? (
     <RTCView

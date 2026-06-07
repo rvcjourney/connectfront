@@ -13,7 +13,12 @@ import { UNIFIED_THEME } from '../unifiedTheme';
 
 const T = UNIFIED_THEME;
 const C = T.colors;
+const B = C.buttons;
 const TB = C.tabBar;
+
+const PURPLE_LINK = B.nebulaGradient[0];
+const GOLD = C.accent.primary;
+const TEAL = C.accent.secondary;
 
 /**
  * Material top tabs — cosmic “sector” layout: aurora edges, nebula wash on active,
@@ -42,8 +47,8 @@ export const CapsuleTabBar = ({ state, descriptors, navigation, compact = false 
       }
     };
 
-    const iconColor = isFocused ? C.accent.primary : C.text.secondary;
-    const labelColor = isFocused ? C.accent.primary : C.text.muted;
+    const iconColor = isFocused ? (compact ? PURPLE_LINK : GOLD) : C.text.secondary;
+    const labelColor = isFocused ? (compact ? PURPLE_LINK : GOLD) : C.text.muted;
 
     const iconNode = options.tabBarIcon
       ? options.tabBarIcon({ focused: isFocused, color: iconColor })
@@ -236,16 +241,16 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     backgroundColor: TB.flatBarBase,
     borderBottomWidth: 1,
-    borderBottomColor: TB.rimBorder,
+    borderBottomColor: C.border.light,
     paddingTop: T.spacing.sm,
     ...Platform.select({
       ios: {
-        shadowColor: 'rgba(124, 58, 237, 0.4)',
-        shadowOffset: { width: 0, height: 5 },
-        shadowOpacity: 0.32,
-        shadowRadius: 14,
+        shadowColor: UNIFIED_THEME.shadows.medium.shadowColor,
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: UNIFIED_THEME.shadows.medium.shadowOpacity * 0.7,
+        shadowRadius: UNIFIED_THEME.shadows.medium.shadowRadius,
       },
-      android: { elevation: 8 },
+      android: { elevation: UNIFIED_THEME.shadows.medium.elevation },
     }),
   },
   barTint: {
@@ -288,8 +293,8 @@ const styles = StyleSheet.create({
     width: StyleSheet.hairlineWidth * 2,
     alignSelf: 'stretch',
     marginVertical: T.spacing.md + 2,
-    backgroundColor: C.border.light,
-    opacity: 0.4,
+    backgroundColor: 'rgba(255,255,255,0.14)',
+    opacity: 0.6,
   },
   tabColumn: {
     flex: 1,
@@ -344,7 +349,7 @@ const styles = StyleSheet.create({
     flex: 1,
     width: '100%',
     borderRadius: 18,
-    backgroundColor: 'rgba(2, 0, 20, 0.72)',
+    backgroundColor: C.surface.sheet,
     borderWidth: 1,
     borderColor: TB.rimBorder,
     justifyContent: 'center',
@@ -404,10 +409,10 @@ const styles = StyleSheet.create({
     letterSpacing: 0.2,
   },
   compactDot: {
-    width: 0,
-    height: 0,
+    width: 4,
+    height: 4,
     borderRadius: 2,
-    backgroundColor: C.accent.primary,
+    backgroundColor: PURPLE_LINK,
     marginLeft: 2,
   },
 });

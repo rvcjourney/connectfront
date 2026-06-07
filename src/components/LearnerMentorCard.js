@@ -7,14 +7,17 @@ import {
   StyleSheet,
   Platform,
 } from 'react-native';
+import LinearGradient from 'react-native-linear-gradient';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
-import { UNIFIED_THEME } from '../unifiedTheme';
+import CosmicButton from './CosmicButton';
+import theme, { UNIFIED_THEME as T } from '../theme';
 
-const T = UNIFIED_THEME;
 const C = T.colors;
 
+const S = C.surface;
+
 /**
- * Learner discover tile — flat panel (left accent, square avatar, no rings / pill CTAs).
+ * Learner discover tile — cosmic glass card aligned with mentor profile rails.
  */
 export function LearnerMentorCard({
   mentor,
@@ -35,21 +38,30 @@ export function LearnerMentorCard({
   const body = (
     <>
       <View style={styles.topRow}>
-        <View style={styles.avatarTile}>
-          {mentor.profiles?.avatar_url ? (
-            <Image source={{ uri: mentor.profiles.avatar_url }} style={styles.avatarImg} />
-          ) : (
-            <View style={[styles.avatarImg, styles.avatarPh]}>
-              <Text style={styles.avatarLetter}>{initial}</Text>
-            </View>
-          )}
+        <View style={styles.avatarRingWrap}>
+          <LinearGradient
+            colors={['rgba(167,139,250,0.95)', 'rgba(255,255,255,0.55)', 'rgba(94,234,212,0.5)']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.avatarRingGrad}
+          >
+            {mentor.profiles?.avatar_url ? (
+              <Image source={{ uri: mentor.profiles.avatar_url }} style={styles.avatarImg} />
+            ) : (
+              <View style={[styles.avatarImg, styles.avatarPh]}>
+                <Text style={styles.avatarLetter}>{initial}</Text>
+              </View>
+            )}
+          </LinearGradient>
         </View>
         <View style={styles.headMain}>
-          <Text style={styles.name} numberOfLines={2}>{name}</Text>
+          <Text style={styles.name} numberOfLines={2}>
+            {name}
+          </Text>
           <View style={styles.badgeRow}>
             {rating ? (
               <View style={styles.ratingBadge}>
-                <MaterialIcons name="star" size={11} color={C.accent.warning} />
+                <MaterialIcons name="star" size={11} color={theme.gold} />
                 <Text style={styles.ratingText}>{rating}</Text>
               </View>
             ) : null}
@@ -78,20 +90,20 @@ export function LearnerMentorCard({
 
       {hasActions ? (
         <View style={styles.actions}>
-          <TouchableOpacity
+          <CosmicButton
+            label="Book"
+            variant="primary"
+            size="compact"
             onPress={() => onBook(mentor)}
-            activeOpacity={0.88}
-            style={styles.bookBtn}
-          >
-            <Text style={styles.bookText}>Book</Text>
-          </TouchableOpacity>
+            style={styles.bookBtnThemed}
+          />
           <TouchableOpacity
             style={styles.profileBtn}
             onPress={() => onViewProfile(mentor)}
             activeOpacity={0.85}
             accessibilityLabel="View profile"
           >
-            <MaterialIcons name="person-outline" size={18} color={C.accent.secondary} />
+            <MaterialIcons name="person-outline" size={18} color={theme.purple} />
           </TouchableOpacity>
         </View>
       ) : null}
@@ -101,9 +113,9 @@ export function LearnerMentorCard({
   if (onPress) {
     return (
       <TouchableOpacity
-        style={styles.card}
+        style={[styles.card, fullWidth && styles.cardFullWidth]}
         onPress={() => onPress(mentor)}
-        activeOpacity={0.92}
+        activeOpacity={0.88}
         accessibilityRole="button"
         accessibilityLabel={`${name}, ${mentor.specialization || 'mentor'}`}
       >
@@ -118,28 +130,24 @@ export function LearnerMentorCard({
 const styles = StyleSheet.create({
   card: {
     width: 176,
-    backgroundColor: C.component.card,
-    borderRadius: T.borderRadius.md,
+    backgroundColor: 'rgba(255,255,255,0.07)',
+    borderRadius: 16,
     padding: T.spacing.md,
     borderWidth: 1,
-    borderColor: C.border.light,
-    borderLeftWidth: 3,
-    borderLeftColor: 'rgba(94,234,212,0.35)',
+    borderColor: 'rgba(255,255,255,0.14)',
     ...Platform.select({
       ios: {
         shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.12,
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.25,
         shadowRadius: 6,
       },
-      android: { elevation: 3 },
+      android: { elevation: 4 },
     }),
   },
   cardFullWidth: {
     width: '100%',
     flex: undefined,
-    borderLeftWidth: 3,
-    borderLeftColor: C.accent.primary,
     ...Platform.select({
       ios: T.shadows.small,
       android: { elevation: 3 },
@@ -151,40 +159,42 @@ const styles = StyleSheet.create({
     marginBottom: T.spacing.sm,
     alignItems: 'flex-start',
   },
-  avatarTile: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    overflow: 'hidden',
-    borderWidth: 2,
-    borderColor: 'rgba(94,234,212,0.25)',
-    backgroundColor: C.primary.dark,
+  avatarRingWrap: {
+    alignItems: 'center',
+  },
+  avatarRingGrad: {
+    padding: 2,
+    borderRadius: 26,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.35)',
   },
   avatarImg: {
-    width: '100%',
-    height: '100%',
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: C.primary.void,
   },
   avatarPh: {
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: C.component.input,
+    backgroundColor: S.accentViolet,
   },
   avatarLetter: {
-    ...T.typography.headingSm,
-    color: C.accent.secondary,
-    fontWeight: '700',
     fontSize: 18,
+    color: theme.purple,
+    fontWeight: '700',
   },
   headMain: {
     flex: 1,
     minWidth: 0,
   },
   name: {
-    ...T.typography.labelMd,
+    fontSize: 13,
     color: C.text.primary,
-    fontWeight: '700',
+    fontWeight: '800',
     marginBottom: 5,
     lineHeight: 17,
+    letterSpacing: -0.2,
   },
   badgeRow: {
     flexDirection: 'row',
@@ -195,32 +205,35 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 2,
-    backgroundColor: 'rgba(240,216,117,0.12)',
-    borderRadius: 5,
-    paddingHorizontal: 5,
+    backgroundColor: S.accentGold,
+    borderRadius: 999,
+    paddingHorizontal: 6,
     paddingVertical: 2,
+    borderWidth: 1,
+    borderColor: 'rgba(240,216,117,0.25)',
   },
   ratingText: {
-    ...T.typography.labelSm,
-    color: C.accent.warning,
-    fontWeight: '700',
     fontSize: 11,
+    color: theme.gold,
+    fontWeight: '700',
   },
   expBadge: {
-    backgroundColor: 'rgba(94,234,212,0.1)',
-    borderRadius: 5,
-    paddingHorizontal: 5,
+    backgroundColor: S.accentTeal,
+    borderRadius: 999,
+    paddingHorizontal: 6,
     paddingVertical: 2,
+    borderWidth: 1,
+    borderColor: 'rgba(94,234,212,0.25)',
   },
   expText: {
-    ...T.typography.labelSm,
-    color: C.accent.secondary,
-    fontWeight: '700',
     fontSize: 11,
+    color: theme.teal,
+    fontWeight: '700',
   },
   spec: {
-    ...T.typography.bodyXs,
-    color: C.text.muted,
+    fontSize: 12,
+    color: theme.gold,
+    fontWeight: '700',
     marginBottom: T.spacing.sm,
     minHeight: 26,
     lineHeight: 16,
@@ -232,16 +245,16 @@ const styles = StyleSheet.create({
     marginBottom: T.spacing.xs,
   },
   price: {
-    ...T.typography.labelMd,
-    color: C.accent.primary,
+    fontSize: 14,
+    color: C.text.primary,
     fontWeight: '800',
   },
   priceFree: {
-    color: C.accent.secondary,
+    color: theme.teal,
   },
   priceUnit: {
-    ...T.typography.bodyXs,
-    color: C.text.secondary,
+    fontSize: 11,
+    color: C.text.muted,
     fontWeight: '600',
   },
   metaRow: {
@@ -251,8 +264,9 @@ const styles = StyleSheet.create({
     marginBottom: T.spacing.sm,
   },
   metaText: {
-    ...T.typography.bodyXs,
+    fontSize: 11,
     color: C.text.muted,
+    fontWeight: '600',
   },
   actions: {
     flexDirection: 'row',
@@ -260,27 +274,14 @@ const styles = StyleSheet.create({
     width: '100%',
     marginTop: 'auto',
   },
-  bookBtn: {
-    flex: 1,
-    paddingVertical: T.spacing.sm,
-    borderRadius: T.borderRadius.sm,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: C.accent.secondary,
-  },
-  bookText: {
-    ...T.typography.labelMd,
-    color: C.primary.void,
-    fontWeight: '800',
-    fontSize: 13,
-  },
+  bookBtnThemed: { flex: 1, marginVertical: 0 },
   profileBtn: {
     width: 38,
     height: 38,
-    borderRadius: T.borderRadius.sm,
+    borderRadius: 12,
     borderWidth: 1,
-    borderColor: C.border.light,
-    backgroundColor: C.component.input,
+    borderColor: 'rgba(167,139,250,0.35)',
+    backgroundColor: S.accentViolet,
     justifyContent: 'center',
     alignItems: 'center',
   },

@@ -13,6 +13,7 @@ import { UNIFIED_THEME } from '../unifiedTheme';
 
 const C = UNIFIED_THEME.colors;
 const S = UNIFIED_THEME.spacing;
+const T = UNIFIED_THEME;
 const TB = C.tabBar;
 const FAB_SIZE = TB.uploadFabSize ?? 52;
 const FAB_LIFT = TB.uploadFabLift ?? 22;
@@ -64,7 +65,7 @@ function UploadFabVisual() {
         style={styles.fabRingGrad}
       >
         <LinearGradient
-          colors={[C.accent.primary, C.accent.secondary]}
+          colors={C.buttons.primaryGradient}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
           style={styles.fabCircle}
@@ -124,7 +125,7 @@ export function CosmicBottomTabBar({ state, descriptors, navigation }) {
   const bottomPad = Math.max(insets.bottom, 8);
 
   const activeColor = C.accent.primary;
-  const inactiveColor = C.text.secondary;
+  const inactiveColor = C.text.muted;
 
   const makeHandlers = (route, index) => {
     const isFocused = state.index === index;
@@ -147,19 +148,11 @@ export function CosmicBottomTabBar({ state, descriptors, navigation }) {
   return (
     <View style={styles.tabRoot} pointerEvents="box-none">
       <LinearGradient
-        colors={C.primary.gradient}
-        locations={C.cosmic.mainGradientLocations}
+        colors={[C.surface.sheet, C.surface.panel, C.surface.sheet]}
+        locations={[0, 0.5, 1]}
         start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
+        end={{ x: 1, y: 0 }}
         style={StyleSheet.absoluteFill}
-      />
-      <LinearGradient
-        colors={C.cosmic.nebulaHaze}
-        locations={C.cosmic.nebulaLocations}
-        start={{ x: 0.15, y: 1 }}
-        end={{ x: 0.85, y: 0 }}
-        style={[StyleSheet.absoluteFill, styles.tabRootHaze]}
-        pointerEvents="none"
       />
 
       <View
@@ -240,10 +233,7 @@ const styles = StyleSheet.create({
     width: '100%',
     position: 'relative',
     overflow: 'visible',
-    backgroundColor: C.primary.void,
-  },
-  tabRootHaze: {
-    opacity: C.cosmic.hazeOpacity * 0.72,
+    backgroundColor: C.surface.panel,
   },
   barWrap: {
     width: '100%',
@@ -251,16 +241,16 @@ const styles = StyleSheet.create({
     overflow: 'visible',
     backgroundColor: TB.flatBarBase,
     borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: TB.rimBorder,
+    borderTopColor: C.border.light,
     paddingTop: S.sm,
     ...Platform.select({
       ios: {
-        shadowColor: 'rgba(124, 58, 237, 0.35)',
+        shadowColor: T.shadows.large.shadowColor,
         shadowOffset: { width: 0, height: -4 },
-        shadowOpacity: 0.3,
-        shadowRadius: 12,
+        shadowOpacity: T.shadows.large.shadowOpacity * 0.6,
+        shadowRadius: T.shadows.large.shadowRadius,
       },
-      android: { elevation: 12 },
+      android: { elevation: T.shadows.large.elevation },
     }),
   },
   barTint: {
@@ -351,14 +341,16 @@ const styles = StyleSheet.create({
     borderRadius: (FAB_SIZE + 6) / 2,
     padding: 2,
     backgroundColor: TB.flatBarBase,
+    borderWidth: 1,
+    borderColor: TB.glassBorder,
     ...Platform.select({
       ios: {
         shadowColor: C.accent.primary,
         shadowOffset: { width: 0, height: 6 },
-        shadowOpacity: 0.5,
-        shadowRadius: 14,
+        shadowOpacity: 0.45,
+        shadowRadius: 12,
       },
-      android: { elevation: 16 },
+      android: { elevation: 14 },
     }),
   },
   fabRingGrad: {

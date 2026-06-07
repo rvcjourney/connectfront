@@ -21,6 +21,15 @@ import { bookingApi } from '../../api/bookingApi';
 import { videoApi } from '../../api/videoApi';
 
 const T = UNIFIED_THEME;
+const C = T.colors;
+const B = C.buttons;
+const S = C.surface;
+
+const PURPLE_LINK = B.nebulaGradient[0];
+const GOLD = C.accent.primary;
+const TEAL = C.accent.secondary;
+const PANEL_BG = '#161432';
+const INPUT_BG = '#0f0e2a';
 const TopTab = createMaterialTopTabNavigator();
 
 const TAB_MENTOR = 'TransactionHistory_MentorTab';
@@ -59,7 +68,7 @@ const STATUS_CONFIG = {
 };
 
 function statusConfig(status) {
-  return STATUS_CONFIG[status] || { label: status, color: T.colors.text.muted, bg: T.colors.component.input };
+  return STATUS_CONFIG[status] || { label: status, color: C.text.muted, bg: S.accentViolet };
 }
 
 // ─── Subscription Card ───────────────────────────────────────────────────────
@@ -226,7 +235,7 @@ function MentorTransactionsTab() {
         </View>
       ) : (
         <View style={styles.empty}>
-          <MaterialIcons name="school" size={28} color={T.colors.text.muted} />
+          <MaterialIcons name="school" size={28} color={PURPLE_LINK} />
           <Text style={styles.emptyText}>No mentor transactions yet</Text>
         </View>
       )}
@@ -286,7 +295,7 @@ function LearnerTransactionsTab() {
         </View>
       ) : (
         <View style={styles.empty}>
-          <MaterialIcons name="menu-book" size={28} color={T.colors.text.muted} />
+          <MaterialIcons name="menu-book" size={28} color={PURPLE_LINK} />
           <Text style={styles.emptyText}>No learner transactions yet</Text>
         </View>
       )}
@@ -417,19 +426,24 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: T.spacing.md,
     paddingVertical: T.spacing.md,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: T.colors.border.light,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(167,139,250,0.22)',
+    backgroundColor: INPUT_BG,
   },
   backBtn: {
     width: 40,
     height: 40,
+    borderRadius: 20,
+    backgroundColor: PANEL_BG,
+    borderWidth: 1,
+    borderColor: 'rgba(167,139,250,0.22)',
     justifyContent: 'center',
-    alignItems: 'flex-start',
+    alignItems: 'center',
   },
   headerTitle: {
-    ...T.typography.bodyLg,
-    color: T.colors.text.primary,
-    fontWeight: '700',
+    fontSize: 17,
+    color: C.text.primary,
+    fontWeight: '800',
   },
   headerSpacer: { width: 40 },
 
@@ -465,12 +479,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: T.spacing.sm,
-    backgroundColor: T.colors.component.input,
-    borderRadius: 12,
-    borderLeftWidth: 3,
-    borderLeftColor: '#34D399',
+    backgroundColor: PANEL_BG,
+    borderRadius: 14,
     borderWidth: 1,
-    borderColor: T.colors.border.light,
+    borderColor: 'rgba(167,139,250,0.22)',
     paddingHorizontal: T.spacing.md,
     paddingVertical: T.spacing.sm,
     marginBottom: T.spacing.md,
@@ -492,10 +504,10 @@ const styles = StyleSheet.create({
   card: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: T.colors.component.input,
-    borderRadius: 14,
+    backgroundColor: PANEL_BG,
+    borderRadius: 16,
     borderWidth: 1,
-    borderColor: T.colors.border.light,
+    borderColor: 'rgba(167,139,250,0.22)',
     paddingHorizontal: T.spacing.md,
     paddingVertical: T.spacing.md,
     gap: T.spacing.md,
@@ -511,7 +523,9 @@ const styles = StyleSheet.create({
     width: 46,
     height: 46,
     borderRadius: 23,
-    backgroundColor: T.colors.primary.light,
+    backgroundColor: INPUT_BG,
+    borderWidth: 1,
+    borderColor: 'rgba(167,139,250,0.22)',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -557,10 +571,10 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingVertical: T.spacing.xxl,
     paddingHorizontal: T.spacing.lg,
-    backgroundColor: T.colors.component.input,
+    backgroundColor: PANEL_BG,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: T.colors.border.light,
+    borderColor: 'rgba(167,139,250,0.22)',
     gap: T.spacing.sm,
   },
   emptyText: {

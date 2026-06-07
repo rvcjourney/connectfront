@@ -50,8 +50,8 @@ export default function ParticipantLimitViewer() {
       </Text>
 
       <Button
-        backgroundColor={colors.purple}
         text="Ok"
+        variant="primary"
         onPress={() => {
           leave();
         }}

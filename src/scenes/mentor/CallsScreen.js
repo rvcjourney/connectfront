@@ -12,7 +12,6 @@ import {
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import Toast from 'react-native-simple-toast';
-import LinearGradient from 'react-native-linear-gradient';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import { UNIFIED_THEME } from '../../unifiedTheme';
 import { LoadingOverlay } from '../../components/LoadingOverlay';
@@ -23,10 +22,16 @@ import { normalizeRecordingUrl } from '../../api/api';
 import { playbackUrlFromBooking } from '../../api/recordingsApi';
 import { scheduleSessionReminder, requestNotificationPermission } from '../../utils/sessionReminder';
 import { SCREEN_NAMES } from '../../navigators/screenNames';
+import { saveRecordingToGallery } from '../../utils/recordingActions';
 
 const T = UNIFIED_THEME;
 const C = T.colors;
-const TB = C.tabBar;
+const B = C.buttons;
+const S = C.surface;
+
+const PURPLE_LINK = B.nebulaGradient[0];
+const TEAL = C.accent.secondary;
+const GOLD = C.accent.primary;
 const PAGE_SIZE = 6;
 const SESSIONS_POLL_MS = 30_000;
 
@@ -52,39 +57,40 @@ const isSessionPast = b => {
   return new Date(`${date}T${endTime || '23:59:59'}`) < new Date();
 };
 
-function StatChip({ icon, value, tint }) {
+function StatSegment({ icon, iconColor, value, label }) {
   return (
-    <View style={styles.statChip}>
-      <View style={[styles.statIconWrap, { backgroundColor: `${tint}16` }]}>
-        <MaterialIcons name={icon} size={18} color={tint} />
+    <View style={styles.statSeg}>
+      <Text style={styles.statValue} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.72}>
+        {value}
+      </Text>
+      <View style={styles.statLabelRow}>
+        <MaterialIcons name={icon} size={12} color={iconColor} />
+        <Text style={styles.statLabel} numberOfLines={1}>
+          {label}
+        </Text>
       </View>
-      <Text style={styles.statValue}>{value}</Text>
     </View>
   );
 }
 
-function SectionRow({ icon, title, count }) {
+function SectionHeaderRow({ title, count }) {
   return (
-    <View style={styles.sectionRow}>
-      <View style={styles.sectionLeft}>
-        <View style={styles.sectionIcon}>
-          <MaterialIcons name={icon} size={15} color={C.accent.secondary} />
-        </View>
-        <Text style={styles.sectionTitle}>{title}</Text>
-      </View>
+    <View style={styles.secHdrRow}>
+      <Text style={styles.secHdrTitle}>{title}</Text>
       {count > 0 ? (
-        <View style={styles.sectionCount}>
-          <Text style={styles.sectionCountTxt}>{count}</Text>
+        <View style={styles.secHdrCount}>
+          <Text style={styles.secHdrCountText}>{count}</Text>
         </View>
       ) : null}
     </View>
   );
 }
 
-function EmptyBlock({ icon }) {
+function EmptyBlock({ icon, text }) {
   return (
     <View style={styles.emptyBlock}>
-      <MaterialIcons name={icon} size={26} color={C.text.muted} />
+      <MaterialIcons name={icon} size={22} color={PURPLE_LINK} />
+      {text ? <Text style={styles.emptyBlockText}>{text}</Text> : null}
     </View>
   );
 }
@@ -239,6 +245,15 @@ export default function MentorCallsScreen({ navigation }) {
     navigation.navigate(SCREEN_NAMES.RecordingPlayer, { recordingUrl: url });
   };
 
+  const handleDownloadRecording = rawUrl => {
+    const url = normalizeRecordingUrl(rawUrl);
+    if (!url) {
+      Toast.show('No recording');
+      return;
+    }
+    saveRecordingToGallery(url);
+  };
+
   const statusKey = item =>
     item.isExpired ? 'expired' : (item.status || 'booked').toLowerCase();
 
@@ -252,6 +267,9 @@ export default function MentorCallsScreen({ navigation }) {
       onPressCancel={null}
       onPressRecording={
         item.recordingUrl ? () => handleOpenRecording(item.recordingUrl) : null
+      }
+      onPressDownload={
+        item.recordingUrl ? () => handleDownloadRecording(item.recordingUrl) : null
       }
       statusLabel={STATUS_LABEL[statusKey(item)] || STATUS_LABEL.booked}
     />
@@ -270,12 +288,11 @@ export default function MentorCallsScreen({ navigation }) {
     listData.push({
       type: 'section',
       key: 'up_hdr',
-      icon: 'event-available',
       title: 'Upcoming',
       count: upcomingAll.length,
     });
     if (!upcomingAll.length) {
-      listData.push({ type: 'empty_slot', key: 'up_empty', icon: 'event-busy' });
+      listData.push({ type: 'empty_slot', key: 'up_empty', icon: 'event-busy', text: 'No upcoming sessions' });
     } else {
       visibleUpcoming.forEach(b =>
         listData.push({ type: 'booking', key: `u-${b.id}`, item: b, isUpcoming: true }),
@@ -291,12 +308,11 @@ export default function MentorCallsScreen({ navigation }) {
     listData.push({
       type: 'section',
       key: 'hist_hdr',
-      icon: 'history',
       title: 'History',
       count: history.length,
     });
     if (!visibleHistory.length && !loadingMore) {
-      listData.push({ type: 'empty_slot', key: 'hist_empty', icon: 'inbox' });
+      listData.push({ type: 'empty_slot', key: 'hist_empty', icon: 'inbox', text: 'No past sessions yet' });
     } else {
       visibleHistory.forEach(b =>
         listData.push({ type: 'booking', key: `h-${b.id}`, item: b, isUpcoming: false }),
@@ -313,31 +329,38 @@ export default function MentorCallsScreen({ navigation }) {
       case 'stats':
         return (
           <View style={styles.statsBar}>
-            <LinearGradient
-              colors={TB.flatBarEdge}
-              locations={[0, 0.4, 0.7, 1]}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 0 }}
-              style={styles.statsBeam}
-              pointerEvents="none"
+            <StatSegment
+              icon="schedule"
+              iconColor={TEAL}
+              value={String(upcomingAll.length)}
+              label="Upcoming"
             />
-            <StatChip icon="schedule" value={upcomingAll.length} tint={C.accent.secondary} />
             <View style={styles.statDivider} />
-            <StatChip icon="check-circle" value={completedCount} tint={C.accent.success} />
+            <StatSegment
+              icon="check-circle"
+              iconColor={GOLD}
+              value={String(completedCount)}
+              label="Done"
+            />
             <View style={styles.statDivider} />
-            <StatChip icon="history" value={history.length} tint={C.accent.primary} />
+            <StatSegment
+              icon="history"
+              iconColor={PURPLE_LINK}
+              value={String(history.length)}
+              label="History"
+            />
           </View>
         );
 
       case 'section':
         return (
           <View style={styles.sectionWrap}>
-            <SectionRow icon={item.icon} title={item.title} count={item.count} />
+            <SectionHeaderRow title={item.title} count={item.count} />
           </View>
         );
 
       case 'empty_slot':
-        return <EmptyBlock icon={item.icon} />;
+        return <EmptyBlock icon={item.icon} text={item.text} />;
 
       case 'booking':
         return (
@@ -353,7 +376,8 @@ export default function MentorCallsScreen({ navigation }) {
             onPress={loadMoreUpcoming}
             activeOpacity={0.75}
           >
-            <MaterialIcons name="expand-more" size={26} color={C.accent.secondary} />
+            <MaterialIcons name="expand-more" size={20} color={PURPLE_LINK} />
+            <Text style={styles.loadMoreTxt}>Load more upcoming</Text>
           </TouchableOpacity>
         );
 
@@ -365,9 +389,12 @@ export default function MentorCallsScreen({ navigation }) {
             activeOpacity={0.75}
           >
             {loadingMore ? (
-              <ActivityIndicator size="small" color={C.accent.secondary} />
+              <ActivityIndicator size="small" color={TEAL} />
             ) : (
-              <MaterialIcons name="expand-more" size={26} color={C.accent.secondary} />
+              <>
+                <MaterialIcons name="expand-more" size={20} color={PURPLE_LINK} />
+                <Text style={styles.loadMoreTxt}>Load more history</Text>
+              </>
             )}
           </TouchableOpacity>
         );
@@ -376,8 +403,12 @@ export default function MentorCallsScreen({ navigation }) {
         return (
           <View style={styles.emptyMain}>
             <View style={styles.emptyRing}>
-              <MaterialIcons name="video-call" size={34} color={C.accent.secondary} />
+              <MaterialIcons name="video-call" size={34} color={PURPLE_LINK} />
             </View>
+            <Text style={styles.emptyTitle}>No sessions yet</Text>
+            <Text style={styles.emptySubtitle}>
+              When learners book with you, sessions will appear here.
+            </Text>
           </View>
         );
 
@@ -399,7 +430,7 @@ export default function MentorCallsScreen({ navigation }) {
           <RefreshControl
             refreshing={refreshing}
             onRefresh={handleRefresh}
-            tintColor={C.accent.secondary}
+            tintColor={TEAL}
           />
         }
       />
@@ -416,134 +447,150 @@ const styles = StyleSheet.create({
   },
   statsBar: {
     flexDirection: 'row',
-    alignItems: 'center',
-    borderRadius: T.borderRadius.md,
-    borderWidth: 1,
-    borderColor: C.border.light,
-    backgroundColor: C.component.card,
-    paddingVertical: T.spacing.md,
-    paddingHorizontal: T.spacing.sm,
+    alignItems: 'stretch',
     marginBottom: T.spacing.lg,
-    overflow: 'hidden',
-    ...Platform.select({
-      ios: T.shadows.small,
-      android: { elevation: 3 },
-    }),
-  },
-  statsBeam: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    top: 0,
-    height: 2,
-    opacity: 0.9,
-  },
-  statChip: {
-    flex: 1,
-    alignItems: 'center',
-    gap: 6,
-  },
-  statIconWrap: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    alignItems: 'center',
-    justifyContent: 'center',
+    paddingVertical: 11,
+    paddingHorizontal: 4,
+    borderRadius: 14,
+    backgroundColor: 'rgba(255,255,255,0.07)',
     borderWidth: 1,
-    borderColor: C.border.light,
+    borderColor: 'rgba(167,139,250,0.22)',
+  },
+  statSeg: {
+    flex: 1,
+    minWidth: 0,
+    alignItems: 'center',
+    paddingHorizontal: 2,
   },
   statValue: {
-    ...T.typography.headingSm,
-    color: C.text.primary,
+    fontSize: 17,
     fontWeight: '800',
+    color: C.text.primary,
+    letterSpacing: -0.4,
+    textAlign: 'center',
+    ...Platform.select({ android: { includeFontPadding: false } }),
+  },
+  statLabelRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 4,
+    marginTop: 5,
+  },
+  statLabel: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: C.text.muted,
   },
   statDivider: {
-    width: StyleSheet.hairlineWidth,
-    height: 38,
-    backgroundColor: C.border.light,
-    opacity: 0.45,
+    width: 1,
+    backgroundColor: 'rgba(255,255,255,0.14)',
+    marginVertical: 6,
+    alignSelf: 'stretch',
   },
   sectionWrap: {
     marginTop: T.spacing.sm,
     marginBottom: T.spacing.xs,
   },
-  sectionRow: {
+  secHdrRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    marginTop: T.spacing.xs,
+    marginBottom: 2,
   },
-  sectionLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: T.spacing.sm,
-  },
-  sectionIcon: {
-    width: 28,
-    height: 28,
-    borderRadius: 8,
-    backgroundColor: 'rgba(94, 234, 212, 0.08)',
-    borderWidth: 1,
-    borderColor: 'rgba(94, 234, 212, 0.18)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  sectionTitle: {
-    ...T.typography.labelMd,
+  secHdrTitle: {
+    fontSize: 15,
+    fontWeight: '800',
     color: C.text.primary,
-    fontWeight: '700',
+    flex: 1,
+    minWidth: 0,
   },
-  sectionCount: {
+  secHdrCount: {
     minWidth: 26,
     height: 26,
-    borderRadius: 13,
     paddingHorizontal: 8,
-    backgroundColor: C.component.buttonSecondary,
+    borderRadius: 999,
+    backgroundColor: S.accentViolet,
     borderWidth: 1,
-    borderColor: C.border.light,
-    alignItems: 'center',
+    borderColor: 'rgba(167,139,250,0.35)',
     justifyContent: 'center',
+    alignItems: 'center',
   },
-  sectionCountTxt: {
-    ...T.typography.labelSm,
-    color: C.accent.secondary,
+  secHdrCountText: {
+    fontSize: 11,
     fontWeight: '800',
+    color: PURPLE_LINK,
   },
   cardWrap: {
     marginBottom: T.spacing.sm,
   },
   emptyBlock: {
+    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: T.spacing.xl,
+    gap: T.spacing.md,
+    paddingVertical: T.spacing.lg,
+    paddingHorizontal: T.spacing.lg,
     marginBottom: T.spacing.sm,
-    borderRadius: T.borderRadius.md,
+    borderRadius: 16,
     borderWidth: 1,
-    borderColor: C.border.light,
-    backgroundColor: C.component.card,
+    borderColor: 'rgba(167,139,250,0.22)',
+    backgroundColor: 'rgba(255,255,255,0.07)',
+  },
+  emptyBlockText: {
+    fontSize: 14,
+    color: C.text.muted,
+    flex: 1,
+    fontWeight: '600',
   },
   loadMore: {
+    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
+    gap: T.spacing.sm,
     paddingVertical: T.spacing.md,
     marginTop: T.spacing.xs,
     marginBottom: T.spacing.lg,
-    borderRadius: T.borderRadius.md,
+    borderRadius: 14,
     borderWidth: 1,
-    borderColor: C.border.light,
-    backgroundColor: C.component.card,
+    borderColor: 'rgba(167,139,250,0.22)',
+    backgroundColor: 'rgba(255,255,255,0.07)',
+  },
+  loadMoreTxt: {
+    fontSize: 13,
+    color: PURPLE_LINK,
+    fontWeight: '700',
   },
   emptyMain: {
     alignItems: 'center',
-    paddingVertical: T.spacing.xxxl * 1.25,
+    paddingVertical: T.spacing.xxxl,
+    paddingHorizontal: T.spacing.lg,
+    borderWidth: 1,
+    borderColor: 'rgba(167,139,250,0.22)',
+    borderRadius: 16,
+    backgroundColor: 'rgba(255,255,255,0.07)',
   },
   emptyRing: {
     width: 76,
     height: 76,
     borderRadius: 38,
     borderWidth: 1,
-    borderColor: C.border.light,
-    backgroundColor: C.component.card,
+    borderColor: 'rgba(167,139,250,0.35)',
+    backgroundColor: S.accentViolet,
     alignItems: 'center',
     justifyContent: 'center',
+    marginBottom: T.spacing.lg,
+  },
+  emptyTitle: {
+    fontSize: 17,
+    fontWeight: '800',
+    color: C.text.primary,
+    marginBottom: T.spacing.sm,
+  },
+  emptySubtitle: {
+    fontSize: 13,
+    color: C.text.muted,
+    textAlign: 'center',
+    lineHeight: 20,
   },
 });
