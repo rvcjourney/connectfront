@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+﻿import React, { useEffect, useRef, useState } from 'react';
 import {
   View,
   Platform,
@@ -34,7 +34,6 @@ export default function VideoCallScreen({ navigation, route }) {
 
   // Log participant count changes
   useEffect(() => {
-    console.log(`👥 Participant count changed to: ${participantCount}`);
   }, [participantCount]);
 
   // Track when both participants have joined
@@ -42,7 +41,6 @@ export default function VideoCallScreen({ navigation, route }) {
     if (participantCount >= 2 && !joinTimeRef.current) {
       const now = new Date();
       joinTimeRef.current = now;
-      console.log(`✅ Both participants joined at ${now.toLocaleTimeString()}`);
     }
   }, [participantCount]);
 
@@ -121,23 +119,13 @@ export default function VideoCallScreen({ navigation, route }) {
       const MIN_DURATION_SECONDS = 600; // 10 minutes
       const shouldMarkComplete = !!joinTimeRef.current && callDuration >= MIN_DURATION_SECONDS;
 
-      console.log(`📊 Call ended:`);
-      console.log(`   - Participants at end: ${participantCount}`);
-      console.log(`   - Join time: ${joinTimeRef.current?.toLocaleTimeString()}`);
-      console.log(`   - End time: ${endTime.toLocaleTimeString()}`);
-      console.log(`   - Call duration: ${callDuration} seconds (min required: ${MIN_DURATION_SECONDS})`);
-      console.log(`   - Duration check: ${callDuration >= MIN_DURATION_SECONDS ? '✅ Pass' : '❌ Fail'}`);
-      console.log(`   - Should mark complete: ${shouldMarkComplete}`);
-      console.log(`   - Is host: ${isHost}`);
 
       if (shouldMarkComplete) {
         // Update booking status to completed
-        console.log(`✅ Updating booking ${bookingId} status to completed...`);
         await bookingApi.updateBookingStatus({
           bookingId,
           status: 'completed',
         });
-        console.log(`✅ Booking status updated successfully`);
 
         // Persist recording URL to booking (host-side best effort with retries).
         if (isHost && callParams?.meetingId && callParams?.token) {
@@ -161,12 +149,10 @@ export default function VideoCallScreen({ navigation, route }) {
                 recordingUrl,
                 recordingPlaybackUrl: recordingUrl,
               });
-              console.log(`✅ Recording URL saved for booking ${bookingId}`);
             } catch (recErr) {
               console.warn('⚠️ Recording URL save skipped (recordings table not set up):', recErr);
             }
           } else {
-            console.log(`⚠️ Recording URL not available yet for booking ${bookingId}`);
           }
         }
 
@@ -179,13 +165,11 @@ export default function VideoCallScreen({ navigation, route }) {
               .eq('id', profile.id)
               .single();
             const pricePerHour = mp?.price_per_hour || 0;
-            console.log(`💰 Creating earnings record: mentorId=${profile.id}, amount=${pricePerHour}`);
             await earningsApi.createEarning({
               mentorId: profile.id,
               bookingId,
               amount: pricePerHour,
             });
-            console.log(`✅ Earnings record created`);
           } catch (earningsErr) {
             console.warn('⚠️ Earnings record skipped:', earningsErr);
           }
@@ -197,7 +181,6 @@ export default function VideoCallScreen({ navigation, route }) {
         let reason = '';
         if (!joinTimeRef.current) {
           reason = 'both participants did not join';
-          console.log(`⚠️ Session ended - ${reason}. Clearing meeting_id...`);
           try {
             await bookingApi.clearMeetingId(bookingId);
             Toast.show('Session ended - Meeting abandoned');
@@ -207,7 +190,6 @@ export default function VideoCallScreen({ navigation, route }) {
           }
         } else if (callDuration < MIN_DURATION_SECONDS) {
           reason = `call was too short (${callDuration}s, min: ${MIN_DURATION_SECONDS}s)`;
-          console.log(`⚠️ Session ended - ${reason}. Clearing meeting_id...`);
           try {
             await bookingApi.clearMeetingId(bookingId);
             Toast.show(`Session too short (${Math.round(callDuration / 60)}min, need 10min)`);

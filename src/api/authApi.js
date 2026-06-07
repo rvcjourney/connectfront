@@ -1,4 +1,4 @@
-import { supabase } from '../lib/supabase';
+﻿import { supabase } from '../lib/supabase';
 import { getSupabaseErrorMessage } from '../lib/supabaseErrorHandler';
 
 function generateUsername(email) {
@@ -13,7 +13,6 @@ function generateUsername(email) {
 export const authApi = {
   signUp: async ({ email, password, name, role }) => {
     try {
-      console.log('📝 Starting signup for:', email);
 
       // Create auth user with Supabase
       const { data: authData, error: authError } = await supabase.auth.signUp({
@@ -22,7 +21,6 @@ export const authApi = {
       });
 
       if (authError) throw authError;
-      console.log('✅ Auth user created');
 
       const userId = authData.user.id;
 
@@ -44,7 +42,6 @@ export const authApi = {
         .single();
 
       if (profileError) throw profileError;
-      console.log('✅ Profile created with timestamp');
 
       // Create role-specific profile
       if (role === 'mentor') {
@@ -61,9 +58,7 @@ export const authApi = {
           ]);
 
         if (mentorError) {
-          console.log('⚠️ Mentor profile creation failed:', mentorError.message);
         } else {
-          console.log('✅ Mentor profile created');
         }
       } else if (role === 'learner') {
         const { error: learnerError } = await supabase
@@ -77,9 +72,7 @@ export const authApi = {
           ]);
 
         if (learnerError) {
-          console.log('⚠️ Learner profile creation failed:', learnerError.message);
         } else {
-          console.log('✅ Learner profile created');
         }
       }
 
@@ -89,14 +82,12 @@ export const authApi = {
         message: 'Account created! Check your email to verify.',
       };
     } catch (error) {
-      console.log('❌ Signup failed:', error.message);
       throw new Error(getSupabaseErrorMessage(error));
     }
   },
 
   signIn: async ({ email, password }) => {
     try {
-      console.log('🔐 Signing in user:', email);
 
       // Sign in with email and password
       const { data, error } = await supabase.auth.signInWithPassword({
@@ -105,7 +96,6 @@ export const authApi = {
       });
 
       if (error) throw error;
-      console.log('✅ User signed in successfully');
 
       // Don't fetch profile here - let AuthContext listener do it
       // This prevents double-fetching and timeout issues
@@ -114,7 +104,6 @@ export const authApi = {
         session: data.session,
       };
     } catch (error) {
-      console.log('❌ Sign in failed:', error.message);
       throw new Error(getSupabaseErrorMessage(error));
     }
   },
@@ -155,19 +144,15 @@ export const authApi = {
 
   signOut: async () => {
     try {
-      console.log('👋 Signing out user');
       const { error } = await supabase.auth.signOut();
       if (error) throw error;
-      console.log('✅ User signed out');
     } catch (error) {
-      console.log('❌ Sign out failed:', error.message);
       throw new Error(getSupabaseErrorMessage(error));
     }
   },
 
   getProfile: async (userId) => {
     try {
-      console.log('🔍 Fetching profile for userId:', userId);
       const { data, error } = await supabase
         .from('profiles')
         .select('*')
@@ -175,10 +160,8 @@ export const authApi = {
         .single();
 
       if (error) throw error;
-      console.log('✅ Profile fetched');
       return data;
     } catch (error) {
-      console.log('❌ Profile fetch failed:', error.message);
       throw new Error(getSupabaseErrorMessage(error));
     }
   },

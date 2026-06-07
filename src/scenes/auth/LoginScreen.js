@@ -1,4 +1,4 @@
-import { useState } from 'react';
+﻿import { useState } from 'react';
 import {
   View,
   Text,
@@ -35,14 +35,12 @@ export default function LoginScreen({ navigation }) {
 
     setLoading(true);
     try {
-      console.log('🔵 Login attempt:', { email });
 
       await authApi.signIn({
         email: email.trim().toLowerCase(),
         password,
       });
 
-      console.log('✅ Login successful');
       Toast.show('Signed in successfully!');
       // AuthContext will handle navigation automatically
     } catch (error) {

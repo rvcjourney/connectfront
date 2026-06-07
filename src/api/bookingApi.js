@@ -1,4 +1,4 @@
-import { supabase, SUPABASE_URL, SUPABASE_ANON_KEY } from '../lib/supabase';
+﻿import { supabase, SUPABASE_URL, SUPABASE_ANON_KEY } from '../lib/supabase';
 import { getSupabaseErrorMessage } from '../lib/supabaseErrorHandler';
 import { cancelSessionReminder } from '../utils/sessionReminder';
 import { recordingsApi } from './recordingsApi';
@@ -272,7 +272,6 @@ export const bookingApi = {
 
   updateBookingStatus: async ({ bookingId, status }) => {
     try {
-      console.log(`📊 Updating booking ${bookingId} status to: ${status}`);
 
       // Update the booking status
       const { data, error } = await supabase
@@ -288,7 +287,6 @@ export const bookingApi = {
       // 1. Increment mentor's total_sessions
       // 2. Move earnings from pending → available balance (complete_session_payment RPC)
       if (status === 'completed' && data?.mentor_id) {
-        console.log(`✅ Session completed for mentor: ${data.mentor_id}`);
 
         // Increment total_sessions
         const { data: mentorData, error: fetchError } = await supabase
@@ -303,7 +301,6 @@ export const bookingApi = {
             .from('mentor_profiles')
             .update({ total_sessions: newCount })
             .eq('id', data.mentor_id);
-          console.log(`✅ total_sessions updated to: ${newCount}`);
         }
 
         // Credit wallet: move pending earnings → available balance
@@ -315,13 +312,11 @@ export const bookingApi = {
         if (walletError) {
           console.error('❌ Failed to credit wallet:', walletError);
         } else {
-          console.log(`✅ Wallet credited for booking: ${bookingId}`);
         }
       }
 
       // Notify learner of status change (fire-and-forget)
       const notifyUrl = `${SUPABASE_URL}/functions/v1/notify-booking-status`;
-      console.log('📣 Calling notify-booking-status:', notifyUrl, { bookingId, status });
       fetch(notifyUrl, {
         method: 'POST',
         headers: {
@@ -333,7 +328,6 @@ export const bookingApi = {
       })
         .then(async res => {
           const text = await res.text();
-          console.log('📣 notify-booking-status response:', res.status, text);
         })
         .catch(err => console.warn('📣 notify-booking-status fetch error:', err));
 
@@ -362,7 +356,6 @@ export const bookingApi = {
         .update({ meeting_id: null })
         .eq('id', bookingId);
       if (error) throw error;
-      console.log('✅ Meeting ID cleared');
     } catch (error) {
       throw new Error(getSupabaseErrorMessage(error));
     }

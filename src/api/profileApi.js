@@ -1,4 +1,4 @@
-import { decode } from 'base64-arraybuffer';
+﻿import { decode } from 'base64-arraybuffer';
 import { supabase } from '../lib/supabase';
 import { getSupabaseErrorMessage } from '../lib/supabaseErrorHandler';
 
@@ -157,12 +157,10 @@ export const profileApi = {
         });
 
       if (uploadError) throw uploadError;
-      console.log('✅ Storage upload success | userId:', userId, '| filePath:', filePath);
 
       // Get public URL with cache-bust timestamp
       const { data } = supabase.storage.from('connectiqo_avatar').getPublicUrl(filePath);
       const avatarUrl = `${data.publicUrl}?t=${Date.now()}`;
-      console.log('🔗 Public URL:', avatarUrl);
 
       // Update profiles table with timestamped URL so refreshProfile loads the fresh image
       const { data: updated, error: profileError } = await supabase
@@ -176,7 +174,6 @@ export const profileApi = {
         console.error('❌ profiles update error:', profileError);
         throw profileError;
       }
-      console.log('✅ profiles.avatar_url updated to:', updated?.avatar_url);
 
       return avatarUrl;
     } catch (error) {
@@ -259,7 +256,6 @@ export const profileApi = {
 
   updateMentorCategory: async (mentorId, category) => {
     try {
-      console.log(`📂 Updating mentor ${mentorId} category to: ${category}`);
       const { data, error } = await supabase
         .from('mentor_profiles')
         .update({ category })
@@ -268,7 +264,6 @@ export const profileApi = {
         .single();
 
       if (error) throw error;
-      console.log(`✅ Category updated successfully:`, data);
       return data;
     } catch (error) {
       throw new Error(getSupabaseErrorMessage(error));

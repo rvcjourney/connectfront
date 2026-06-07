@@ -1,4 +1,4 @@
-import notifee, {
+﻿import notifee, {
   TriggerType,
   AndroidImportance,
   AuthorizationStatus,
@@ -95,7 +95,6 @@ export async function scheduleSessionReminder({
       },
     );
 
-    console.log(`✅ Reminder scheduled for booking ${bookingId} at ${new Date(reminderMs).toLocaleTimeString()}`);
   } catch (err) {
     console.warn('⚠️ Failed to schedule reminder:', err);
   }
@@ -107,7 +106,6 @@ export async function scheduleSessionReminder({
 export async function cancelSessionReminder(bookingId) {
   try {
     await notifee.cancelTriggerNotification(bookingId);
-    console.log(`✅ Reminder cancelled for booking ${bookingId}`);
   } catch (err) {
     console.warn('⚠️ Failed to cancel reminder:', err);
   }

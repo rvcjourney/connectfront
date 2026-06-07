@@ -1,0 +1,452 @@
+﻿2026-05-23T20:48:42.331+0530 [INFO] [org.gradle.internal.nativeintegration.services.NativeServices] Initialized native services in: C:\Users\Admin\.gradle\native
+2026-05-23T20:48:42.413+0530 [INFO] [org.gradle.internal.nativeintegration.services.NativeServices] Initialized jansi services in: C:\Users\Admin\.gradle\native
+2026-05-23T20:48:42.459+0530 [LIFECYCLE] [org.gradle.launcher.cli.DebugLoggerWarningAction] 
+#############################################################################
+   WARNING WARNING WARNING WARNING WARNING WARNING WARNING WARNING WARNING
+
+   Debug level logging will leak security sensitive information!
+
+   For more details, please refer to https://docs.gradle.org/8.13/userguide/logging.html#sec:debug_security in the Gradle documentation.
+#############################################################################
+
+2026-05-23T20:48:42.545+0530 [DEBUG] [org.gradle.internal.nativeintegration.services.NativeServices] Native-platform posix files integration is not available. Continuing with fallback.
+2026-05-23T20:48:42.638+0530 [DEBUG] [org.gradle.internal.remote.internal.inet.InetAddresses] Adding IP addresses for network interface Software Loopback Interface 1
+2026-05-23T20:48:42.641+0530 [DEBUG] [org.gradle.internal.remote.internal.inet.InetAddresses] Is this a loopback interface? true
+2026-05-23T20:48:42.641+0530 [DEBUG] [org.gradle.internal.remote.internal.inet.InetAddresses] Adding loopback address /127.0.0.1
+2026-05-23T20:48:42.641+0530 [DEBUG] [org.gradle.internal.remote.internal.inet.InetAddresses] Adding loopback address /0:0:0:0:0:0:0:1
+2026-05-23T20:48:42.641+0530 [DEBUG] [org.gradle.internal.remote.internal.inet.InetAddresses] Adding IP addresses for network interface WAN Miniport (PPTP)
+2026-05-23T20:48:42.643+0530 [DEBUG] [org.gradle.internal.remote.internal.inet.InetAddresses] Is this a loopback interface? false
+2026-05-23T20:48:42.643+0530 [DEBUG] [org.gradle.internal.remote.internal.inet.InetAddresses] Adding IP addresses for network interface WAN Miniport (Network Monitor)
+2026-05-23T20:48:42.646+0530 [DEBUG] [org.gradle.internal.remote.internal.inet.InetAddresses] Is this a loopback interface? false
+2026-05-23T20:48:42.647+0530 [DEBUG] [org.gradle.internal.remote.internal.inet.InetAddresses] Adding IP addresses for network interface Microsoft 6to4 Adapter
+2026-05-23T20:48:42.649+0530 [DEBUG] [org.gradle.internal.remote.internal.inet.InetAddresses] Is this a loopback interface? false
+2026-05-23T20:48:42.649+0530 [DEBUG] [org.gradle.internal.remote.internal.inet.InetAddresses] Adding IP addresses for network interface WAN Miniport (SSTP)
+2026-05-23T20:48:42.651+0530 [DEBUG] [org.gradle.internal.remote.internal.inet.InetAddresses] Is this a loopback interface? false
+2026-05-23T20:48:42.651+0530 [DEBUG] [org.gradle.internal.remote.internal.inet.InetAddresses] Adding IP addresses for network interface Intel(R) Ethernet Connection (4) I219-LM
+2026-05-23T20:48:42.653+0530 [DEBUG] [org.gradle.internal.remote.internal.inet.InetAddresses] Is this a loopback interface? false
+2026-05-23T20:48:42.654+0530 [DEBUG] [org.gradle.internal.remote.internal.inet.InetAddresses] Adding remote address /fe80:0:0:0:f49f:cda7:749d:d3e2%eth1
+2026-05-23T20:48:42.654+0530 [DEBUG] [org.gradle.internal.remote.internal.inet.InetAddresses] Adding IP addresses for network interface Microsoft IP-HTTPS Platform Adapter
+2026-05-23T20:48:42.656+0530 [DEBUG] [org.gradle.internal.remote.internal.inet.InetAddresses] Is this a loopback interface? false
+2026-05-23T20:48:42.656+0530 [DEBUG] [org.gradle.internal.remote.internal.inet.InetAddresses] Adding IP addresses for network interface ASIX AX88179 USB 3.0 to Gigabit Ethernet Adapter
+2026-05-23T20:48:42.658+0530 [DEBUG] [org.gradle.internal.remote.internal.inet.InetAddresses] Is this a loopback interface? false
+2026-05-23T20:48:42.658+0530 [DEBUG] [org.gradle.internal.remote.internal.inet.InetAddresses] Adding IP addresses for network interface WAN Miniport (IP)
+2026-05-23T20:48:42.660+0530 [DEBUG] [org.gradle.internal.remote.internal.inet.InetAddresses] Is this a loopback interface? false
+2026-05-23T20:48:42.660+0530 [DEBUG] [org.gradle.internal.remote.internal.inet.InetAddresses] Adding IP addresses for network interface WAN Miniport (IKEv2)
+2026-05-23T20:48:42.663+0530 [DEBUG] [org.gradle.internal.remote.internal.inet.InetAddresses] Is this a loopback interface? false
+2026-05-23T20:48:42.663+0530 [DEBUG] [org.gradle.internal.remote.internal.inet.InetAddresses] Adding IP addresses for network interface WAN Miniport (IPv6)
+2026-05-23T20:48:42.665+0530 [DEBUG] [org.gradle.internal.remote.internal.inet.InetAddresses] Is this a loopback interface? false
+2026-05-23T20:48:42.665+0530 [DEBUG] [org.gradle.internal.remote.internal.inet.InetAddresses] Adding IP addresses for network interface Microsoft Kernel Debug Network Adapter
+2026-05-23T20:48:42.667+0530 [DEBUG] [org.gradle.internal.remote.internal.inet.InetAddresses] Is this a loopback interface? false
+2026-05-23T20:48:42.667+0530 [DEBUG] [org.gradle.internal.remote.internal.inet.InetAddresses] Adding IP addresses for network interface Bluetooth Device (Personal Area Network)
+2026-05-23T20:48:42.669+0530 [DEBUG] [org.gradle.internal.remote.internal.inet.InetAddresses] Is this a loopback interface? false
+2026-05-23T20:48:42.669+0530 [DEBUG] [org.gradle.internal.remote.internal.inet.InetAddresses] Adding IP addresses for network interface Microsoft Teredo Tunneling Adapter
+2026-05-23T20:48:42.671+0530 [DEBUG] [org.gradle.internal.remote.internal.inet.InetAddresses] Is this a loopback interface? false
+2026-05-23T20:48:42.671+0530 [DEBUG] [org.gradle.internal.remote.internal.inet.InetAddresses] Adding IP addresses for network interface Microsoft Wi-Fi Direct Virtual Adapter #2
+2026-05-23T20:48:42.674+0530 [DEBUG] [org.gradle.internal.remote.internal.inet.InetAddresses] Is this a loopback interface? false
+2026-05-23T20:48:42.674+0530 [DEBUG] [org.gradle.internal.remote.internal.inet.InetAddresses] Adding IP addresses for network interface Intel(R) Dual Band Wireless-AC 8265
+2026-05-23T20:48:42.677+0530 [DEBUG] [org.gradle.internal.remote.internal.inet.InetAddresses] Is this a loopback interface? false
+2026-05-23T20:48:42.684+0530 [DEBUG] [org.gradle.internal.remote.internal.inet.InetAddresses] Adding remote address /192.168.43.2
+2026-05-23T20:48:42.684+0530 [DEBUG] [org.gradle.internal.remote.internal.inet.InetAddresses] Adding remote address /2401:4900:5502:f589:d236:3401:8e4f:9648
+2026-05-23T20:48:42.684+0530 [DEBUG] [org.gradle.internal.remote.internal.inet.InetAddresses] Adding remote address /2401:4900:5502:f589:5896:9ab7:2a34:3e23
+2026-05-23T20:48:42.684+0530 [DEBUG] [org.gradle.internal.remote.internal.inet.InetAddresses] Adding remote address /fe80:0:0:0:7068:523e:c438:7c2b%wlan1
+2026-05-23T20:48:42.684+0530 [DEBUG] [org.gradle.internal.remote.internal.inet.InetAddresses] Adding IP addresses for network interface WAN Miniport (L2TP)
+2026-05-23T20:48:42.686+0530 [DEBUG] [org.gradle.internal.remote.internal.inet.InetAddresses] Is this a loopback interface? false
+2026-05-23T20:48:42.686+0530 [DEBUG] [org.gradle.internal.remote.internal.inet.InetAddresses] Adding IP addresses for network interface Microsoft Wi-Fi Direct Virtual Adapter
+2026-05-23T20:48:42.688+0530 [DEBUG] [org.gradle.internal.remote.internal.inet.InetAddresses] Is this a loopback interface? false
+2026-05-23T20:48:42.688+0530 [DEBUG] [org.gradle.internal.remote.internal.inet.InetAddresses] Adding remote address /fe80:0:0:0:1688:5c68:805e:fb57%wlan2
+2026-05-23T20:48:42.688+0530 [DEBUG] [org.gradle.internal.remote.internal.inet.InetAddresses] Adding IP addresses for network interface WAN Miniport (PPPOE)
+2026-05-23T20:48:42.691+0530 [DEBUG] [org.gradle.internal.remote.internal.inet.InetAddresses] Is this a loopback interface? false
+2026-05-23T20:48:42.691+0530 [DEBUG] [org.gradle.internal.remote.internal.inet.InetAddresses] Adding IP addresses for network interface Intel(R) Ethernet Connection (4) I219-LM-WFP Native MAC Layer LightWeight Filter-0000
+2026-05-23T20:48:42.693+0530 [DEBUG] [org.gradle.internal.remote.internal.inet.InetAddresses] Is this a loopback interface? false
+2026-05-23T20:48:42.693+0530 [DEBUG] [org.gradle.internal.remote.internal.inet.InetAddresses] Adding IP addresses for network interface Intel(R) Ethernet Connection (4) I219-LM-QoS Packet Scheduler-0000
+2026-05-23T20:48:42.696+0530 [DEBUG] [org.gradle.internal.remote.internal.inet.InetAddresses] Is this a loopback interface? false
+2026-05-23T20:48:42.696+0530 [DEBUG] [org.gradle.internal.remote.internal.inet.InetAddresses] Adding IP addresses for network interface Intel(R) Ethernet Connection (4) I219-LM-WFP 802.3 MAC Layer LightWeight Filter-0000
+2026-05-23T20:48:42.699+0530 [DEBUG] [org.gradle.internal.remote.internal.inet.InetAddresses] Is this a loopback interface? false
+2026-05-23T20:48:42.699+0530 [DEBUG] [org.gradle.internal.remote.internal.inet.InetAddresses] Adding IP addresses for network interface Intel(R) Dual Band Wireless-AC 8265-WFP Native MAC Layer LightWeight Filter-0000
+2026-05-23T20:48:42.701+0530 [DEBUG] [org.gradle.internal.remote.internal.inet.InetAddresses] Is this a loopback interface? false
+2026-05-23T20:48:42.701+0530 [DEBUG] [org.gradle.internal.remote.internal.inet.InetAddresses] Adding IP addresses for network interface Intel(R) Dual Band Wireless-AC 8265-Virtual WiFi Filter Driver-0000
+2026-05-23T20:48:42.704+0530 [DEBUG] [org.gradle.internal.remote.internal.inet.InetAddresses] Is this a loopback interface? false
+2026-05-23T20:48:42.704+0530 [DEBUG] [org.gradle.internal.remote.internal.inet.InetAddresses] Adding IP addresses for network interface Intel(R) Dual Band Wireless-AC 8265-Native WiFi Filter Driver-0000
+2026-05-23T20:48:42.706+0530 [DEBUG] [org.gradle.internal.remote.internal.inet.InetAddresses] Is this a loopback interface? false
+2026-05-23T20:48:42.706+0530 [DEBUG] [org.gradle.internal.remote.internal.inet.InetAddresses] Adding IP addresses for network interface Intel(R) Dual Band Wireless-AC 8265-QoS Packet Scheduler-0000
+2026-05-23T20:48:42.709+0530 [DEBUG] [org.gradle.internal.remote.internal.inet.InetAddresses] Is this a loopback interface? false
+2026-05-23T20:48:42.709+0530 [DEBUG] [org.gradle.internal.remote.internal.inet.InetAddresses] Adding IP addresses for network interface Intel(R) Dual Band Wireless-AC 8265-WFP 802.3 MAC Layer LightWeight Filter-0000
+2026-05-23T20:48:42.712+0530 [DEBUG] [org.gradle.internal.remote.internal.inet.InetAddresses] Is this a loopback interface? false
+2026-05-23T20:48:42.712+0530 [DEBUG] [org.gradle.internal.remote.internal.inet.InetAddresses] Adding IP addresses for network interface WAN Miniport (IP)-WFP Native MAC Layer LightWeight Filter-0000
+2026-05-23T20:48:42.714+0530 [DEBUG] [org.gradle.internal.remote.internal.inet.InetAddresses] Is this a loopback interface? false
+2026-05-23T20:48:42.714+0530 [DEBUG] [org.gradle.internal.remote.internal.inet.InetAddresses] Adding IP addresses for network interface WAN Miniport (IP)-QoS Packet Scheduler-0000
+2026-05-23T20:48:42.717+0530 [DEBUG] [org.gradle.internal.remote.internal.inet.InetAddresses] Is this a loopback interface? false
+2026-05-23T20:48:42.717+0530 [DEBUG] [org.gradle.internal.remote.internal.inet.InetAddresses] Adding IP addresses for network interface WAN Miniport (IPv6)-WFP Native MAC Layer LightWeight Filter-0000
+2026-05-23T20:48:42.720+0530 [DEBUG] [org.gradle.internal.remote.internal.inet.InetAddresses] Is this a loopback interface? false
+2026-05-23T20:48:42.720+0530 [DEBUG] [org.gradle.internal.remote.internal.inet.InetAddresses] Adding IP addresses for network interface WAN Miniport (IPv6)-QoS Packet Scheduler-0000
+2026-05-23T20:48:42.723+0530 [DEBUG] [org.gradle.internal.remote.internal.inet.InetAddresses] Is this a loopback interface? false
+2026-05-23T20:48:42.723+0530 [DEBUG] [org.gradle.internal.remote.internal.inet.InetAddresses] Adding IP addresses for network interface WAN Miniport (Network Monitor)-WFP Native MAC Layer LightWeight Filter-0000
+2026-05-23T20:48:42.726+0530 [DEBUG] [org.gradle.internal.remote.internal.inet.InetAddresses] Is this a loopback interface? false
+2026-05-23T20:48:42.726+0530 [DEBUG] [org.gradle.internal.remote.internal.inet.InetAddresses] Adding IP addresses for network interface WAN Miniport (Network Monitor)-QoS Packet Scheduler-0000
+2026-05-23T20:48:42.729+0530 [DEBUG] [org.gradle.internal.remote.internal.inet.InetAddresses] Is this a loopback interface? false
+2026-05-23T20:48:42.729+0530 [DEBUG] [org.gradle.internal.remote.internal.inet.InetAddresses] Adding IP addresses for network interface Microsoft Wi-Fi Direct Virtual Adapter-WFP Native MAC Layer LightWeight Filter-0000
+2026-05-23T20:48:42.732+0530 [DEBUG] [org.gradle.internal.remote.internal.inet.InetAddresses] Is this a loopback interface? false
+2026-05-23T20:48:42.732+0530 [DEBUG] [org.gradle.internal.remote.internal.inet.InetAddresses] Adding IP addresses for network interface Microsoft Wi-Fi Direct Virtual Adapter-Native WiFi Filter Driver-0000
+2026-05-23T20:48:42.735+0530 [DEBUG] [org.gradle.internal.remote.internal.inet.InetAddresses] Is this a loopback interface? false
+2026-05-23T20:48:42.735+0530 [DEBUG] [org.gradle.internal.remote.internal.inet.InetAddresses] Adding IP addresses for network interface Microsoft Wi-Fi Direct Virtual Adapter-QoS Packet Scheduler-0000
+2026-05-23T20:48:42.738+0530 [DEBUG] [org.gradle.internal.remote.internal.inet.InetAddresses] Is this a loopback interface? false
+2026-05-23T20:48:42.738+0530 [DEBUG] [org.gradle.internal.remote.internal.inet.InetAddresses] Adding IP addresses for network interface Microsoft Wi-Fi Direct Virtual Adapter-WFP 802.3 MAC Layer LightWeight Filter-0000
+2026-05-23T20:48:42.742+0530 [DEBUG] [org.gradle.internal.remote.internal.inet.InetAddresses] Is this a loopback interface? false
+2026-05-23T20:48:42.874+0530 [DEBUG] [org.gradle.cache.internal.DefaultCacheCoordinator] Creating new cache for metadata, path C:\Users\Admin\.gradle\caches\8.13\jvms\metadata.bin, access org.gradle.cache.internal.DefaultCacheCoordinator@1583741e
+2026-05-23T20:48:43.072+0530 [DEBUG] [org.gradle.launcher.daemon.client.DaemonClient] Executing build b4e90a36-6e82-4241-9e3e-89199dc19fb3 in daemon client {pid=3704}
+2026-05-23T20:48:43.081+0530 [DEBUG] [org.gradle.cache.internal.DefaultFileLockManager] Waiting to acquire shared lock on daemon addresses registry.
+2026-05-23T20:48:43.086+0530 [DEBUG] [org.gradle.cache.internal.DefaultFileLockManager] Lock acquired on daemon addresses registry.
+2026-05-23T20:48:43.097+0530 [DEBUG] [org.gradle.cache.internal.DefaultFileLockManager] Releasing lock on daemon addresses registry.
+2026-05-23T20:48:43.111+0530 [DEBUG] [org.gradle.internal.remote.internal.inet.TcpOutgoingConnector] Attempting to connect to [992411c7-3a06-477d-bb75-1d8a8b6b7b98 port:54560, addresses:[/127.0.0.1]].
+2026-05-23T20:48:43.111+0530 [DEBUG] [org.gradle.internal.remote.internal.inet.TcpOutgoingConnector] Trying to connect to address /127.0.0.1.
+2026-05-23T20:48:43.125+0530 [DEBUG] [org.gradle.internal.remote.internal.inet.TcpOutgoingConnector] Connected to address /127.0.0.1:54560.
+2026-05-23T20:48:43.204+0530 [DEBUG] [org.gradle.launcher.daemon.client.DaemonClient] Connected to daemon DaemonInfo{pid=17404, address=[992411c7-3a06-477d-bb75-1d8a8b6b7b98 port:54560, addresses:[/127.0.0.1]], state=Idle, lastBusy=1779549438203, context=DefaultDaemonContext[uid=4408065a-a628-4e1c-bb7d-21e9fc934037,javaHome=C:\Program Files\Eclipse Adoptium\jdk-17.0.18.8-hotspot,javaVersion=17,javaVendor=Eclipse Adoptium,daemonRegistryDir=C:\Users\Admin\.gradle\daemon,pid=17404,idleTimeout=10800000,priority=NORMAL,applyInstrumentationAgent=true,nativeServicesMode=ENABLED,daemonOpts=-XX:MaxMetaspaceSize=1024m,-Xmx4096m,-Dfile.encoding=UTF-8,-Duser.country=IN,-Duser.language=en,-Duser.variant]}. Dispatching request Build{id=b4e90a36-6e82-4241-9e3e-89199dc19fb3, currentDir=C:\connect\android}.
+2026-05-23T20:48:43.204+0530 [DEBUG] [org.gradle.launcher.daemon.client.DaemonClientConnection] thread 1: dispatching class org.gradle.launcher.daemon.protocol.Build
+2026-05-23T20:48:43.224+0530 [DEBUG] [org.gradle.launcher.daemon.client.DaemonClient] Received result org.gradle.launcher.daemon.protocol.BuildStarted@1506f20f from daemon DaemonInfo{pid=17404, address=[992411c7-3a06-477d-bb75-1d8a8b6b7b98 port:54560, addresses:[/127.0.0.1]], state=Idle, lastBusy=1779549438203, context=DefaultDaemonContext[uid=4408065a-a628-4e1c-bb7d-21e9fc934037,javaHome=C:\Program Files\Eclipse Adoptium\jdk-17.0.18.8-hotspot,javaVersion=17,javaVendor=Eclipse Adoptium,daemonRegistryDir=C:\Users\Admin\.gradle\daemon,pid=17404,idleTimeout=10800000,priority=NORMAL,applyInstrumentationAgent=true,nativeServicesMode=ENABLED,daemonOpts=-XX:MaxMetaspaceSize=1024m,-Xmx4096m,-Dfile.encoding=UTF-8,-Duser.country=IN,-Duser.language=en,-Duser.variant]} (build should be starting).
+2026-05-23T20:48:43.225+0530 [INFO] [org.gradle.launcher.daemon.server.exec.LogToClient] The client will now receive all logging from the daemon (pid: 17404). The daemon log file: C:\Users\Admin\.gradle\daemon\8.13\daemon-17404.out.log
+2026-05-23T20:48:43.226+0530 [INFO] [org.gradle.launcher.daemon.server.exec.LogAndCheckHealth] Starting 9th build in daemon [uptime: 22 mins 55.891 secs, performance: 100%, GC rate: 0.00/s, heap usage: 0% of 4 GiB, non-heap usage: 36% of 1 GiB]
+2026-05-23T20:48:43.226+0530 [DEBUG] [org.gradle.launcher.daemon.server.exec.ExecuteBuild] The daemon has started executing the build.
+2026-05-23T20:48:43.226+0530 [DEBUG] [org.gradle.launcher.daemon.server.exec.ExecuteBuild] Executing build with daemon context: DefaultDaemonContext[uid=4408065a-a628-4e1c-bb7d-21e9fc934037,javaHome=C:\Program Files\Eclipse Adoptium\jdk-17.0.18.8-hotspot,javaVersion=17,javaVendor=Eclipse Adoptium,daemonRegistryDir=C:\Users\Admin\.gradle\daemon,pid=17404,idleTimeout=10800000,priority=NORMAL,applyInstrumentationAgent=true,nativeServicesMode=ENABLED,daemonOpts=-XX:MaxMetaspaceSize=1024m,-Xmx4096m,-Dfile.encoding=UTF-8,-Duser.country=IN,-Duser.language=en,-Duser.variant]
+2026-05-23T20:48:43.228+0530 [INFO] [org.gradle.internal.work.DefaultWorkerLeaseService] Using 8 worker leases.
+2026-05-23T20:48:43.228+0530 [DEBUG] [org.gradle.internal.resources.AbstractTrackedResourceLock] Daemon worker Thread 6: acquired lock on worker lease
+2026-05-23T20:48:43.228+0530 [DEBUG] [org.gradle.internal.operations.DefaultBuildOperationRunner] Build operation 'Run build' started
+2026-05-23T20:48:43.232+0530 [DEBUG] [org.gradle.cache.internal.DefaultCacheCoordinator] Creating new cache for fileHashes, path C:\connect\android\.gradle\8.13\fileHashes\fileHashes.bin, access org.gradle.cache.internal.DefaultCacheCoordinator@17b8dad5
+2026-05-23T20:48:43.233+0530 [DEBUG] [org.gradle.cache.internal.LockOnDemandCrossProcessCacheAccess] Acquiring file lock for file hash cache (C:\connect\android\.gradle\8.13\fileHashes)
+2026-05-23T20:48:43.235+0530 [DEBUG] [org.gradle.cache.internal.DefaultFileLockManager] Waiting to acquire exclusive lock on file hash cache (C:\connect\android\.gradle\8.13\fileHashes).
+2026-05-23T20:48:43.236+0530 [DEBUG] [org.gradle.cache.internal.DefaultFileLockManager] Lock acquired on file hash cache (C:\connect\android\.gradle\8.13\fileHashes).
+2026-05-23T20:48:43.237+0530 [DEBUG] [org.gradle.cache.internal.DefaultCacheCoordinator] Creating new cache for outputFiles, path C:\connect\android\.gradle\buildOutputCleanup\outputFiles.bin, access org.gradle.cache.internal.DefaultCacheCoordinator@100a0781
+2026-05-23T20:48:43.238+0530 [DEBUG] [org.gradle.cache.internal.LockOnDemandCrossProcessCacheAccess] Acquiring file lock for Build Output Cleanup Cache (C:\connect\android\.gradle\buildOutputCleanup)
+2026-05-23T20:48:43.240+0530 [DEBUG] [org.gradle.cache.internal.DefaultFileLockManager] Waiting to acquire exclusive lock on Build Output Cleanup Cache (C:\connect\android\.gradle\buildOutputCleanup).
+2026-05-23T20:48:43.241+0530 [DEBUG] [org.gradle.cache.internal.DefaultFileLockManager] Lock acquired on Build Output Cleanup Cache (C:\connect\android\.gradle\buildOutputCleanup).
+2026-05-23T20:48:43.241+0530 [DEBUG] [org.gradle.cache.internal.DefaultCacheCoordinator] Creating new cache for resourceHashesCache, path C:\connect\android\.gradle\8.13\fileHashes\resourceHashesCache.bin, access org.gradle.cache.internal.DefaultCacheCoordinator@17b8dad5
+2026-05-23T20:48:43.243+0530 [INFO] [org.gradle.internal.watch.registry.impl.WatchableHierarchies] Now considering [C:\connect\android, C:\connect\node_modules\@react-native\gradle-plugin] as hierarchies to watch
+2026-05-23T20:48:43.243+0530 [DEBUG] [org.gradle.internal.watch.registry.impl.HierarchicalFileWatcherUpdater] Watching 2 directory hierarchies to track changes
+2026-05-23T20:48:43.245+0530 [INFO] [org.gradle.tooling.internal.provider.FileSystemWatchingBuildActionRunner] Watching the file system is configured to be enabled if available
+2026-05-23T20:48:43.245+0530 [DEBUG] [org.gradle.tooling.internal.provider.FileSystemWatchingBuildActionRunner] Watching the file system computed to be enabled if available
+2026-05-23T20:48:43.245+0530 [DEBUG] [org.gradle.internal.operations.DefaultBuildOperationRunner] Build operation 'Build started for file system watching' started
+2026-05-23T20:48:43.246+0530 [DEBUG] [org.gradle.internal.watch.vfs.impl.DefaultWatchableFileSystemDetector] Detected NTFS: C:\ from \Device\HarddiskVolume3 (remote: false)
+2026-05-23T20:48:43.257+0530 [DEBUG] [org.gradle.internal.operations.DefaultBuildOperationRunner] Completing Build operation 'Build started for file system watching'
+2026-05-23T20:48:43.257+0530 [DEBUG] [org.gradle.internal.operations.DefaultBuildOperationRunner] Build operation 'Build started for file system watching' completed
+2026-05-23T20:48:43.257+0530 [INFO] [org.gradle.tooling.internal.provider.FileSystemWatchingBuildActionRunner] File system watching is active
+2026-05-23T20:48:43.257+0530 [DEBUG] [org.gradle.internal.operations.DefaultBuildOperationRunner] Build operation 'Load build' started
+2026-05-23T20:48:43.258+0530 [DEBUG] [org.gradle.initialization.properties.DefaultProjectPropertiesLoader] Found env project properties: []
+2026-05-23T20:48:43.259+0530 [DEBUG] [org.gradle.initialization.properties.DefaultProjectPropertiesLoader] Found system project properties: []
+2026-05-23T20:48:43.261+0530 [DEBUG] [org.gradle.initialization.DefaultSettingsLoader] Loading build definition for build: ':'
+2026-05-23T20:48:43.261+0530 [DEBUG] [org.gradle.internal.operations.DefaultBuildOperationRunner] Build operation 'Evaluate settings' started
+2026-05-23T20:48:43.263+0530 [INFO] [org.gradle.internal.buildevents.BuildLogger] Starting Build
+2026-05-23T20:48:43.263+0530 [DEBUG] [org.gradle.internal.buildevents.BuildLogger] Gradle user home: C:\Users\Admin\.gradle
+2026-05-23T20:48:43.263+0530 [DEBUG] [org.gradle.internal.buildevents.BuildLogger] Current dir: C:\connect\android
+2026-05-23T20:48:43.263+0530 [DEBUG] [org.gradle.internal.buildevents.BuildLogger] Settings file: null
+2026-05-23T20:48:43.263+0530 [DEBUG] [org.gradle.internal.buildevents.BuildLogger] Build file: null
+2026-05-23T20:48:43.265+0530 [DEBUG] [org.gradle.internal.operations.DefaultBuildOperationRunner] Build operation 'Apply settings file 'settings.gradle' to settings 'android'' started
+2026-05-23T20:48:43.266+0530 [DEBUG] [org.gradle.cache.internal.DefaultCacheCoordinator] Creating new cache for md5-checksums, path C:\connect\android\.gradle\8.13\checksums\md5-checksums.bin, access org.gradle.cache.internal.DefaultCacheCoordinator@2b6e336e
+2026-05-23T20:48:43.266+0530 [DEBUG] [org.gradle.cache.internal.LockOnDemandCrossProcessCacheAccess] Acquiring file lock for checksums cache (C:\connect\android\.gradle\8.13\checksums)
+2026-05-23T20:48:43.269+0530 [DEBUG] [org.gradle.cache.internal.DefaultFileLockManager] Waiting to acquire exclusive lock on checksums cache (C:\connect\android\.gradle\8.13\checksums).
+2026-05-23T20:48:43.269+0530 [DEBUG] [org.gradle.cache.internal.DefaultFileLockManager] Lock acquired on checksums cache (C:\connect\android\.gradle\8.13\checksums).
+2026-05-23T20:48:43.269+0530 [DEBUG] [org.gradle.cache.internal.DefaultCacheCoordinator] Creating new cache for sha1-checksums, path C:\connect\android\.gradle\8.13\checksums\sha1-checksums.bin, access org.gradle.cache.internal.DefaultCacheCoordinator@2b6e336e
+2026-05-23T20:48:43.269+0530 [DEBUG] [org.gradle.cache.internal.DefaultCacheCoordinator] Creating new cache for sha256-checksums, path C:\connect\android\.gradle\8.13\checksums\sha256-checksums.bin, access org.gradle.cache.internal.DefaultCacheCoordinator@2b6e336e
+2026-05-23T20:48:43.270+0530 [DEBUG] [org.gradle.cache.internal.DefaultCacheCoordinator] Creating new cache for sha512-checksums, path C:\connect\android\.gradle\8.13\checksums\sha512-checksums.bin, access org.gradle.cache.internal.DefaultCacheCoordinator@2b6e336e
+2026-05-23T20:48:43.273+0530 [DEBUG] [org.gradle.cache.internal.DefaultCacheCoordinator] Creating new cache for workingDirs, path C:\connect\android\.gradle\8.13\vcsMetadata\workingDirs.bin, access org.gradle.cache.internal.DefaultCacheCoordinator@2f5f588e
+2026-05-23T20:48:43.274+0530 [DEBUG] [org.gradle.api.internal.artifacts.mvnsettings.DefaultLocalMavenRepositoryLocator] No local repository in Settings file defined. Using default path: C:\Users\Admin\.m2\repository
+2026-05-23T20:48:43.276+0530 [DEBUG] [org.gradle.cache.internal.DefaultCacheCoordinator] Creating new cache for md-supplier, path C:\Users\Admin\.gradle\caches\8.13\md-supplier\md-supplier.bin, access org.gradle.cache.internal.DefaultCacheCoordinator@3ac95c66
+2026-05-23T20:48:43.276+0530 [DEBUG] [org.gradle.cache.internal.LockOnDemandCrossProcessCacheAccess] Acquiring file lock for cache directory md-supplier (C:\Users\Admin\.gradle\caches\8.13\md-supplier)
+2026-05-23T20:48:43.278+0530 [DEBUG] [org.gradle.cache.internal.DefaultFileLockManager] Waiting to acquire exclusive lock on cache directory md-supplier (C:\Users\Admin\.gradle\caches\8.13\md-supplier).
+2026-05-23T20:48:43.278+0530 [DEBUG] [org.gradle.cache.internal.DefaultFileLockManager] Lock acquired on cache directory md-supplier (C:\Users\Admin\.gradle\caches\8.13\md-supplier).
+2026-05-23T20:48:43.279+0530 [DEBUG] [org.gradle.cache.internal.DefaultCacheCoordinator] Creating new cache for md-rule, path C:\Users\Admin\.gradle\caches\8.13\md-rule\md-rule.bin, access org.gradle.cache.internal.DefaultCacheCoordinator@5ff21716
+2026-05-23T20:48:43.280+0530 [DEBUG] [org.gradle.cache.internal.LockOnDemandCrossProcessCacheAccess] Acquiring file lock for cache directory md-rule (C:\Users\Admin\.gradle\caches\8.13\md-rule)
+2026-05-23T20:48:43.281+0530 [DEBUG] [org.gradle.cache.internal.DefaultFileLockManager] Waiting to acquire exclusive lock on cache directory md-rule (C:\Users\Admin\.gradle\caches\8.13\md-rule).
+2026-05-23T20:48:43.282+0530 [DEBUG] [org.gradle.cache.internal.DefaultFileLockManager] Lock acquired on cache directory md-rule (C:\Users\Admin\.gradle\caches\8.13\md-rule).
+2026-05-23T20:48:43.285+0530 [INFO] [org.gradle.internal.watch.registry.impl.WatchableHierarchies] Now considering [C:\connect\node_modules\@react-native\gradle-plugin, C:\connect\android] as hierarchies to watch
+2026-05-23T20:48:43.285+0530 [DEBUG] [org.gradle.internal.watch.registry.impl.HierarchicalFileWatcherUpdater] Watching 2 directory hierarchies to track changes
+2026-05-23T20:48:43.287+0530 [DEBUG] [org.gradle.cache.internal.DefaultCacheCoordinator] Creating new cache for outputFiles, path C:\connect\node_modules\@react-native\gradle-plugin\.gradle\buildOutputCleanup\outputFiles.bin, access org.gradle.cache.internal.DefaultCacheCoordinator@4cb160a2
+2026-05-23T20:48:43.287+0530 [DEBUG] [org.gradle.cache.internal.LockOnDemandCrossProcessCacheAccess] Acquiring file lock for Build Output Cleanup Cache (C:\connect\node_modules\@react-native\gradle-plugin\.gradle\buildOutputCleanup)
+2026-05-23T20:48:43.290+0530 [DEBUG] [org.gradle.cache.internal.DefaultFileLockManager] Waiting to acquire exclusive lock on Build Output Cleanup Cache (C:\connect\node_modules\@react-native\gradle-plugin\.gradle\buildOutputCleanup).
+2026-05-23T20:48:43.291+0530 [DEBUG] [org.gradle.cache.internal.DefaultFileLockManager] Lock acquired on Build Output Cleanup Cache (C:\connect\node_modules\@react-native\gradle-plugin\.gradle\buildOutputCleanup).
+2026-05-23T20:48:43.292+0530 [DEBUG] [org.gradle.internal.operations.DefaultBuildOperationRunner] Build operation 'Load build (:gradle-plugin)' started
+2026-05-23T20:48:43.293+0530 [DEBUG] [org.gradle.initialization.properties.DefaultProjectPropertiesLoader] Found env project properties: []
+2026-05-23T20:48:43.293+0530 [DEBUG] [org.gradle.initialization.properties.DefaultProjectPropertiesLoader] Found system project properties: []
+2026-05-23T20:48:43.294+0530 [DEBUG] [org.gradle.initialization.DefaultSettingsLoader] Loading build definition for build: ':gradle-plugin'
+2026-05-23T20:48:43.294+0530 [DEBUG] [org.gradle.internal.operations.DefaultBuildOperationRunner] Build operation 'Evaluate settings (:gradle-plugin)' started
+2026-05-23T20:48:43.298+0530 [DEBUG] [org.gradle.internal.operations.DefaultBuildOperationRunner] Build operation 'Apply settings file '..\node_modules\@react-native\gradle-plugin\settings.gradle.kts' to settings 'gradle-plugin'' started
+2026-05-23T20:48:43.298+0530 [DEBUG] [org.gradle.kotlin.dsl.provider.KotlinScriptPlugin] Applying Kotlin script to settings 'gradle-plugin'
+2026-05-23T20:48:43.299+0530 [DEBUG] [org.gradle.api.internal.artifacts.mvnsettings.DefaultLocalMavenRepositoryLocator] No local repository in Settings file defined. Using default path: C:\Users\Admin\.m2\repository
+2026-05-23T20:48:43.300+0530 [DEBUG] [org.gradle.internal.locking.LockFileReaderWriter] Lockfiles root: C:\connect\android\gradle\dependency-locks
+2026-05-23T20:48:43.303+0530 [DEBUG] [org.gradle.internal.operations.DefaultBuildOperationRunner] Build operation 'Resolve dependencies of detachedConfiguration1' started
+2026-05-23T20:48:43.306+0530 [DEBUG] [org.gradle.api.internal.artifacts.ivyservice.modulecache.ResolvedArtifactCaches] Creating new in-memory cache for repo 'MavenRepo' [26c913274550a0b2221f47a0fe2d2358].
+2026-05-23T20:48:43.306+0530 [DEBUG] [org.gradle.api.internal.artifacts.ivyservice.modulecache.ResolvedArtifactCaches] Creating new in-memory cache for repo 'Google' [d4e342018b23d58be902a60e67105aa1].
+2026-05-23T20:48:43.306+0530 [DEBUG] [org.gradle.api.internal.artifacts.ivyservice.modulecache.ResolvedArtifactCaches] Creating new in-memory cache for repo 'Gradle Central Plugin Repository' [2f8748e965ecb2135dad092e9ef808de].
+2026-05-23T20:48:43.306+0530 [DEBUG] [org.gradle.api.internal.artifacts.ivyservice.resolveengine.graph.builder.DependencyGraphBuilder] Visiting configuration unspecified:unspecified:unspecified(detachedConfiguration1).
+2026-05-23T20:48:43.308+0530 [DEBUG] [org.gradle.api.internal.artifacts.ivyservice.ivyresolve.RepositoryChainComponentMetaDataResolver] Attempting to resolve component for org.gradle.toolchains.foojay-resolver-convention:org.gradle.toolchains.foojay-resolver-convention.gradle.plugin:0.5.0 using repositories [MavenRepo, Google, Gradle Central Plugin Repository]
+2026-05-23T20:48:43.308+0530 [DEBUG] [org.gradle.api.internal.artifacts.ivyservice.ivyresolve.CachingModuleComponentRepository] Detected non-existence of module 'org.gradle.toolchains.foojay-resolver-convention:org.gradle.toolchains.foojay-resolver-convention.gradle.plugin:0.5.0' in resolver cache 'MavenRepo'
+2026-05-23T20:48:43.308+0530 [DEBUG] [org.gradle.api.internal.artifacts.ivyservice.ivyresolve.CachingModuleComponentRepository] Detected non-existence of module 'org.gradle.toolchains.foojay-resolver-convention:org.gradle.toolchains.foojay-resolver-convention.gradle.plugin:0.5.0' in resolver cache 'Google'
+2026-05-23T20:48:43.308+0530 [DEBUG] [org.gradle.api.internal.artifacts.ivyservice.ivyresolve.CachingModuleComponentRepository] Using cached module metadata for module 'org.gradle.toolchains.foojay-resolver-convention:org.gradle.toolchains.foojay-resolver-convention.gradle.plugin:0.5.0' in 'Gradle Central Plugin Repository'
+2026-05-23T20:48:43.308+0530 [DEBUG] [org.gradle.api.internal.artifacts.ivyservice.ivyresolve.RepositoryChainComponentMetaDataResolver] Using org.gradle.toolchains.foojay-resolver-convention:org.gradle.toolchains.foojay-resolver-convention.gradle.plugin:0.5.0 from Maven repository 'Gradle Central Plugin Repository'
+2026-05-23T20:48:43.309+0530 [DEBUG] [org.gradle.api.internal.attributes.matching.DefaultAttributeMatcher] Selected matches [1] from candidates [{org.gradle.category=library, org.gradle.libraryelements=jar, org.gradle.status=release, org.gradle.usage=java-api}, {org.gradle.category=library, org.gradle.libraryelements=jar, org.gradle.status=release, org.gradle.usage=java-runtime}, {org.gradle.category=documentation, org.gradle.dependency.bundling=external, org.gradle.docstype=sources, org.gradle.status=release, org.gradle.usage=java-runtime}, {org.gradle.category=documentation, org.gradle.dependency.bundling=external, org.gradle.docstype=javadoc, org.gradle.status=release, org.gradle.usage=java-runtime}, {org.gradle.category=platform, org.gradle.status=release, org.gradle.usage=java-api}, {org.gradle.category=platform, org.gradle.status=release, org.gradle.usage=java-runtime}, {org.gradle.category=enforced-platform, org.gradle.status=release, org.gradle.usage=java-api}, {org.gradle.category=enforced-platform, org.gradle.status=release, org.gradle.usage=java-runtime}] for {}
+2026-05-23T20:48:43.309+0530 [DEBUG] [org.gradle.api.internal.artifacts.ivyservice.resolveengine.graph.builder.DependencyGraphBuilder] Visiting configuration org.gradle.toolchains.foojay-resolver-convention:org.gradle.toolchains.foojay-resolver-convention.gradle.plugin:0.5.0(runtime).
+2026-05-23T20:48:43.309+0530 [DEBUG] [org.gradle.api.internal.artifacts.ivyservice.resolveengine.graph.builder.NodeState] org.gradle.toolchains.foojay-resolver-convention:org.gradle.toolchains.foojay-resolver-convention.gradle.plugin:0.5.0(runtime) has no transitive incoming edges. ignoring outgoing edges.
+2026-05-23T20:48:43.310+0530 [DEBUG] [org.gradle.api.internal.artifacts.ivyservice.resolveengine.oldresult.TransientConfigurationResultsBuilder] Flushing resolved configuration data in Binary store in C:\Users\Admin\.gradle\.tmp\gradle15387606705999338721.bin. Wrote root 3.
+2026-05-23T20:48:43.310+0530 [DEBUG] [org.gradle.internal.operations.DefaultBuildOperationRunner] Completing Build operation 'Resolve dependencies of detachedConfiguration1'
+2026-05-23T20:48:43.310+0530 [DEBUG] [org.gradle.internal.operations.DefaultBuildOperationRunner] Build operation 'Resolve dependencies of detachedConfiguration1' completed
+2026-05-23T20:48:43.310+0530 [DEBUG] [org.gradle.internal.component.model.LoggingAttributeMatchingExplanationBuilder] Selected match org.gradle.toolchains.foojay-resolver-convention:org.gradle.toolchains.foojay-resolver-convention.gradle.plugin:0.5.0 configuration runtime from candidates [org.gradle.toolchains.foojay-resolver-convention:org.gradle.toolchains.foojay-resolver-convention.gradle.plugin:0.5.0 configuration runtime] for {}
+2026-05-23T20:48:43.310+0530 [DEBUG] [org.gradle.api.internal.artifacts.ivyservice.ivyresolve.CachingModuleComponentRepository] Detected non-existence of artifact 'org.gradle.toolchains.foojay-resolver-convention.gradle.plugin-0.5.0.jar (org.gradle.toolchains.foojay-resolver-convention:org.gradle.toolchains.foojay-resolver-convention.gradle.plugin:0.5.0)' in resolver cache
+2026-05-23T20:48:43.311+0530 [DEBUG] [org.gradle.internal.operations.DefaultBuildOperationRunner] Build operation 'Resolve files of configuration 'detachedConfiguration1'' started
+2026-05-23T20:48:43.311+0530 [DEBUG] [org.gradle.internal.operations.DefaultBuildOperationRunner] Completing Build operation 'Resolve files of configuration 'detachedConfiguration1''
+2026-05-23T20:48:43.311+0530 [DEBUG] [org.gradle.internal.operations.DefaultBuildOperationRunner] Build operation 'Resolve files of configuration 'detachedConfiguration1'' completed
+2026-05-23T20:48:43.311+0530 [INFO] [org.gradle.plugin.use.internal.DefaultPluginRequestApplicator] Resolved plugin [id: 'org.gradle.toolchains.foojay-resolver-convention', version: '0.5.0']
+2026-05-23T20:48:43.311+0530 [DEBUG] [org.gradle.api.internal.artifacts.ivyservice.resolveengine.graph.builder.DependencyGraphBuilder] Visiting configuration unspecified:unspecified:unspecified(classpath).
+2026-05-23T20:48:43.312+0530 [DEBUG] [org.gradle.api.internal.artifacts.ivyservice.resolveengine.graph.builder.NodeState] dependency: org.gradle.toolchains.foojay-resolver-convention:org.gradle.toolchains.foojay-resolver-convention.gradle.plugin:0.5.0 to-conf: null is filtered.
+2026-05-23T20:48:43.312+0530 [DEBUG] [org.gradle.api.internal.artifacts.ivyservice.resolveengine.graph.builder.NodeState] dependency: org.apache.logging.log4j:log4j-core:{require 2.17.1; reject [2.0, 2.17.1)} to-conf: null is filtered.
+2026-05-23T20:48:43.312+0530 [DEBUG] [org.gradle.api.internal.artifacts.ivyservice.resolveengine.graph.builder.NodeState] dependency: org.jetbrains.kotlin:kotlin-stdlib:{strictly 2.0.21} to-conf: null is filtered.
+2026-05-23T20:48:43.312+0530 [DEBUG] [org.gradle.api.internal.artifacts.ivyservice.resolveengine.graph.builder.NodeState] dependency: org.jetbrains.kotlin:kotlin-reflect:{strictly 2.0.21} to-conf: null is filtered.
+2026-05-23T20:48:43.312+0530 [DEBUG] [org.gradle.api.internal.artifacts.ivyservice.resolveengine.graph.builder.NodeState] dependency: org.jetbrains:annotations:{strictly 13.0} to-conf: null is filtered.
+2026-05-23T20:48:43.312+0530 [DEBUG] [org.gradle.internal.operations.DefaultBuildOperationRunner] Build operation 'Resolve dependencies of classpath' started
+2026-05-23T20:48:43.313+0530 [DEBUG] [org.gradle.api.internal.artifacts.ivyservice.modulecache.ResolvedArtifactCaches] Reusing in-memory cache for repo 'MavenRepo' [26c913274550a0b2221f47a0fe2d2358].
+2026-05-23T20:48:43.313+0530 [DEBUG] [org.gradle.api.internal.artifacts.ivyservice.modulecache.ResolvedArtifactCaches] Reusing in-memory cache for repo 'Google' [d4e342018b23d58be902a60e67105aa1].
+2026-05-23T20:48:43.313+0530 [DEBUG] [org.gradle.api.internal.artifacts.ivyservice.modulecache.ResolvedArtifactCaches] Reusing in-memory cache for repo 'Gradle Central Plugin Repository' [2f8748e965ecb2135dad092e9ef808de].
+2026-05-23T20:48:43.314+0530 [DEBUG] [org.gradle.api.internal.artifacts.ivyservice.resolveengine.graph.builder.DependencyGraphBuilder] Visiting configuration unspecified:unspecified:unspecified(classpath).
+2026-05-23T20:48:43.314+0530 [DEBUG] [org.gradle.api.internal.artifacts.ivyservice.ivyresolve.RepositoryChainComponentMetaDataResolver] Attempting to resolve component for org.gradle.toolchains.foojay-resolver-convention:org.gradle.toolchains.foojay-resolver-convention.gradle.plugin:0.5.0 using repositories [MavenRepo, Google, Gradle Central Plugin Repository]
+2026-05-23T20:48:43.314+0530 [DEBUG] [org.gradle.api.internal.artifacts.ivyservice.ivyresolve.CachingModuleComponentRepository] Detected non-existence of module 'org.gradle.toolchains.foojay-resolver-convention:org.gradle.toolchains.foojay-resolver-convention.gradle.plugin:0.5.0' in resolver cache 'MavenRepo'
+2026-05-23T20:48:43.314+0530 [DEBUG] [org.gradle.api.internal.artifacts.ivyservice.ivyresolve.CachingModuleComponentRepository] Detected non-existence of module 'org.gradle.toolchains.foojay-resolver-convention:org.gradle.toolchains.foojay-resolver-convention.gradle.plugin:0.5.0' in resolver cache 'Google'
+2026-05-23T20:48:43.314+0530 [DEBUG] [org.gradle.api.internal.artifacts.ivyservice.ivyresolve.CachingModuleComponentRepository] Using cached module metadata for module 'org.gradle.toolchains.foojay-resolver-convention:org.gradle.toolchains.foojay-resolver-convention.gradle.plugin:0.5.0' in 'Gradle Central Plugin Repository'
+2026-05-23T20:48:43.314+0530 [DEBUG] [org.gradle.api.internal.artifacts.ivyservice.ivyresolve.RepositoryChainComponentMetaDataResolver] Using org.gradle.toolchains.foojay-resolver-convention:org.gradle.toolchains.foojay-resolver-convention.gradle.plugin:0.5.0 from Maven repository 'Gradle Central Plugin Repository'
+2026-05-23T20:48:43.314+0530 [DEBUG] [org.gradle.internal.component.model.LoggingAttributeMatchingExplanationBuilder] Candidate {org.gradle.category=library, org.gradle.libraryelements=jar, org.gradle.status=release, org.gradle.usage=java-api} attribute org.gradle.usage value {org.gradle.status=release, org.gradle.usage=java-api} doesn't requested value java-runtime
+2026-05-23T20:48:43.314+0530 [DEBUG] [org.gradle.internal.component.model.LoggingAttributeMatchingExplanationBuilder] Candidate {org.gradle.category=library, org.gradle.libraryelements=jar, org.gradle.status=release, org.gradle.usage=java-runtime} doesn't have attribute org.gradle.dependency.bundling
+2026-05-23T20:48:43.314+0530 [DEBUG] [org.gradle.internal.component.model.LoggingAttributeMatchingExplanationBuilder] Candidate {org.gradle.category=library, org.gradle.libraryelements=jar, org.gradle.status=release, org.gradle.usage=java-runtime} doesn't have attribute org.gradle.jvm.version
+2026-05-23T20:48:43.314+0530 [DEBUG] [org.gradle.internal.component.model.LoggingAttributeMatchingExplanationBuilder] Candidate {org.gradle.category=library, org.gradle.libraryelements=jar, org.gradle.status=release, org.gradle.usage=java-runtime} doesn't have attribute org.gradle.plugin.api-version
+2026-05-23T20:48:43.315+0530 [DEBUG] [org.gradle.internal.component.model.LoggingAttributeMatchingExplanationBuilder] Candidate {org.gradle.category=documentation, org.gradle.dependency.bundling=external, org.gradle.docstype=sources, org.gradle.status=release, org.gradle.usage=java-runtime} attribute org.gradle.category value {org.gradle.category=documentation, org.gradle.status=release} doesn't requested value library
+2026-05-23T20:48:43.315+0530 [DEBUG] [org.gradle.internal.component.model.LoggingAttributeMatchingExplanationBuilder] Candidate {org.gradle.category=documentation, org.gradle.dependency.bundling=external, org.gradle.docstype=javadoc, org.gradle.status=release, org.gradle.usage=java-runtime} attribute org.gradle.category value {org.gradle.category=documentation, org.gradle.status=release} doesn't requested value library
+2026-05-23T20:48:43.315+0530 [DEBUG] [org.gradle.internal.component.model.LoggingAttributeMatchingExplanationBuilder] Candidate {org.gradle.category=platform, org.gradle.status=release, org.gradle.usage=java-api} attribute org.gradle.usage value {org.gradle.status=release, org.gradle.usage=java-api} doesn't requested value java-runtime
+2026-05-23T20:48:43.315+0530 [DEBUG] [org.gradle.internal.component.model.LoggingAttributeMatchingExplanationBuilder] Candidate {org.gradle.category=platform, org.gradle.status=release, org.gradle.usage=java-runtime} attribute org.gradle.category value {org.gradle.category=platform, org.gradle.status=release, org.gradle.usage=java-runtime} doesn't requested value library
+2026-05-23T20:48:43.315+0530 [DEBUG] [org.gradle.internal.component.model.LoggingAttributeMatchingExplanationBuilder] Candidate {org.gradle.category=enforced-platform, org.gradle.status=release, org.gradle.usage=java-api} attribute org.gradle.usage value {org.gradle.status=release, org.gradle.usage=java-api} doesn't requested value java-runtime
+2026-05-23T20:48:43.315+0530 [DEBUG] [org.gradle.internal.component.model.LoggingAttributeMatchingExplanationBuilder] Candidate {org.gradle.category=enforced-platform, org.gradle.status=release, org.gradle.usage=java-runtime} attribute org.gradle.category value {org.gradle.category=enforced-platform, org.gradle.status=release, org.gradle.usage=java-runtime} doesn't requested value library
+2026-05-23T20:48:43.315+0530 [DEBUG] [org.gradle.api.internal.attributes.matching.DefaultAttributeMatcher] Selected matches [1] from candidates [{org.gradle.category=library, org.gradle.libraryelements=jar, org.gradle.status=release, org.gradle.usage=java-api}, {org.gradle.category=library, org.gradle.libraryelements=jar, org.gradle.status=release, org.gradle.usage=java-runtime}, {org.gradle.category=documentation, org.gradle.dependency.bundling=external, org.gradle.docstype=sources, org.gradle.status=release, org.gradle.usage=java-runtime}, {org.gradle.category=documentation, org.gradle.dependency.bundling=external, org.gradle.docstype=javadoc, org.gradle.status=release, org.gradle.usage=java-runtime}, {org.gradle.category=platform, org.gradle.status=release, org.gradle.usage=java-api}, {org.gradle.category=platform, org.gradle.status=release, org.gradle.usage=java-runtime}, {org.gradle.category=enforced-platform, org.gradle.status=release, org.gradle.usage=java-api}, {org.gradle.category=enforced-platform, org.gradle.status=release, org.gradle.usage=java-runtime}] for {org.gradle.category=library, org.gradle.dependency.bundling=external, org.gradle.jvm.version=17, org.gradle.libraryelements=jar, org.gradle.plugin.api-version=8.13, org.gradle.usage=java-runtime}
+2026-05-23T20:48:43.315+0530 [DEBUG] [org.gradle.api.internal.artifacts.ivyservice.resolveengine.graph.builder.DependencyGraphBuilder] Visiting configuration org.gradle.toolchains.foojay-resolver-convention:org.gradle.toolchains.foojay-resolver-convention.gradle.plugin:0.5.0(runtime).
+2026-05-23T20:48:43.316+0530 [DEBUG] [org.gradle.api.internal.artifacts.ivyservice.ivyresolve.RepositoryChainComponentMetaDataResolver] Attempting to resolve component for org.gradle.toolchains:foojay-resolver:0.5.0 using repositories [MavenRepo, Google, Gradle Central Plugin Repository]
+2026-05-23T20:48:43.317+0530 [DEBUG] [org.gradle.api.internal.artifacts.ivyservice.ivyresolve.CachingModuleComponentRepository] Detected non-existence of module 'org.gradle.toolchains:foojay-resolver:0.5.0' in resolver cache 'MavenRepo'
+2026-05-23T20:48:43.317+0530 [DEBUG] [org.gradle.api.internal.artifacts.ivyservice.ivyresolve.CachingModuleComponentRepository] Detected non-existence of module 'org.gradle.toolchains:foojay-resolver:0.5.0' in resolver cache 'Google'
+2026-05-23T20:48:43.317+0530 [DEBUG] [org.gradle.api.internal.artifacts.ivyservice.ivyresolve.CachingModuleComponentRepository] Using cached module metadata for module 'org.gradle.toolchains:foojay-resolver:0.5.0' in 'Gradle Central Plugin Repository'
+2026-05-23T20:48:43.317+0530 [DEBUG] [org.gradle.api.internal.artifacts.ivyservice.ivyresolve.RepositoryChainComponentMetaDataResolver] Using org.gradle.toolchains:foojay-resolver:0.5.0 from Maven repository 'Gradle Central Plugin Repository'
+2026-05-23T20:48:43.317+0530 [DEBUG] [org.gradle.internal.component.model.LoggingAttributeMatchingExplanationBuilder] Candidate {org.gradle.category=library, org.gradle.dependency.bundling=external, org.gradle.jvm.environment=standard-jvm, org.gradle.jvm.version=8, org.gradle.libraryelements=jar, org.gradle.status=release, org.gradle.usage=java-api, org.jetbrains.kotlin.platform.type=jvm} attribute org.gradle.usage value {org.gradle.category=library, org.gradle.dependency.bundling=external, org.gradle.jvm.environment=standard-jvm, org.gradle.jvm.version=8, org.gradle.libraryelements=jar, org.gradle.usage=java-api} doesn't requested value java-runtime
+2026-05-23T20:48:43.317+0530 [DEBUG] [org.gradle.internal.component.model.LoggingAttributeMatchingExplanationBuilder] Candidate {org.gradle.category=library, org.gradle.dependency.bundling=external, org.gradle.jvm.environment=standard-jvm, org.gradle.jvm.version=8, org.gradle.libraryelements=jar, org.gradle.status=release, org.gradle.usage=java-runtime, org.jetbrains.kotlin.platform.type=jvm} doesn't have attribute org.gradle.plugin.api-version
+2026-05-23T20:48:43.317+0530 [DEBUG] [org.gradle.internal.component.model.LoggingAttributeMatchingExplanationBuilder] Candidate {org.gradle.category=documentation, org.gradle.dependency.bundling=external, org.gradle.docstype=javadoc, org.gradle.status=release, org.gradle.usage=java-runtime} attribute org.gradle.category value {org.gradle.category=documentation} doesn't requested value library
+2026-05-23T20:48:43.317+0530 [DEBUG] [org.gradle.internal.component.model.LoggingAttributeMatchingExplanationBuilder] Candidate {org.gradle.category=documentation, org.gradle.dependency.bundling=external, org.gradle.docstype=sources, org.gradle.status=release, org.gradle.usage=java-runtime} attribute org.gradle.category value {org.gradle.category=documentation} doesn't requested value library
+2026-05-23T20:48:43.317+0530 [DEBUG] [org.gradle.api.internal.attributes.matching.DefaultAttributeMatcher] Selected matches [1] from candidates [{org.gradle.category=library, org.gradle.dependency.bundling=external, org.gradle.jvm.environment=standard-jvm, org.gradle.jvm.version=8, org.gradle.libraryelements=jar, org.gradle.status=release, org.gradle.usage=java-api, org.jetbrains.kotlin.platform.type=jvm}, {org.gradle.category=library, org.gradle.dependency.bundling=external, org.gradle.jvm.environment=standard-jvm, org.gradle.jvm.version=8, org.gradle.libraryelements=jar, org.gradle.status=release, org.gradle.usage=java-runtime, org.jetbrains.kotlin.platform.type=jvm}, {org.gradle.category=documentation, org.gradle.dependency.bundling=external, org.gradle.docstype=javadoc, org.gradle.status=release, org.gradle.usage=java-runtime}, {org.gradle.category=documentation, org.gradle.dependency.bundling=external, org.gradle.docstype=sources, org.gradle.status=release, org.gradle.usage=java-runtime}] for {org.gradle.category=library, org.gradle.dependency.bundling=external, org.gradle.jvm.version=17, org.gradle.libraryelements=jar, org.gradle.plugin.api-version=8.13, org.gradle.usage=java-runtime}
+2026-05-23T20:48:43.317+0530 [DEBUG] [org.gradle.api.internal.artifacts.ivyservice.resolveengine.graph.builder.DependencyGraphBuilder] Visiting configuration org.gradle.toolchains:foojay-resolver:0.5.0(runtimeElements).
+2026-05-23T20:48:43.318+0530 [DEBUG] [org.gradle.api.internal.artifacts.ivyservice.ivyresolve.RepositoryChainComponentMetaDataResolver] Attempting to resolve component for com.google.code.gson:gson:2.9.1 using repositories [MavenRepo, Google, Gradle Central Plugin Repository]
+2026-05-23T20:48:43.319+0530 [DEBUG] [org.gradle.api.internal.artifacts.ivyservice.ivyresolve.CachingModuleComponentRepository] Using cached module metadata for module 'com.google.code.gson:gson:2.9.1' in 'MavenRepo'
+2026-05-23T20:48:43.319+0530 [DEBUG] [org.gradle.api.internal.artifacts.ivyservice.ivyresolve.RepositoryChainComponentMetaDataResolver] Using com.google.code.gson:gson:2.9.1 from Maven repository 'MavenRepo'
+2026-05-23T20:48:43.319+0530 [DEBUG] [org.gradle.api.internal.artifacts.ivyservice.resolveengine.graph.builder.DependencyGraphBuilder] Visiting configuration com.google.code.gson:gson:2.9.1(runtime).
+2026-05-23T20:48:43.319+0530 [DEBUG] [org.gradle.api.internal.artifacts.ivyservice.resolveengine.oldresult.TransientConfigurationResultsBuilder] Flushing resolved configuration data in Binary store in C:\Users\Admin\.gradle\.tmp\gradle15387606705999338721.bin. Wrote root 22.
+2026-05-23T20:48:43.320+0530 [DEBUG] [org.gradle.internal.operations.DefaultBuildOperationRunner] Completing Build operation 'Resolve dependencies of classpath'
+2026-05-23T20:48:43.320+0530 [DEBUG] [org.gradle.internal.operations.DefaultBuildOperationRunner] Build operation 'Resolve dependencies of classpath' completed
+2026-05-23T20:48:43.320+0530 [DEBUG] [org.gradle.internal.component.model.LoggingAttributeMatchingExplanationBuilder] Selected match org.gradle.toolchains.foojay-resolver-convention:org.gradle.toolchains.foojay-resolver-convention.gradle.plugin:0.5.0 configuration runtime from candidates [org.gradle.toolchains.foojay-resolver-convention:org.gradle.toolchains.foojay-resolver-convention.gradle.plugin:0.5.0 configuration runtime] for {org.gradle.category=library, org.gradle.dependency.bundling=external, org.gradle.jvm.version=17, org.gradle.libraryelements=jar, org.gradle.plugin.api-version=8.13, org.gradle.usage=java-runtime}
+2026-05-23T20:48:43.320+0530 [DEBUG] [org.gradle.internal.component.model.LoggingAttributeMatchingExplanationBuilder] Selected match org.gradle.toolchains:foojay-resolver:0.5.0 variant runtimeElements from candidates [org.gradle.toolchains:foojay-resolver:0.5.0 variant runtimeElements] for {org.gradle.category=library, org.gradle.dependency.bundling=external, org.gradle.jvm.version=17, org.gradle.libraryelements=jar, org.gradle.plugin.api-version=8.13, org.gradle.usage=java-runtime}
+2026-05-23T20:48:43.320+0530 [DEBUG] [org.gradle.internal.component.model.LoggingAttributeMatchingExplanationBuilder] Selected match com.google.code.gson:gson:2.9.1 configuration runtime from candidates [com.google.code.gson:gson:2.9.1 configuration runtime] for {org.gradle.category=library, org.gradle.dependency.bundling=external, org.gradle.jvm.version=17, org.gradle.libraryelements=jar, org.gradle.plugin.api-version=8.13, org.gradle.usage=java-runtime}
+2026-05-23T20:48:43.320+0530 [DEBUG] [org.gradle.internal.operations.DefaultBuildOperationRunner] Build operation 'Resolve files of configuration 'classpath'' started
+2026-05-23T20:48:43.321+0530 [DEBUG] [org.gradle.internal.operations.DefaultBuildOperationRunner] Build operation 'Resolve foojay-resolver-0.5.0.jar (org.gradle.toolchains:foojay-resolver:0.5.0)' started
+2026-05-23T20:48:43.321+0530 [DEBUG] [org.gradle.internal.resources.AbstractTrackedResourceLock] Unconstrained build operations: acquired lock on worker lease
+2026-05-23T20:48:43.321+0530 [DEBUG] [org.gradle.internal.operations.DefaultBuildOperationRunner] Build operation 'Resolve gson-2.9.1.jar (com.google.code.gson:gson:2.9.1)' started
+2026-05-23T20:48:43.321+0530 [DEBUG] [org.gradle.api.internal.artifacts.ivyservice.ivyresolve.CachingModuleComponentRepository] Found artifact 'org.gradle.internal.component.external.model.UrlBackedArtifactMetadata@1afb6ab4' in resolver cache: C:\Users\Admin\.gradle\caches\modules-2\files-2.1\org.gradle.toolchains\foojay-resolver\0.5.0\ea9de2dd6593295f79b4eb723dc8b1a68d04c627\foojay-resolver-0.5.0.jar
+2026-05-23T20:48:43.322+0530 [DEBUG] [org.gradle.internal.operations.DefaultBuildOperationRunner] Completing Build operation 'Resolve foojay-resolver-0.5.0.jar (org.gradle.toolchains:foojay-resolver:0.5.0)'
+2026-05-23T20:48:43.322+0530 [DEBUG] [org.gradle.internal.operations.DefaultBuildOperationRunner] Build operation 'Resolve foojay-resolver-0.5.0.jar (org.gradle.toolchains:foojay-resolver:0.5.0)' completed
+2026-05-23T20:48:43.322+0530 [DEBUG] [org.gradle.api.internal.artifacts.ivyservice.ivyresolve.CachingModuleComponentRepository] Found artifact 'gson-2.9.1.jar (com.google.code.gson:gson:2.9.1)' in resolver cache: C:\Users\Admin\.gradle\caches\modules-2\files-2.1\com.google.code.gson\gson\2.9.1\2cc2131b98ebfb04e2b2c7dfb84431f4045096b\gson-2.9.1.jar
+2026-05-23T20:48:43.322+0530 [DEBUG] [org.gradle.internal.operations.DefaultBuildOperationRunner] Completing Build operation 'Resolve gson-2.9.1.jar (com.google.code.gson:gson:2.9.1)'
+2026-05-23T20:48:43.322+0530 [DEBUG] [org.gradle.internal.operations.DefaultBuildOperationRunner] Build operation 'Resolve gson-2.9.1.jar (com.google.code.gson:gson:2.9.1)' completed
+2026-05-23T20:48:43.322+0530 [DEBUG] [org.gradle.internal.resources.AbstractTrackedResourceLock] Daemon worker Thread 6: released lock on worker lease
+2026-05-23T20:48:43.322+0530 [DEBUG] [org.gradle.internal.resources.AbstractTrackedResourceLock] Unconstrained build operations: released lock on worker lease
+2026-05-23T20:48:43.323+0530 [DEBUG] [org.gradle.internal.resources.AbstractTrackedResourceLock] Daemon worker Thread 6: acquired lock on worker lease
+2026-05-23T20:48:43.323+0530 [DEBUG] [org.gradle.internal.operations.DefaultBuildOperationRunner] Completing Build operation 'Resolve files of configuration 'classpath''
+2026-05-23T20:48:43.323+0530 [DEBUG] [org.gradle.internal.operations.DefaultBuildOperationRunner] Build operation 'Resolve files of configuration 'classpath'' completed
+2026-05-23T20:48:43.323+0530 [DEBUG] [org.gradle.internal.component.model.LoggingAttributeMatchingExplanationBuilder] Candidate org.gradle.toolchains.foojay-resolver-convention:org.gradle.toolchains.foojay-resolver-convention.gradle.plugin:0.5.0 configuration runtime doesn't match attributes {org.gradle.category=library, org.gradle.dependency.bundling=external, org.gradle.internal.instrumented=instrumented-and-upgraded, org.gradle.jvm.version=17, org.gradle.libraryelements=jar, org.gradle.plugin.api-version=8.13, org.gradle.usage=java-runtime}
+2026-05-23T20:48:43.324+0530 [DEBUG] [org.gradle.internal.component.model.LoggingAttributeMatchingExplanationBuilder] Candidate org.gradle.toolchains:foojay-resolver:0.5.0 variant runtimeElements doesn't match attributes {org.gradle.category=library, org.gradle.dependency.bundling=external, org.gradle.internal.instrumented=instrumented-and-upgraded, org.gradle.jvm.version=17, org.gradle.libraryelements=jar, org.gradle.plugin.api-version=8.13, org.gradle.usage=java-runtime}
+2026-05-23T20:48:43.325+0530 [DEBUG] [org.gradle.internal.component.model.LoggingAttributeMatchingExplanationBuilder] Candidate com.google.code.gson:gson:2.9.1 configuration runtime doesn't match attributes {org.gradle.category=library, org.gradle.dependency.bundling=external, org.gradle.internal.instrumented=instrumented-and-upgraded, org.gradle.jvm.version=17, org.gradle.libraryelements=jar, org.gradle.plugin.api-version=8.13, org.gradle.usage=java-runtime}
+2026-05-23T20:48:43.325+0530 [DEBUG] [org.gradle.internal.operations.DefaultBuildOperationRunner] Build operation 'Resolve files of configuration 'classpath'' started
+2026-05-23T20:48:43.325+0530 [DEBUG] [org.gradle.internal.operations.DefaultBuildOperationRunner] Build operation 'Fingerprint transform inputs' started
+2026-05-23T20:48:43.325+0530 [DEBUG] [org.gradle.internal.operations.DefaultBuildOperationRunner] Completing Build operation 'Fingerprint transform inputs'
+2026-05-23T20:48:43.326+0530 [DEBUG] [org.gradle.internal.operations.DefaultBuildOperationRunner] Build operation 'Fingerprint transform inputs' completed
+2026-05-23T20:48:43.326+0530 [DEBUG] [org.gradle.internal.component.model.LoggingAttributeMatchingExplanationBuilder] Candidate org.gradle.toolchains.foojay-resolver-convention:org.gradle.toolchains.foojay-resolver-convention.gradle.plugin:0.5.0 configuration runtime doesn't match attributes {org.gradle.category=library, org.gradle.dependency.bundling=external, org.gradle.internal.instrumented=analyzed-artifact, org.gradle.jvm.version=17, org.gradle.libraryelements=classes, org.gradle.plugin.api-version=8.13, org.gradle.usage=java-runtime}
+2026-05-23T20:48:43.326+0530 [DEBUG] [org.gradle.internal.component.model.LoggingAttributeMatchingExplanationBuilder] Candidate org.gradle.toolchains:foojay-resolver:0.5.0 variant runtimeElements doesn't match attributes {org.gradle.category=library, org.gradle.dependency.bundling=external, org.gradle.internal.instrumented=analyzed-artifact, org.gradle.jvm.version=17, org.gradle.libraryelements=classes, org.gradle.plugin.api-version=8.13, org.gradle.usage=java-runtime}
+2026-05-23T20:48:43.326+0530 [DEBUG] [org.gradle.internal.component.model.LoggingAttributeMatchingExplanationBuilder] Candidate com.google.code.gson:gson:2.9.1 configuration runtime doesn't match attributes {org.gradle.category=library, org.gradle.dependency.bundling=external, org.gradle.internal.instrumented=analyzed-artifact, org.gradle.jvm.version=17, org.gradle.libraryelements=classes, org.gradle.plugin.api-version=8.13, org.gradle.usage=java-runtime}
+2026-05-23T20:48:43.326+0530 [DEBUG] [org.gradle.internal.operations.DefaultBuildOperationRunner] Build operation 'Resolve files of configuration 'classpath'' started
+2026-05-23T20:48:43.327+0530 [DEBUG] [org.gradle.internal.operations.DefaultBuildOperationRunner] Build operation 'Identifying work' started
+2026-05-23T20:48:43.327+0530 [DEBUG] [org.gradle.internal.operations.DefaultBuildOperationRunner] Completing Build operation 'Identifying work'
+2026-05-23T20:48:43.327+0530 [DEBUG] [org.gradle.internal.operations.DefaultBuildOperationRunner] Build operation 'Identifying work' completed
+2026-05-23T20:48:43.327+0530 [DEBUG] [org.gradle.internal.operations.DefaultBuildOperationRunner] Build operation 'Identifying work' started
+2026-05-23T20:48:43.327+0530 [DEBUG] [org.gradle.internal.operations.DefaultBuildOperationRunner] Completing Build operation 'Identifying work'
+2026-05-23T20:48:43.327+0530 [DEBUG] [org.gradle.internal.operations.DefaultBuildOperationRunner] Build operation 'Identifying work' completed
+2026-05-23T20:48:43.327+0530 [DEBUG] [org.gradle.internal.operations.DefaultBuildOperationRunner] Completing Build operation 'Resolve files of configuration 'classpath''
+2026-05-23T20:48:43.328+0530 [DEBUG] [org.gradle.internal.operations.DefaultBuildOperationRunner] Build operation 'Resolve files of configuration 'classpath'' completed
+2026-05-23T20:48:43.328+0530 [DEBUG] [org.gradle.internal.operations.DefaultBuildOperationRunner] Build operation 'Fingerprint transform inputs' started
+2026-05-23T20:48:43.328+0530 [DEBUG] [org.gradle.internal.operations.DefaultBuildOperationRunner] Completing Build operation 'Fingerprint transform inputs'
+2026-05-23T20:48:43.328+0530 [DEBUG] [org.gradle.internal.operations.DefaultBuildOperationRunner] Build operation 'Fingerprint transform inputs' completed
+2026-05-23T20:48:43.329+0530 [DEBUG] [org.gradle.internal.operations.DefaultBuildOperationRunner] Build operation 'Fingerprint transform inputs' started
+2026-05-23T20:48:43.329+0530 [DEBUG] [org.gradle.internal.operations.DefaultBuildOperationRunner] Completing Build operation 'Fingerprint transform inputs'
+2026-05-23T20:48:43.329+0530 [DEBUG] [org.gradle.internal.operations.DefaultBuildOperationRunner] Build operation 'Fingerprint transform inputs' completed
+2026-05-23T20:48:43.329+0530 [DEBUG] [org.gradle.internal.operations.DefaultBuildOperationRunner] Build operation 'Identifying work' started
+2026-05-23T20:48:43.329+0530 [DEBUG] [org.gradle.internal.operations.DefaultBuildOperationRunner] Completing Build operation 'Identifying work'
+2026-05-23T20:48:43.329+0530 [DEBUG] [org.gradle.internal.operations.DefaultBuildOperationRunner] Build operation 'Identifying work' completed
+2026-05-23T20:48:43.330+0530 [DEBUG] [org.gradle.internal.operations.DefaultBuildOperationRunner] Build operation 'Identifying work' started
+2026-05-23T20:48:43.330+0530 [DEBUG] [org.gradle.internal.operations.DefaultBuildOperationRunner] Completing Build operation 'Identifying work'
+2026-05-23T20:48:43.330+0530 [DEBUG] [org.gradle.internal.operations.DefaultBuildOperationRunner] Build operation 'Identifying work' completed
+2026-05-23T20:48:43.330+0530 [DEBUG] [org.gradle.internal.resources.AbstractTrackedResourceLock] Unconstrained build operations Thread 3: acquired lock on worker lease
+2026-05-23T20:48:43.330+0530 [DEBUG] [org.gradle.internal.operations.DefaultBuildOperationRunner] Build operation 'Execute transform chain: foojay-resolver-0.5.0.jar (org.gradle.toolchains:foojay-resolver:0.5.0)' started
+2026-05-23T20:48:43.330+0530 [DEBUG] [org.gradle.internal.operations.DefaultBuildOperationRunner] Build operation 'Identifying work' started
+2026-05-23T20:48:43.331+0530 [DEBUG] [org.gradle.internal.operations.DefaultBuildOperationRunner] Completing Build operation 'Identifying work'
+2026-05-23T20:48:43.331+0530 [DEBUG] [org.gradle.internal.operations.DefaultBuildOperationRunner] Build operation 'Identifying work' completed
+2026-05-23T20:48:43.331+0530 [DEBUG] [org.gradle.internal.operations.DefaultBuildOperationRunner] Build operation 'Execute transform chain: gson-2.9.1.jar (com.google.code.gson:gson:2.9.1)' started
+2026-05-23T20:48:43.331+0530 [DEBUG] [org.gradle.internal.operations.DefaultBuildOperationRunner] Build operation 'Identifying work' started
+2026-05-23T20:48:43.331+0530 [DEBUG] [org.gradle.internal.operations.DefaultBuildOperationRunner] Build operation 'Identifying work' started
+2026-05-23T20:48:43.331+0530 [DEBUG] [org.gradle.internal.operations.DefaultBuildOperationRunner] Completing Build operation 'Identifying work'
+2026-05-23T20:48:43.331+0530 [DEBUG] [org.gradle.internal.operations.DefaultBuildOperationRunner] Build operation 'Identifying work' completed
+2026-05-23T20:48:43.331+0530 [DEBUG] [org.gradle.internal.operations.DefaultBuildOperationRunner] Completing Build operation 'Identifying work'
+2026-05-23T20:48:43.332+0530 [DEBUG] [org.gradle.internal.operations.DefaultBuildOperationRunner] Build operation 'Identifying work' completed
+2026-05-23T20:48:43.331+0530 [DEBUG] [org.gradle.internal.operations.DefaultBuildOperationRunner] Build operation 'Identifying work' started
+2026-05-23T20:48:43.332+0530 [DEBUG] [org.gradle.internal.operations.DefaultBuildOperationRunner] Build operation 'Identifying work' started
+2026-05-23T20:48:43.332+0530 [DEBUG] [org.gradle.internal.operations.DefaultBuildOperationRunner] Completing Build operation 'Identifying work'
+2026-05-23T20:48:43.332+0530 [DEBUG] [org.gradle.internal.operations.DefaultBuildOperationRunner] Build operation 'Identifying work' completed
+2026-05-23T20:48:43.332+0530 [DEBUG] [org.gradle.internal.operations.DefaultBuildOperationRunner] Completing Build operation 'Identifying work'
+2026-05-23T20:48:43.332+0530 [DEBUG] [org.gradle.internal.operations.DefaultBuildOperationRunner] Build operation 'Identifying work' completed
+2026-05-23T20:48:43.332+0530 [DEBUG] [org.gradle.internal.operations.DefaultBuildOperationRunner] Build operation 'Identifying work' started
+2026-05-23T20:48:43.332+0530 [DEBUG] [org.gradle.internal.operations.DefaultBuildOperationRunner] Build operation 'Identifying work' started
+2026-05-23T20:48:43.333+0530 [DEBUG] [org.gradle.internal.operations.DefaultBuildOperationRunner] Completing Build operation 'Identifying work'
+2026-05-23T20:48:43.333+0530 [DEBUG] [org.gradle.internal.operations.DefaultBuildOperationRunner] Build operation 'Identifying work' completed
+2026-05-23T20:48:43.333+0530 [DEBUG] [org.gradle.internal.operations.DefaultBuildOperationRunner] Completing Build operation 'Identifying work'
+2026-05-23T20:48:43.333+0530 [DEBUG] [org.gradle.internal.operations.DefaultBuildOperationRunner] Build operation 'Identifying work' completed
+2026-05-23T20:48:43.333+0530 [DEBUG] [org.gradle.internal.operations.DefaultBuildOperationRunner] Build operation 'Identifying work' started
+2026-05-23T20:48:43.333+0530 [DEBUG] [org.gradle.internal.operations.DefaultBuildOperationRunner] Build operation 'Identifying work' started
+2026-05-23T20:48:43.333+0530 [DEBUG] [org.gradle.internal.operations.DefaultBuildOperationRunner] Completing Build operation 'Identifying work'
+2026-05-23T20:48:43.333+0530 [DEBUG] [org.gradle.internal.operations.DefaultBuildOperationRunner] Completing Build operation 'Identifying work'
+2026-05-23T20:48:43.334+0530 [DEBUG] [org.gradle.internal.operations.DefaultBuildOperationRunner] Build operation 'Identifying work' completed
+2026-05-23T20:48:43.334+0530 [DEBUG] [org.gradle.internal.operations.DefaultBuildOperationRunner] Build operation 'Identifying work' completed
+2026-05-23T20:48:43.334+0530 [DEBUG] [org.gradle.internal.operations.DefaultBuildOperationRunner] Build operation 'Identifying work' started
+2026-05-23T20:48:43.334+0530 [DEBUG] [org.gradle.internal.operations.DefaultBuildOperationRunner] Build operation 'Identifying work' started
+2026-05-23T20:48:43.334+0530 [DEBUG] [org.gradle.internal.operations.DefaultBuildOperationRunner] Completing Build operation 'Identifying work'
+2026-05-23T20:48:43.334+0530 [DEBUG] [org.gradle.internal.operations.DefaultBuildOperationRunner] Completing Build operation 'Identifying work'
+2026-05-23T20:48:43.334+0530 [DEBUG] [org.gradle.internal.operations.DefaultBuildOperationRunner] Build operation 'Identifying work' completed
+2026-05-23T20:48:43.334+0530 [DEBUG] [org.gradle.internal.operations.DefaultBuildOperationRunner] Build operation 'Identifying work' completed
+2026-05-23T20:48:43.334+0530 [DEBUG] [org.gradle.internal.operations.DefaultBuildOperationRunner] Build operation 'Identifying work' started
+2026-05-23T20:48:43.335+0530 [DEBUG] [org.gradle.internal.operations.DefaultBuildOperationRunner] Build operation 'Identifying work' started
+2026-05-23T20:48:43.335+0530 [DEBUG] [org.gradle.internal.operations.DefaultBuildOperationRunner] Completing Build operation 'Identifying work'
+2026-05-23T20:48:43.335+0530 [DEBUG] [org.gradle.internal.operations.DefaultBuildOperationRunner] Build operation 'Identifying work' completed
+2026-05-23T20:48:43.335+0530 [DEBUG] [org.gradle.internal.operations.DefaultBuildOperationRunner] Build operation 'Identifying work' started
+2026-05-23T20:48:43.335+0530 [DEBUG] [org.gradle.internal.operations.DefaultBuildOperationRunner] Completing Build operation 'Identifying work'
+2026-05-23T20:48:43.335+0530 [DEBUG] [org.gradle.internal.operations.DefaultBuildOperationRunner] Build operation 'Identifying work' completed
+2026-05-23T20:48:43.335+0530 [DEBUG] [org.gradle.internal.operations.DefaultBuildOperationRunner] Completing Build operation 'Execute transform chain: gson-2.9.1.jar (com.google.code.gson:gson:2.9.1)'
+2026-05-23T20:48:43.336+0530 [DEBUG] [org.gradle.internal.operations.DefaultBuildOperationRunner] Build operation 'Execute transform chain: gson-2.9.1.jar (com.google.code.gson:gson:2.9.1)' completed
+2026-05-23T20:48:43.336+0530 [DEBUG] [org.gradle.internal.resources.AbstractTrackedResourceLock] Daemon worker Thread 6: released lock on worker lease
+2026-05-23T20:48:43.335+0530 [DEBUG] [org.gradle.internal.operations.DefaultBuildOperationRunner] Completing Build operation 'Identifying work'
+2026-05-23T20:48:43.336+0530 [DEBUG] [org.gradle.internal.operations.DefaultBuildOperationRunner] Build operation 'Identifying work' completed
+2026-05-23T20:48:43.336+0530 [DEBUG] [org.gradle.internal.operations.DefaultBuildOperationRunner] Completing Build operation 'Execute transform chain: foojay-resolver-0.5.0.jar (org.gradle.toolchains:foojay-resolver:0.5.0)'
+2026-05-23T20:48:43.336+0530 [DEBUG] [org.gradle.internal.operations.DefaultBuildOperationRunner] Build operation 'Execute transform chain: foojay-resolver-0.5.0.jar (org.gradle.toolchains:foojay-resolver:0.5.0)' completed
+2026-05-23T20:48:43.336+0530 [DEBUG] [org.gradle.internal.resources.AbstractTrackedResourceLock] Unconstrained build operations Thread 3: released lock on worker lease
+2026-05-23T20:48:43.336+0530 [DEBUG] [org.gradle.internal.resources.AbstractTrackedResourceLock] Daemon worker Thread 6: acquired lock on worker lease
+2026-05-23T20:48:43.336+0530 [DEBUG] [org.gradle.internal.operations.DefaultBuildOperationRunner] Completing Build operation 'Resolve files of configuration 'classpath''
+2026-05-23T20:48:43.337+0530 [DEBUG] [org.gradle.internal.operations.DefaultBuildOperationRunner] Build operation 'Resolve files of configuration 'classpath'' completed
+2026-05-23T20:48:43.337+0530 [DEBUG] [org.gradle.internal.operations.DefaultBuildOperationRunner] Build operation 'Resolve files of configuration 'classpath'' started
+2026-05-23T20:48:43.337+0530 [DEBUG] [org.gradle.internal.operations.DefaultBuildOperationRunner] Completing Build operation 'Resolve files of configuration 'classpath''
+2026-05-23T20:48:43.337+0530 [DEBUG] [org.gradle.internal.operations.DefaultBuildOperationRunner] Build operation 'Resolve files of configuration 'classpath'' completed
+2026-05-23T20:48:43.339+0530 [DEBUG] [org.gradle.internal.operations.DefaultBuildOperationRunner] Build operation 'Apply plugin org.gradle.toolchains.foojay-resolver-convention to settings 'gradle-plugin'' started
+2026-05-23T20:48:43.339+0530 [DEBUG] [org.gradle.internal.operations.DefaultBuildOperationRunner] Build operation 'Apply plugin org.gradle.toolchains.foojay.FoojayToolchainsPlugin to settings 'gradle-plugin'' started
+2026-05-23T20:48:43.340+0530 [DEBUG] [org.gradle.internal.operations.DefaultBuildOperationRunner] Build operation 'Apply plugin org.gradle.jvm-toolchain-management to settings 'gradle-plugin'' started
+2026-05-23T20:48:43.340+0530 [DEBUG] [org.gradle.internal.operations.DefaultBuildOperationRunner] Completing Build operation 'Apply plugin org.gradle.jvm-toolchain-management to settings 'gradle-plugin''
+2026-05-23T20:48:43.341+0530 [DEBUG] [org.gradle.internal.operations.DefaultBuildOperationRunner] Build operation 'Apply plugin org.gradle.jvm-toolchain-management to settings 'gradle-plugin'' completed
+2026-05-23T20:48:43.341+0530 [DEBUG] [org.gradle.internal.operations.DefaultBuildOperationRunner] Completing Build operation 'Apply plugin org.gradle.toolchains.foojay.FoojayToolchainsPlugin to settings 'gradle-plugin''
+2026-05-23T20:48:43.341+0530 [DEBUG] [org.gradle.internal.operations.DefaultBuildOperationRunner] Build operation 'Apply plugin org.gradle.toolchains.foojay.FoojayToolchainsPlugin to settings 'gradle-plugin'' completed
+2026-05-23T20:48:43.341+0530 [DEBUG] [org.gradle.internal.operations.DefaultBuildOperationRunner] Completing Build operation 'Apply plugin org.gradle.toolchains.foojay-resolver-convention to settings 'gradle-plugin''
+2026-05-23T20:48:43.341+0530 [DEBUG] [org.gradle.internal.operations.DefaultBuildOperationRunner] Build operation 'Apply plugin org.gradle.toolchains.foojay-resolver-convention to settings 'gradle-plugin'' completed
+2026-05-23T20:48:43.407+0530 [DEBUG] [org.gradle.api.internal.runtimeshaded.RuntimeShadedJarFactory] Using Gradle runtime shaded JAR file: C:\Users\Admin\.gradle\caches\8.13\generated-gradle-jars\gradle-api-8.13.jar
+2026-05-23T20:48:43.410+0530 [DEBUG] [org.gradle.internal.operations.DefaultBuildOperationRunner] Build operation 'Identifying work' started
+2026-05-23T20:48:43.411+0530 [DEBUG] [org.gradle.internal.operations.DefaultBuildOperationRunner] Completing Build operation 'Identifying work'
+2026-05-23T20:48:43.411+0530 [DEBUG] [org.gradle.internal.operations.DefaultBuildOperationRunner] Build operation 'Identifying work' completed
+2026-05-23T20:48:43.412+0530 [DEBUG] [org.gradle.internal.operations.DefaultBuildOperationRunner] Completing Build operation 'Apply settings file '..\node_modules\@react-native\gradle-plugin\settings.gradle.kts' to settings 'gradle-plugin''
+2026-05-23T20:48:43.412+0530 [DEBUG] [org.gradle.internal.operations.DefaultBuildOperationRunner] Build operation 'Apply settings file '..\node_modules\@react-native\gradle-plugin\settings.gradle.kts' to settings 'gradle-plugin'' completed
+2026-05-23T20:48:43.412+0530 [DEBUG] [org.gradle.internal.operations.DefaultBuildOperationRunner] Completing Build operation 'Evaluate settings (:gradle-plugin)'
+2026-05-23T20:48:43.412+0530 [DEBUG] [org.gradle.internal.operations.DefaultBuildOperationRunner] Build operation 'Evaluate settings (:gradle-plugin)' completed
+2026-05-23T20:48:43.412+0530 [DEBUG] [org.gradle.internal.operations.DefaultBuildOperationRunner] Completing Build operation 'Load build (:gradle-plugin)'
+2026-05-23T20:48:43.412+0530 [DEBUG] [org.gradle.internal.operations.DefaultBuildOperationRunner] Build operation 'Load build (:gradle-plugin)' completed
+2026-05-23T20:48:43.412+0530 [DEBUG] [org.gradle.internal.operations.DefaultBuildOperationRunner] Completing Build operation 'Apply settings file 'settings.gradle' to settings 'android''
+2026-05-23T20:48:43.412+0530 [DEBUG] [org.gradle.internal.operations.DefaultBuildOperationRunner] Build operation 'Apply settings file 'settings.gradle' to settings 'android'' completed
+2026-05-23T20:48:43.413+0530 [DEBUG] [org.gradle.internal.operations.DefaultBuildOperationRunner] Completing Build operation 'Evaluate settings'
+2026-05-23T20:48:43.413+0530 [DEBUG] [org.gradle.internal.operations.DefaultBuildOperationRunner] Build operation 'Evaluate settings' completed
+2026-05-23T20:48:43.413+0530 [DEBUG] [org.gradle.internal.operations.DefaultBuildOperationRunner] Completing Build operation 'Load build'
+2026-05-23T20:48:43.413+0530 [DEBUG] [org.gradle.internal.operations.DefaultBuildOperationRunner] Build operation 'Load build' completed
+2026-05-23T20:48:43.413+0530 [DEBUG] [org.gradle.internal.operations.DefaultBuildOperationRunner] Build operation 'Finish root build tree' started
+2026-05-23T20:48:43.417+0530 [DEBUG] [org.gradle.internal.operations.DefaultBuildOperationRunner] Completing Build operation 'Finish root build tree'
+2026-05-23T20:48:43.417+0530 [DEBUG] [org.gradle.internal.operations.DefaultBuildOperationRunner] Build operation 'Finish root build tree' completed
+./gradlew : 2026-05-23T20:48:43.417+0530 [ERROR] [org.gradle.internal.buildevents.BuildExceptionReporter] 
+At line:1 char:24
++ cd C:\connect\android; ./gradlew assembleRelease --debug 2>&1 | Out-F ...
++                        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (2026-05-23T20:4...ptionReporter] :String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+2026-05-23T20:48:43.417+0530 [ERROR] [org.gradle.internal.buildevents.BuildExceptionReporter] FAILURE: Build failed 
+with an exception.
+2026-05-23T20:48:43.417+0530 [ERROR] [org.gradle.internal.buildevents.BuildExceptionReporter] 
+2026-05-23T20:48:43.417+0530 [ERROR] [org.gradle.internal.buildevents.BuildExceptionReporter] * Where:
+2026-05-23T20:48:43.418+0530 [ERROR] [org.gradle.internal.buildevents.BuildExceptionReporter] Settings file 
+'C:\connect\android\settings.gradle' line: 2
+2026-05-23T20:48:43.418+0530 [ERROR] [org.gradle.internal.buildevents.BuildExceptionReporter] 
+2026-05-23T20:48:43.418+0530 [ERROR] [org.gradle.internal.buildevents.BuildExceptionReporter] * What went wrong:
+2026-05-23T20:48:43.418+0530 [ERROR] [org.gradle.internal.buildevents.BuildExceptionReporter] Error resolving plugin 
+[id: 'com.facebook.react.settings']
+2026-05-23T20:48:43.418+0530 [ERROR] [org.gradle.internal.buildevents.BuildExceptionReporter] > Could not read 
+workspace metadata from 
+C:\Users\Admin\.gradle\caches\8.13\kotlin-dsl\accessors\cbd2677dac5813b0a8ba9dfa391abe66\metadata.bin
+2026-05-23T20:48:43.418+0530 [ERROR] [org.gradle.internal.buildevents.BuildExceptionReporter] 
+2026-05-23T20:48:43.418+0530 [ERROR] [org.gradle.internal.buildevents.BuildExceptionReporter] * Try:
+2026-05-23T20:48:43.418+0530 [ERROR] [org.gradle.internal.buildevents.BuildExceptionReporter] > Run with --stacktrace 
+option to get the stack trace.
+2026-05-23T20:48:43.418+0530 [ERROR] [org.gradle.internal.buildevents.BuildExceptionReporter] > Run with --scan to get 
+full insights.
+2026-05-23T20:48:43.418+0530 [ERROR] [org.gradle.internal.buildevents.BuildExceptionReporter] > Get more help at 
+https://help.gradle.org.
+2026-05-23T20:48:43.418+0530 [ERROR] [org.gradle.internal.buildevents.BuildResultLogger] 
+2026-05-23T20:48:43.418+0530 [ERROR] [org.gradle.internal.buildevents.BuildResultLogger] BUILD FAILED in 2s
+2026-05-23T20:48:43.418+0530 [DEBUG] [org.gradle.internal.operations.DefaultBuildOperationRunner] Build operation 'Build finished for file system watching' started
+2026-05-23T20:48:43.442+0530 [INFO] [org.gradle.internal.watch.registry.impl.HierarchicalFileWatcherUpdater] Watched directory hierarchies: [C:\connect\node_modules\@react-native\gradle-plugin, C:\connect\android]
+2026-05-23T20:48:43.454+0530 [DEBUG] [org.gradle.internal.operations.DefaultBuildOperationRunner] Completing Build operation 'Build finished for file system watching'
+2026-05-23T20:48:43.454+0530 [DEBUG] [org.gradle.internal.operations.DefaultBuildOperationRunner] Build operation 'Build finished for file system watching' completed
+2026-05-23T20:48:43.456+0530 [DEBUG] [org.gradle.cache.internal.LockOnDemandCrossProcessCacheAccess] Releasing file lock for Build Output Cleanup Cache (C:\connect\android\.gradle\buildOutputCleanup)
+2026-05-23T20:48:43.457+0530 [DEBUG] [org.gradle.cache.internal.DefaultFileLockManager] Releasing lock on Build Output Cleanup Cache (C:\connect\android\.gradle\buildOutputCleanup).
+2026-05-23T20:48:43.457+0530 [DEBUG] [org.gradle.cache.internal.LockOnDemandCrossProcessCacheAccess] Releasing file lock for cache directory md-supplier (C:\Users\Admin\.gradle\caches\8.13\md-supplier)
+2026-05-23T20:48:43.457+0530 [DEBUG] [org.gradle.cache.internal.DefaultFileLockManager] Releasing lock on cache directory md-supplier (C:\Users\Admin\.gradle\caches\8.13\md-supplier).
+2026-05-23T20:48:43.458+0530 [DEBUG] [org.gradle.cache.internal.LockOnDemandCrossProcessCacheAccess] Releasing file lock for Build Output Cleanup Cache (C:\connect\node_modules\@react-native\gradle-plugin\.gradle\buildOutputCleanup)
+2026-05-23T20:48:43.458+0530 [DEBUG] [org.gradle.cache.internal.DefaultFileLockManager] Releasing lock on Build Output Cleanup Cache (C:\connect\node_modules\@react-native\gradle-plugin\.gradle\buildOutputCleanup).
+2026-05-23T20:48:43.458+0530 [DEBUG] [org.gradle.cache.internal.LockOnDemandCrossProcessCacheAccess] Releasing file lock for cache directory md-rule (C:\Users\Admin\.gradle\caches\8.13\md-rule)
+2026-05-23T20:48:43.458+0530 [DEBUG] [org.gradle.cache.internal.DefaultFileLockManager] Releasing lock on cache directory md-rule (C:\Users\Admin\.gradle\caches\8.13\md-rule).
+2026-05-23T20:48:43.459+0530 [DEBUG] [org.gradle.api.internal.artifacts.ivyservice.resolveengine.store.CachedStoreFactory] Resolution result cache closed. Cache reads: 0, disk reads: 0 (avg: 0.0 secs, total: 0.0 secs)
+2026-05-23T20:48:43.460+0530 [DEBUG] [org.gradle.api.internal.artifacts.ivyservice.resolveengine.store.CachedStoreFactory] Resolution result cache closed. Cache reads: 0, disk reads: 0 (avg: 0.0 secs, total: 0.0 secs)
+2026-05-23T20:48:43.460+0530 [DEBUG] [org.gradle.api.internal.artifacts.ivyservice.resolveengine.store.ResolutionResultsStoreFactory] Deleted 2 resolution results binary files in 0.001 secs
+2026-05-23T20:48:43.460+0530 [DEBUG] [org.gradle.internal.operations.DefaultBuildOperationRunner] Completing Build operation 'Run build'
+2026-05-23T20:48:43.460+0530 [DEBUG] [org.gradle.internal.operations.DefaultBuildOperationRunner] Build operation 'Run build' completed
+2026-05-23T20:48:43.460+0530 [DEBUG] [org.gradle.internal.resources.AbstractTrackedResourceLock] Daemon worker Thread 6: released lock on worker lease
+2026-05-23T20:48:43.463+0530 [DEBUG] [org.gradle.deployment.internal.DefaultDeploymentRegistry] Stopping 0 deployment handles
+2026-05-23T20:48:43.463+0530 [DEBUG] [org.gradle.deployment.internal.DefaultDeploymentRegistry] Stopped deployment handles
+2026-05-23T20:48:43.464+0530 [DEBUG] [org.gradle.cache.internal.LockOnDemandCrossProcessCacheAccess] Releasing file lock for file hash cache (C:\connect\android\.gradle\8.13\fileHashes)
+2026-05-23T20:48:43.464+0530 [DEBUG] [org.gradle.cache.internal.DefaultFileLockManager] Releasing lock on file hash cache (C:\connect\android\.gradle\8.13\fileHashes).
+2026-05-23T20:48:43.465+0530 [DEBUG] [org.gradle.cache.internal.LockOnDemandCrossProcessCacheAccess] Releasing file lock for checksums cache (C:\connect\android\.gradle\8.13\checksums)
+2026-05-23T20:48:43.465+0530 [DEBUG] [org.gradle.cache.internal.DefaultFileLockManager] Releasing lock on checksums cache (C:\connect\android\.gradle\8.13\checksums).
+2026-05-23T20:48:43.465+0530 [DEBUG] [org.gradle.cache.internal.DefaultCacheCoordinator] Cache Compressed Files Expansion Cache (C:\connect\android\.gradle\8.13\expanded) was closed 0 times.
+2026-05-23T20:48:43.466+0530 [DEBUG] [org.gradle.cache.internal.DefaultCacheCleanupExecutor] VCS Checkout Cache (C:\connect\android\.gradle\vcs-1) has last been fully cleaned up 0 hours ago
+2026-05-23T20:48:43.466+0530 [DEBUG] [org.gradle.cache.internal.DefaultCacheCleanupExecutor] Skipping cleanup for VCS Checkout Cache (C:\connect\android\.gradle\vcs-1) as it is not yet due
+2026-05-23T20:48:43.466+0530 [DEBUG] [org.gradle.cache.internal.DefaultCacheCoordinator] Cache VCS Checkout Cache (C:\connect\android\.gradle\vcs-1) was closed 0 times.
+2026-05-23T20:48:43.466+0530 [DEBUG] [org.gradle.cache.internal.DefaultCacheCoordinator] Cache VCS metadata (C:\connect\android\.gradle\8.13\vcsMetadata) was closed 0 times.
+2026-05-23T20:48:43.466+0530 [DEBUG] [org.gradle.internal.operations.DefaultBuildOperationRunner] Build operation 'Deleting unused version-specific caches in C:\connect\android\.gradle' started
+2026-05-23T20:48:43.467+0530 [DEBUG] [org.gradle.internal.operations.DefaultBuildOperationRunner] Completing Build operation 'Deleting unused version-specific caches in C:\connect\android\.gradle'
+2026-05-23T20:48:43.467+0530 [DEBUG] [org.gradle.internal.operations.DefaultBuildOperationRunner] Build operation 'Deleting unused version-specific caches in C:\connect\android\.gradle' completed
+2026-05-23T20:48:43.477+0530 [DEBUG] [org.gradle.launcher.daemon.server.exec.ExecuteBuild] The daemon has finished executing the build.
+2026-05-23T20:48:43.541+0530 [DEBUG] [org.gradle.launcher.daemon.client.DaemonClientConnection] thread 1: dispatching class org.gradle.launcher.daemon.protocol.CloseInput
+2026-05-23T20:48:43.541+0530 [DEBUG] [org.gradle.launcher.daemon.client.DaemonClient] Received result Success[value=org.gradle.launcher.exec.BuildActionResult@62e6b5c8] from daemon DaemonInfo{pid=17404, address=[992411c7-3a06-477d-bb75-1d8a8b6b7b98 port:54560, addresses:[/127.0.0.1]], state=Idle, lastBusy=1779549438203, context=DefaultDaemonContext[uid=4408065a-a628-4e1c-bb7d-21e9fc934037,javaHome=C:\Program Files\Eclipse Adoptium\jdk-17.0.18.8-hotspot,javaVersion=17,javaVendor=Eclipse Adoptium,daemonRegistryDir=C:\Users\Admin\.gradle\daemon,pid=17404,idleTimeout=10800000,priority=NORMAL,applyInstrumentationAgent=true,nativeServicesMode=ENABLED,daemonOpts=-XX:MaxMetaspaceSize=1024m,-Xmx4096m,-Dfile.encoding=UTF-8,-Duser.country=IN,-Duser.language=en,-Duser.variant]} (build should be done).
+2026-05-23T20:48:43.541+0530 [DEBUG] [org.gradle.launcher.daemon.client.DaemonClientConnection] thread 1: dispatching class org.gradle.launcher.daemon.protocol.Finished
+2026-05-23T20:48:43.541+0530 [DEBUG] [org.gradle.launcher.daemon.client.DaemonClientConnection] thread 1: connection stop
+2026-05-23T20:48:43.545+0530 [DEBUG] [org.gradle.cache.internal.DefaultCacheCoordinator] Cache cache directory jvms (C:\Users\Admin\.gradle\caches\8.13\jvms) was closed 0 times.
+2026-05-23T20:48:43.546+0530 [LIFECYCLE] [org.gradle.launcher.cli.DebugLoggerWarningAction] 
+#############################################################################
+   WARNING WARNING WARNING WARNING WARNING WARNING WARNING WARNING WARNING
+
+   Debug level logging will leak security sensitive information!
+
+   For more details, please refer to https://docs.gradle.org/8.13/userguide/logging.html#sec:debug_security in the Gradle documentation.
+#############################################################################
+

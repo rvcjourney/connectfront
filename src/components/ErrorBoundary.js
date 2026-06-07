@@ -1,4 +1,4 @@
-import React from "react";
+﻿import React from "react";
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from "react-native";
 import { UNIFIED_THEME } from "../unifiedTheme";
 
@@ -41,7 +41,6 @@ export class ErrorBoundary extends React.Component {
       userAgent: "React Native App",
     };
 
-    console.log("📊 Error logged:", errorData);
     // Example: Send to logging service
     // fetch('https://your-logging-service.com/errors', {
     //   method: 'POST',
