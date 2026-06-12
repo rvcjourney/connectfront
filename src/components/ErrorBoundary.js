@@ -42,7 +42,6 @@ export class ErrorBoundary extends React.Component {
       userAgent: "React Native App",
     };
 
-    console.log("📊 Error logged:", errorData);
     // Example: Send to logging service
     // fetch('https://your-logging-service.com/errors', {
     //   method: 'POST',

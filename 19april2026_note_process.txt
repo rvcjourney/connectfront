@@ -46,12 +46,12 @@ Slot Conflict Guard
 Before creating a booking, bookingApi.createBooking now reads the slot's is_booked flag first. If another learner grabbed the same slot between the time it was displayed and the time the booking was submitted, the user gets a clear error message: "This time slot was just booked by someone else. Please choose a different slot." Previously the insert would succeed silently and create a double-booking.
 
 What's Still Left Before Launch
-Strip 89 console.log statements across 14 files — exposes userId, earnings, recording URLs in device logs
+Strip 89 console.log statements across 14 files — exposes userId, earnings, recording URLs in device logs -------Done
 Force Update UI screen — the logic exists, the blocking modal doesn't
-Real push notifications — FCM/APNs for booking confirmations (current NotificationContext is just an in-app counter)
+Real push notifications — FCM/APNs for booking confirmations (current NotificationContext is just an in-app counter) ------Done
 Crash reporting — Sentry or Crashlytics, currently zero visibility into production crashes
 Privacy Policy screen — required by both app stores, must be accessible from Settings
 
-****Add Real Time Update which is needed**** as much before versio update we can update through database & Admin section****
+****Add Real Time Uupdate which is needed**** as much before version update we can update through database & Admin section****
 
 Scheduing Screen Should Also Need to Update

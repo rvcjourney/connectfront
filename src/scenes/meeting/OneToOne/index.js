@@ -105,6 +105,7 @@ export default function OneToOneMeetingViewer({ isHost }) {
 
   const participantCount = participantIds ? participantIds.length : null;
 
+  const [splitMode, setSplitMode] = useState(true);
   const [chatViewer, setchatViewer] = useState(false);
   const [participantListViewer, setparticipantListViewer] = useState(false);
   const [participantStatsViewer, setparticipantStatsViewer] = useState(false);
@@ -124,17 +125,27 @@ export default function OneToOneMeetingViewer({ isHost }) {
   }, [localParticipantId]);
 
   useEffect(() => {
-    const fetchFrontCamera = async () => {
+    let cancelled = false;
+    const fetchFrontCamera = async (attempt = 0) => {
       try {
         const cams = await getWebcams?.();
-        if (!cams?.length) return;
-        const front = cams.find(c =>
-          c.label?.toLowerCase().includes('front') || c.facingMode === 'user'
-        ) || cams[0];
-        frontCameraIdRef.current = front?.deviceId ?? null;
-      } catch (_) {}
+        if (cancelled) return;
+        if (cams?.length) {
+          const front = cams.find(c =>
+            c.label?.toLowerCase().includes('front') || c.facingMode === 'user'
+          ) || cams[0];
+          frontCameraIdRef.current = front?.deviceId ?? null;
+        } else if (attempt < 4) {
+          setTimeout(() => fetchFrontCamera(attempt + 1), 1000);
+        }
+      } catch (_) {
+        if (!cancelled && attempt < 4) {
+          setTimeout(() => fetchFrontCamera(attempt + 1), 1000);
+        }
+      }
     };
-    fetchFrontCamera();
+    const t = setTimeout(() => fetchFrontCamera(), 800);
+    return () => { cancelled = true; clearTimeout(t); };
   }, []);
 
   useEffect(() => {
@@ -543,7 +554,23 @@ export default function OneToOneMeetingViewer({ isHost }) {
             </TouchableOpacity>
           </View>
         </View>
-        <View>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 14 }}>
+          <TouchableOpacity
+            onPress={() => setSplitMode(v => !v)}
+            style={{ alignItems: 'center', justifyContent: 'center' }}
+          >
+            {splitMode ? (
+              <View style={{ gap: 3 }}>
+                <View style={{ width: 24, height: 9, borderRadius: 3, backgroundColor: colors.primary[100] }} />
+                <View style={{ width: 24, height: 9, borderRadius: 3, backgroundColor: colors.primary[100] }} />
+              </View>
+            ) : (
+              <View style={{ gap: 3 }}>
+                <View style={{ width: 24, height: 14, borderRadius: 3, backgroundColor: colors.primary[100] }} />
+                <View style={{ width: 24, height: 6, borderRadius: 3, backgroundColor: colors.primary[400] }} />
+              </View>
+            )}
+          </TouchableOpacity>
           <TouchableOpacity
             onPress={() => {
               changeWebcam();
@@ -556,8 +583,8 @@ export default function OneToOneMeetingViewer({ isHost }) {
       {/* Center */}
       <View style={{ flex: 1, marginTop: 8, marginBottom: 12 }}>
         {participantCount > 1 ? (
-          <>
-            {localScreenShareOn ? (
+          splitMode ? (
+            localScreenShareOn ? (
               <LocalParticipantPresenter />
             ) : (
               <View style={{ flex: 1, gap: 8 }}>
@@ -578,8 +605,25 @@ export default function OneToOneMeetingViewer({ isHost }) {
                   ) : null}
                 </View>
               </View>
-            )}
-          </>
+            )
+          ) : (
+            <>
+              {localScreenShareOn ? (
+                <LocalParticipantPresenter />
+              ) : (
+                <LargeView
+                  participantId={remoteParticipantId ?? participantIds[1]}
+                  openStatsBottomSheet={openStatsBottomSheet}
+                />
+              )}
+              <MiniView
+                openStatsBottomSheet={openStatsBottomSheet}
+                participantId={
+                  participantIds[localScreenShareOn || presenterId ? 1 : 0]
+                }
+              />
+            </>
+          )
         ) : participantCount === 1 ? (
           <LocalViewContainer participantId={participantIds[0]} />
         ) : (
@@ -777,9 +821,15 @@ export default function OneToOneMeetingViewer({ isHost }) {
           }}
           backgroundColor={!localWebcamOn ? colors.primary[100] : "transparent"}
           onPress={() => {
-            if (!localWebcamOn && frontCameraIdRef.current) {
+            if (!localWebcamOn) {
               toggleWebcam();
-              setTimeout(() => changeWebcam(frontCameraIdRef.current), 300);
+              setTimeout(() => {
+                if (frontCameraIdRef.current) {
+                  changeWebcam(frontCameraIdRef.current);
+                } else {
+                  changeWebcam();
+                }
+              }, 600);
             } else {
               toggleWebcam();
             }

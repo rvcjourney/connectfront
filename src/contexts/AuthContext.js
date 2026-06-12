@@ -1,4 +1,4 @@
-import { createContext, useState, useEffect } from 'react';
+﻿import { createContext, useState, useEffect } from 'react';
 import { Alert } from 'react-native';
 import { supabase } from '../lib/supabase';
 import { registerFcmToken } from '../utils/fcmToken';
@@ -17,13 +17,6 @@ export const AuthProvider = ({ children }) => {
 
     const bootstrapSession = async () => {
       try {
-        console.log('📱 Restoring auth session...');
-        const sessionResult = await Promise.race([
-          supabase.auth.getSession(),
-          new Promise((_, reject) =>
-            setTimeout(() => reject(new Error('Session restore timed out')), 12_000),
-          ),
-        ]);
         const {
           data: { session: initialSession },
         } = sessionResult;
@@ -31,14 +24,12 @@ export const AuthProvider = ({ children }) => {
         if (!active) return;
 
         if (initialSession?.user) {
-          console.log('✅ Initial session restored, fetching profile...');
           setSession(initialSession);
           setUser(initialSession.user);
           // Do not block app startup on profile query.
           fetchProfile(initialSession.user.id);
           setLoading(false);
         } else {
-          console.log('❌ No initial session found');
           setSession(null);
           setUser(null);
           setProfile(null);
@@ -60,16 +51,13 @@ export const AuthProvider = ({ children }) => {
     const { data: listener } = supabase.auth.onAuthStateChange(
       async (event, newSession) => {
         if (!active) return;
-        console.log('🔔 Auth state changed:', event);
         if (newSession?.user) {
-          console.log('✅ Session found, fetching profile...');
           setSession(newSession);
           setUser(newSession.user);
           // Keep auth transitions responsive even if profile query is slow.
           fetchProfile(newSession.user.id);
           setLoading(false);
         } else {
-          console.log('❌ No session found');
           setSession(null);
           setUser(null);
           setProfile(null);
@@ -86,12 +74,10 @@ export const AuthProvider = ({ children }) => {
 
   const fetchProfile = async (userId) => {
     try {
-      console.log('🔍 Fetching profile for userId:', userId);
 
       // Create a promise that logs if it takes too long
       const slowPromise = new Promise(resolve =>
         setTimeout(() => {
-          console.log('⏳ Profile query is slow (3 seconds)...');
           resolve();
         }, 3000)
       );
@@ -113,8 +99,6 @@ export const AuthProvider = ({ children }) => {
 
         // If profile doesn't exist and user is authenticated, sign them out
         if (error.code === 'PGRST116' || error.message.includes('not found')) {
-          console.log('⚠️ Profile does not exist for userId:', userId);
-          console.log('⚠️ Signing out user and clearing session');
           await supabase.auth.signOut();
           setSession(null);
           setUser(null);
@@ -123,7 +107,6 @@ export const AuthProvider = ({ children }) => {
           return;
         }
         // For other errors, just log and wait for next event
-        console.log('⚠️ Query error, waiting for next auth event');
         setLoading(false);
         return;
       }
@@ -145,7 +128,6 @@ export const AuthProvider = ({ children }) => {
           setLoading(false);
           return;
         }
-        console.log('✅ Profile loaded:', data.name, data.role);
         setProfile(data);
         registerFcmToken(userId);
       }

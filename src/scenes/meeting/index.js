@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+﻿import React, { useEffect, useState } from "react";
 import { Platform, NativeModules, PermissionsAndroid, StyleSheet } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import {
@@ -30,11 +30,9 @@ const requestPermissions = async () => {
 
     const allPermissions = [...corePermissions, ...optionalPermissions];
 
-    console.log("🔐 Requesting permissions:", allPermissions);
 
     const granted = await PermissionsAndroid.requestMultiple(allPermissions);
 
-    console.log("📋 Permission results:", granted);
 
     // Check if core permissions are granted
     const coreGranted = corePermissions.every(
@@ -42,13 +40,10 @@ const requestPermissions = async () => {
     );
 
     if (coreGranted) {
-      console.log("✅ Core permissions granted (Camera + Microphone)");
       return true;
     } else {
-      console.log("❌ Core permissions denied");
       // Log which permissions were denied
       corePermissions.forEach((perm) => {
-        console.log(`  - ${perm}: ${granted[perm]}`);
       });
       return false;
     }

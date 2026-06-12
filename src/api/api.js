@@ -1,4 +1,4 @@
-import { REACT_APP_AUTH_URL, AUTH_URL, VIDEO_SDK_AUTH_URL } from "@env";
+﻿import { REACT_APP_AUTH_URL, AUTH_URL, VIDEO_SDK_AUTH_URL } from "@env";
 import ApiErrorHandler from "../utils/apiErrorHandler";
 
 const API_BASE_URL = "https://api.videosdk.live/v2";
@@ -21,7 +21,6 @@ export const getToken = async () => {
       );
     }
 
-    console.log(`📡 Fetching token from: ${API_AUTH_URL}/get-token`);
 
     const token = await ApiErrorHandler.retryWithBackoff(
       async () => {
@@ -40,7 +39,6 @@ export const getToken = async () => {
       3 // Max retries
     );
 
-    console.log("✅ Token received successfully");
     return token;
   } catch (error) {
     ApiErrorHandler.logError("getToken", error);
@@ -57,7 +55,6 @@ export const createMeeting = async ({ token }) => {
       throw new Error("Token is required to create a meeting");
     }
 
-    console.log("📝 Creating meeting...");
 
     const roomId = await ApiErrorHandler.retryWithBackoff(
       async () => {
@@ -84,7 +81,6 @@ export const createMeeting = async ({ token }) => {
       2 // Max retries (fewer for POST)
     );
 
-    console.log("✅ Meeting created. Room ID:", roomId);
     return roomId;
   } catch (error) {
     ApiErrorHandler.logError("createMeeting", error);
@@ -101,7 +97,6 @@ export const validateMeeting = async ({ meetingId, token }) => {
       throw new Error("meetingId and token are required");
     }
 
-    console.log(`🔍 Validating meeting: ${meetingId}`);
 
     const isValid = await ApiErrorHandler.retryWithBackoff(
       async () => {
@@ -128,7 +123,6 @@ export const validateMeeting = async ({ meetingId, token }) => {
       2 // Max retries
     );
 
-    console.log(isValid ? "✅ Meeting is valid" : "❌ Meeting is invalid");
     return isValid;
   } catch (error) {
     ApiErrorHandler.logError("validateMeeting", error);

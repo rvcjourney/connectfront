@@ -1,9 +1,8 @@
-import { supabase, SUPABASE_URL, SUPABASE_ANON_KEY } from '../lib/supabase';
+﻿import { supabase, SUPABASE_URL, SUPABASE_ANON_KEY } from '../lib/supabase';
 import { getSupabaseErrorMessage } from '../lib/supabaseErrorHandler';
 
 async function invokeFunction(name, body) {
   const url = `${SUPABASE_URL}/functions/v1/${name}`;
-  console.log(`🔗 Calling Edge Function: ${url}`);
 
   const res = await fetch(url, {
     method: 'POST',
@@ -16,8 +15,6 @@ async function invokeFunction(name, body) {
   });
 
   const text = await res.text();
-  console.log(`📥 Response status: ${res.status}`);
-  console.log(`📥 Response body: ${text}`);
 
   if (!res.ok) {
     throw new Error(`Function error (${res.status}): ${text}`);

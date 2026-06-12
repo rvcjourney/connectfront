@@ -1,4 +1,4 @@
-import {
+﻿import {
   useMeeting,
 } from "@videosdk.live/react-native-sdk";
 import { useEffect, useState } from "react";
@@ -28,7 +28,6 @@ export default function MeetingContainer({ webcamEnabled, meetingType, onPartici
   // Track participant count and notify parent
   useEffect(() => {
     const participantCount = participants.size + 1; // +1 for self
-    console.log(`👥 Participants joined: ${participantCount}`);
     if (onParticipantCountChange) {
       onParticipantCountChange(participantCount);
     }
