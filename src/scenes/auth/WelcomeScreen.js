@@ -464,7 +464,7 @@ const styles = StyleSheet.create({
     gap: 6,
     paddingVertical: 4,
     paddingHorizontal: T.spacing.sm,
-    borderRadius: 999,
+    borderRadius: T.borderRadius.chip,
     backgroundColor: 'rgba(255,255,255,0.08)',
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.1)',

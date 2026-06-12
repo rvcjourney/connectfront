@@ -12,7 +12,7 @@ import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import Toast from 'react-native-simple-toast';
 import { useFocusEffect } from '@react-navigation/native';
 import { SafeScreen } from '../../components/SafeScreen';
-import { CapsuleTabBar } from '../../components/CapsuleTabBar';
+import { CosmicTopTabBar } from '../../components/CapsuleTabBar';
 import { UNIFIED_THEME } from '../../unifiedTheme';
 import { LoadingOverlay } from '../../components/LoadingOverlay';
 import { BookingCard } from '../../components/BookingCard';
@@ -26,7 +26,7 @@ import {
 } from '../../api/api';
 import {
   playbackUrlFromBooking,
-  pickRecordingRow,
+  meetingIdFromBooking,
   recordingsApi,
 } from '../../api/recordingsApi';
 import { SCREEN_NAMES } from '../../navigators/screenNames';
@@ -62,8 +62,7 @@ async function enrichBookingsWithRecordings(bookings, token) {
         return [{ ...booking, recordingUrl: existing, recordingIndex: 0 }];
       }
 
-      const rec = pickRecordingRow(booking);
-      const meetingId = rec?.meeting_id;
+      const meetingId = meetingIdFromBooking(booking);
       if (!token || !meetingId) {
         return [];
       }
@@ -79,6 +78,9 @@ async function enrichBookingsWithRecordings(bookings, token) {
             bookingId: booking.id,
             recordingUrl: urls[0],
             recordingPlaybackUrl: urls[0],
+            mentorId: booking.mentor_id,
+            learnerId: booking.learner_id,
+            meetingId,
           });
         } catch (err) {
           console.warn('Could not persist recording URL:', err?.message);
@@ -321,7 +323,7 @@ export default function RecordedLecturesScreen({ navigation }) {
         <View style={styles.tabsWrap}>
         <RecordingsContext.Provider value={contextValue}>
           <TopTab.Navigator
-            tabBar={props => <CapsuleTabBar {...props} />}
+            tabBar={props => <CosmicTopTabBar {...props} />}
             screenOptions={{
               swipeEnabled: true,
               lazy: true,
@@ -373,7 +375,7 @@ const styles = StyleSheet.create({
   backBtn: {
     width: 40,
     height: 40,
-    borderRadius: 20,
+    borderRadius: T.borderRadius.md,
     backgroundColor: PANEL_BG,
     borderWidth: 1,
     borderColor: 'rgba(167,139,250,0.22)',

@@ -13,7 +13,7 @@ import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import Toast from 'react-native-simple-toast';
 import { useFocusEffect } from '@react-navigation/native';
 import { SafeScreen } from '../../components/SafeScreen';
-import { CapsuleTabBar } from '../../components/CapsuleTabBar';
+import { CosmicTopTabBar } from '../../components/CapsuleTabBar';
 import { UNIFIED_THEME } from '../../unifiedTheme';
 import { LoadingOverlay } from '../../components/LoadingOverlay';
 import { useAuth } from '../../hooks/useAuth';
@@ -390,7 +390,7 @@ export default function TransactionHistoryScreen({ navigation }) {
         <View style={styles.tabsWrap}>
           <TransactionContext.Provider value={contextValue}>
             <TopTab.Navigator
-              tabBar={props => <CapsuleTabBar {...props} />}
+              tabBar={props => <CosmicTopTabBar {...props} />}
               screenOptions={{ swipeEnabled: true, lazy: true }}
               style={styles.tabNavigator}
               sceneContainerStyle={styles.tabScene}
@@ -433,7 +433,7 @@ const styles = StyleSheet.create({
   backBtn: {
     width: 40,
     height: 40,
-    borderRadius: 20,
+    borderRadius: T.borderRadius.md,
     backgroundColor: PANEL_BG,
     borderWidth: 1,
     borderColor: 'rgba(167,139,250,0.22)',

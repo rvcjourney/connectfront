@@ -7,7 +7,6 @@ import SignupScreen from '../scenes/auth/SignupScreen';
 import LoginScreen from '../scenes/auth/LoginScreen';
 import ForgotPasswordScreen from '../scenes/auth/ForgotPasswordScreen';
 import ResetPasswordScreen from '../scenes/auth/ResetPasswordScreen';
-
 const AuthStack = createStackNavigator();
 
 export const AuthNavigator = () => {
@@ -15,7 +14,7 @@ export const AuthNavigator = () => {
     <AuthStack.Navigator
       screenOptions={{
         headerShown: false,
-        animationEnabled: true,
+        animationEnabled: false,
         cardStyle: { backgroundColor: UNIFIED_THEME.colors.primary.void },
       }}
     >

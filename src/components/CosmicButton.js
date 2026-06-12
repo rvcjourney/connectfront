@@ -1,10 +1,12 @@
-import React from 'react';
+import React, { useRef } from 'react';
 import {
   TouchableOpacity,
+  Pressable,
   Text,
   StyleSheet,
   View,
   ActivityIndicator,
+  Animated,
 } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
@@ -46,6 +48,57 @@ const GRADIENT_VARIANTS = {
 /**
  * @param {'primary'|'secondary'|'outline'|'ghost'|'success'|'danger'|'nebula'|'premium'|'info'|'warning'|'goldOutline'} variant
  */
+function usePressScale(enabled) {
+  const scale = useRef(new Animated.Value(1)).current;
+
+  const onPressIn = () => {
+    if (!enabled) return;
+    Animated.spring(scale, {
+      toValue: 0.96,
+      friction: 6,
+      tension: 140,
+      useNativeDriver: true,
+    }).start();
+  };
+
+  const onPressOut = () => {
+    if (!enabled) return;
+    Animated.spring(scale, {
+      toValue: 1,
+      friction: 5,
+      tension: 120,
+      useNativeDriver: true,
+    }).start();
+  };
+
+  return { scale, onPressIn, onPressOut };
+}
+
+function PressableShell({ pressScale, onPress, style, children, disabled }) {
+  const { scale, onPressIn, onPressOut } = usePressScale(pressScale && !disabled);
+
+  if (!pressScale || disabled) {
+    return (
+      <TouchableOpacity onPress={onPress} activeOpacity={0.88} style={style} disabled={disabled}>
+        {children}
+      </TouchableOpacity>
+    );
+  }
+
+  return (
+    <Animated.View style={[style, styles.pressScaleWrap, { transform: [{ scale }] }]}>
+      <Pressable
+        onPress={onPress}
+        onPressIn={onPressIn}
+        onPressOut={onPressOut}
+        style={styles.pressableFill}
+      >
+        {children}
+      </Pressable>
+    </Animated.View>
+  );
+}
+
 export default function CosmicButton({
   label,
   onPress,
@@ -57,6 +110,7 @@ export default function CosmicButton({
   iconColor,
   style,
   textStyle,
+  pressScale = false,
 }) {
   const resolvedVariant = variant === 'ghost' ? 'outline' : variant;
   const isDisabled = disabled || loading;
@@ -123,9 +177,9 @@ export default function CosmicButton({
 
   if (gradientConfig) {
     return (
-      <TouchableOpacity
+      <PressableShell
+        pressScale={pressScale}
         onPress={onPress}
-        activeOpacity={0.88}
         style={[shell, { borderColor: gradientConfig.border }]}
       >
         <LinearGradient
@@ -136,7 +190,7 @@ export default function CosmicButton({
         >
           {content}
         </LinearGradient>
-      </TouchableOpacity>
+      </PressableShell>
     );
   }
 
@@ -154,7 +208,7 @@ export default function CosmicButton({
         };
       case 'goldOutline':
         return {
-          backgroundColor: 'transparent',
+          backgroundColor: B.goldOutlinePressedBg,
           borderColor: B.goldOutlineBorder,
         };
       case 'danger':
@@ -176,17 +230,25 @@ export default function CosmicButton({
   })();
 
   return (
-    <TouchableOpacity
+    <PressableShell
+      pressScale={pressScale}
       onPress={onPress}
-      activeOpacity={0.88}
       style={[shell, flat, compact ? styles.flatCompact : styles.flat]}
     >
       {content}
-    </TouchableOpacity>
+    </PressableShell>
   );
 }
 
 const styles = StyleSheet.create({
+  pressScaleWrap: {
+    alignSelf: 'stretch',
+  },
+  pressableFill: {
+    width: '100%',
+    flexGrow: 1,
+    justifyContent: 'center',
+  },
   shell: {
     width: '100%',
     minHeight: 50,
@@ -213,6 +275,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: T.spacing.lg,
   },
   gradient: {
+    flexGrow: 1,
     minHeight: 48,
     paddingVertical: 14,
     paddingHorizontal: T.spacing.lg,
@@ -227,6 +290,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   flat: {
+    flexGrow: 1,
     justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: T.spacing.lg,

@@ -1,10 +1,13 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import {
   View,
   Text,
   TouchableOpacity,
   StyleSheet,
   Platform,
+  Animated,
+  Easing,
+  useWindowDimensions,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import LinearGradient from 'react-native-linear-gradient';
@@ -17,12 +20,36 @@ const T = UNIFIED_THEME;
 const TB = C.tabBar;
 const FAB_SIZE = TB.uploadFabSize ?? 52;
 const FAB_LIFT = TB.uploadFabLift ?? 22;
+const FAB_RING_INSET = 2;
+const FAB_INNER = FAB_SIZE - FAB_RING_INSET * 2;
+const FAB_SPIN_COLORS = [
+  C.accent.primary,
+  C.accent.secondary,
+  'rgba(167, 139, 250, 0.95)',
+  '#ec4899',
+  C.accent.primary,
+];
 
 /** Fixed row geometry — all tabs share the same slots */
-const INDICATOR_H = 7;
-const ICON_SLOT_H = TB.iconSizeFocused + 2;
-const LABEL_H = 16;
-const TAB_ROW_H = INDICATOR_H + ICON_SLOT_H + LABEL_H + 4;
+const INDICATOR_H = 6;
+const ICON_FRAME = 28;
+const ICON_SIZE = 24;
+const ICON_SLOT_H = ICON_FRAME;
+const LABEL_H = 14;
+const TAB_ROW_H = INDICATOR_H + ICON_SLOT_H + LABEL_H + 8;
+const TAB_BAR_PADDING_TOP = S.sm;
+
+/** Total height of the floating bottom tab bar (matches barWrap layout). */
+export function getFloatingTabBarHeight(insets) {
+  const bottomPad = Math.max(insets.bottom, 8);
+  return TAB_BAR_PADDING_TOP + TAB_ROW_H + bottomPad;
+}
+
+/** Inset for screen content that should sit just above tab icons (excludes bar top padding). */
+export function getFloatingTabBarContentInset(insets) {
+  const bottomPad = Math.max(insets.bottom, 8);
+  return TAB_ROW_H + bottomPad;
+}
 
 function resolveLabel(route, options, focused) {
   const raw =
@@ -38,32 +65,155 @@ function resolveLabel(route, options, focused) {
   return route.name;
 }
 
+function BarTopShimmer() {
+  const { width } = useWindowDimensions();
+  const shimmer = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    const loop = Animated.loop(
+      Animated.timing(shimmer, {
+        toValue: 1,
+        duration: 4200,
+        easing: Easing.inOut(Easing.sin),
+        useNativeDriver: true,
+      }),
+    );
+    loop.start();
+    return () => loop.stop();
+  }, [shimmer]);
+
+  const translateX = shimmer.interpolate({
+    inputRange: [0, 1],
+    outputRange: [-width * 0.45, width * 0.45],
+  });
+
+  return (
+    <View style={styles.topEdgeShimmerWrap} pointerEvents="none">
+      <Animated.View style={{ transform: [{ translateX }] }}>
+        <LinearGradient
+          colors={[
+            'transparent',
+            'rgba(240, 216, 117, 0.55)',
+            'rgba(94, 234, 212, 0.45)',
+            'transparent',
+          ]}
+          locations={[0, 0.35, 0.65, 1]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 0 }}
+          style={[styles.topEdgeShimmer, { width: width * 0.55 }]}
+        />
+      </Animated.View>
+    </View>
+  );
+}
+
 function TabIndicator({ active }) {
+  const progress = useRef(new Animated.Value(active ? 1 : 0)).current;
+
+  useEffect(() => {
+    Animated.spring(progress, {
+      toValue: active ? 1 : 0,
+      friction: 7,
+      tension: 140,
+      useNativeDriver: true,
+    }).start();
+  }, [active, progress]);
+
+  const scaleX = progress.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0.35, 1],
+  });
+
   return (
     <View style={styles.indicatorRow}>
-      {active ? (
+      <Animated.View
+        style={{
+          opacity: progress,
+          transform: [{ scaleX }],
+        }}
+      >
         <LinearGradient
           colors={TB.activeIndicatorGradient}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 0 }}
           style={styles.activeIndicator}
         />
-      ) : (
-        <View style={styles.activeIndicatorGhost} />
-      )}
+      </Animated.View>
     </View>
   );
 }
 
 function UploadFabVisual() {
+  const spin = useRef(new Animated.Value(0)).current;
+  const breathe = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    const spinLoop = Animated.loop(
+      Animated.timing(spin, {
+        toValue: 1,
+        duration: 2800,
+        easing: Easing.linear,
+        useNativeDriver: true,
+      }),
+    );
+    const breatheLoop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(breathe, {
+          toValue: 1,
+          duration: 1600,
+          easing: Easing.inOut(Easing.sin),
+          useNativeDriver: true,
+        }),
+        Animated.timing(breathe, {
+          toValue: 0,
+          duration: 1600,
+          easing: Easing.inOut(Easing.sin),
+          useNativeDriver: true,
+        }),
+      ]),
+    );
+    spinLoop.start();
+    breatheLoop.start();
+    return () => {
+      spinLoop.stop();
+      breatheLoop.stop();
+    };
+  }, [spin, breathe]);
+
+  const rotate = spin.interpolate({
+    inputRange: [0, 1],
+    outputRange: ['0deg', '360deg'],
+  });
+  const fabScale = breathe.interpolate({
+    inputRange: [0, 1],
+    outputRange: [1, 1.05],
+  });
+
+  const spinGradSize = FAB_SIZE * 1.55;
+  const spinOffset = (FAB_SIZE - spinGradSize) / 2;
+
   return (
-    <View style={styles.fabOuterRing}>
-      <LinearGradient
-        colors={TB.iconRingGradient}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={styles.fabRingGrad}
-      >
+    <Animated.View style={[styles.fabOuterRing, { transform: [{ scale: fabScale }] }]}>
+      <View style={styles.fabRingClip}>
+        <Animated.View
+          style={[
+            styles.fabSpinGradWrap,
+            {
+              width: spinGradSize,
+              height: spinGradSize,
+              left: spinOffset,
+              top: spinOffset,
+              transform: [{ rotate }],
+            },
+          ]}
+        >
+          <LinearGradient
+            colors={FAB_SPIN_COLORS}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={StyleSheet.absoluteFill}
+          />
+        </Animated.View>
         <LinearGradient
           colors={C.buttons.primaryGradient}
           start={{ x: 0, y: 0 }}
@@ -72,8 +222,8 @@ function UploadFabVisual() {
         >
           <MaterialIcons name="file-upload" size={22} color={C.text.onAccent} />
         </LinearGradient>
-      </LinearGradient>
-    </View>
+      </View>
+    </Animated.View>
   );
 }
 
@@ -88,6 +238,26 @@ function TabColumn({
   icon,
   isUpload,
 }) {
+  const press = useRef(new Animated.Value(1)).current;
+
+  const handlePressIn = () => {
+    Animated.spring(press, {
+      toValue: 0.92,
+      friction: 6,
+      tension: 200,
+      useNativeDriver: true,
+    }).start();
+  };
+
+  const handlePressOut = () => {
+    Animated.spring(press, {
+      toValue: 1,
+      friction: 5,
+      tension: 160,
+      useNativeDriver: true,
+    }).start();
+  };
+
   return (
     <TouchableOpacity
       accessibilityRole="button"
@@ -96,13 +266,21 @@ function TabColumn({
       testID={testID}
       onPress={onPress}
       onLongPress={onLongPress}
+      onPressIn={handlePressIn}
+      onPressOut={handlePressOut}
       style={[styles.tabColumn, isUpload && styles.tabColumnUpload]}
-      activeOpacity={0.82}
+      activeOpacity={1}
     >
-      <TabIndicator active={isFocused} />
-      <View style={[styles.iconSlot, isUpload && styles.iconSlotUpload]}>
+      <TabIndicator active={isFocused && !isUpload} />
+      <Animated.View
+        style={[
+          styles.iconSlot,
+          isUpload && styles.iconSlotUpload,
+          { transform: [{ scale: press }] },
+        ]}
+      >
         {icon}
-      </View>
+      </Animated.View>
       {typeof label === 'string' ? (
         <Text
           style={[styles.label, { color }, isFocused && styles.labelFocused]}
@@ -176,6 +354,7 @@ export function CosmicBottomTabBar({ state, descriptors, navigation }) {
           style={styles.topEdge}
           pointerEvents="none"
         />
+        <BarTopShimmer />
 
         <View style={styles.barRow}>
           {state.routes.map((route, index) => {
@@ -194,11 +373,13 @@ export function CosmicBottomTabBar({ state, descriptors, navigation }) {
                 <UploadFabVisual />
               </View>
             ) : Icon ? (
-              Icon({
-                focused: isFocused,
-                color,
-                size: isFocused ? TB.iconSizeFocused : TB.iconSize,
-              })
+              <View style={styles.iconFrame}>
+                {Icon({
+                  focused: isFocused,
+                  color,
+                  size: ICON_SIZE,
+                })}
+              </View>
             ) : null;
 
             return (
@@ -265,6 +446,19 @@ const styles = StyleSheet.create({
     height: 2,
     opacity: 0.95,
   },
+  topEdgeShimmerWrap: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    top: 0,
+    height: 2,
+    overflow: 'hidden',
+    alignItems: 'center',
+  },
+  topEdgeShimmer: {
+    height: 2,
+    borderRadius: 1,
+  },
   barRow: {
     flexDirection: 'row',
     alignItems: 'flex-start',
@@ -286,21 +480,23 @@ const styles = StyleSheet.create({
     height: INDICATOR_H,
     width: '100%',
     alignItems: 'center',
-    justifyContent: 'flex-end',
+    justifyContent: 'center',
   },
   activeIndicator: {
-    width: 28,
+    width: 24,
     height: 3,
     borderRadius: 2,
-  },
-  activeIndicatorGhost: {
-    width: 28,
-    height: 3,
-    opacity: 0,
   },
   iconSlot: {
     height: ICON_SLOT_H,
     width: '100%',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 2,
+  },
+  iconFrame: {
+    width: ICON_FRAME,
+    height: ICON_FRAME,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -311,6 +507,7 @@ const styles = StyleSheet.create({
     ...UNIFIED_THEME.typography.labelSm,
     height: LABEL_H,
     lineHeight: LABEL_H,
+    marginTop: 4,
     textAlign: 'center',
     letterSpacing: 0.2,
     width: '100%',
@@ -338,7 +535,7 @@ const styles = StyleSheet.create({
   fabOuterRing: {
     width: FAB_SIZE + 6,
     height: FAB_SIZE + 6,
-    borderRadius: (FAB_SIZE + 6) / 2,
+    borderRadius: T.borderRadius.lg,
     padding: 2,
     backgroundColor: TB.flatBarBase,
     borderWidth: 1,
@@ -353,15 +550,22 @@ const styles = StyleSheet.create({
       android: { elevation: 14 },
     }),
   },
-  fabRingGrad: {
+  fabRingClip: {
     flex: 1,
-    borderRadius: (FAB_SIZE + 2) / 2,
-    padding: 2,
-  },
-  fabCircle: {
-    flex: 1,
-    borderRadius: FAB_SIZE / 2,
+    borderRadius: T.borderRadius.md + 2,
+    overflow: 'hidden',
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  fabSpinGradWrap: {
+    position: 'absolute',
+  },
+  fabCircle: {
+    width: FAB_INNER,
+    height: FAB_INNER,
+    borderRadius: T.borderRadius.md,
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 1,
   },
 });

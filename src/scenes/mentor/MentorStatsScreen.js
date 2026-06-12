@@ -227,7 +227,7 @@ const styles = StyleSheet.create({
   backBtn: {
     width: 40,
     height: 40,
-    borderRadius: 20,
+    borderRadius: T.borderRadius.md,
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: 'rgba(12,12,40,0.55)',
@@ -286,7 +286,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 4,
     backgroundColor: 'rgba(255,255,255,0.08)',
-    borderRadius: 999,
+    borderRadius: T.borderRadius.chip,
     paddingHorizontal: T.spacing.sm,
     paddingVertical: 3,
     borderWidth: 1,

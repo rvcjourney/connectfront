@@ -231,6 +231,8 @@ export const UNIFIED_THEME = {
     md: 12,
     lg: 16,
     xl: 20,
+    /** Tags, badges, chips — rounded rect, not full pill */
+    chip: 10,
     round: 50,
   },
 

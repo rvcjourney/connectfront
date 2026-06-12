@@ -1,39 +1,38 @@
-import { View, Text, StyleSheet, Modal } from 'react-native';
+import { View, Text, StyleSheet } from 'react-native';
 import { CosmicLoader } from './LoadingSpinner';
 import { UNIFIED_THEME } from '../unifiedTheme';
 
+/**
+ * In-screen overlay (not a Modal) so preloaded tab screens cannot block the whole app.
+ */
 export const LoadingOverlay = ({
   visible = false,
   message = 'Loading...',
   backdropOpacity = 0.75,
 }) => {
+  if (!visible) return null;
+
   return (
-    <Modal
-      visible={visible}
-      transparent
-      animationType="fade"
-      statusBarTranslucent
-      onRequestClose={() => {}}
-    >
-      <View style={styles.root}>
-        <View
-          style={[styles.backdrop, { opacity: backdropOpacity }]}
-          pointerEvents="none"
-        />
-        <View style={styles.center}>
-          <CosmicLoader size={56} />
-          {message ? (
-            <Text style={styles.message}>{message}</Text>
-          ) : null}
-        </View>
+    <View style={styles.overlay} pointerEvents="auto">
+      <View
+        style={[styles.backdrop, { opacity: backdropOpacity }]}
+        pointerEvents="none"
+      />
+      <View style={styles.center} pointerEvents="none">
+        <CosmicLoader size={56} />
+        {message ? (
+          <Text style={styles.message}>{message}</Text>
+        ) : null}
       </View>
-    </Modal>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
-  root: {
-    flex: 1,
+  overlay: {
+    ...StyleSheet.absoluteFillObject,
+    zIndex: 100,
+    elevation: 100,
   },
   backdrop: {
     ...StyleSheet.absoluteFillObject,

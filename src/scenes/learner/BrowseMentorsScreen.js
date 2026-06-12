@@ -247,7 +247,7 @@ const styles = StyleSheet.create({
     minWidth: 26,
     height: 26,
     paddingHorizontal: 8,
-    borderRadius: 999,
+    borderRadius: T.borderRadius.chip,
     backgroundColor: S.accentViolet,
     borderWidth: 1,
     borderColor: 'rgba(167,139,250,0.35)',

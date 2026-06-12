@@ -753,7 +753,7 @@ const styles = StyleSheet.create({
     marginLeft: 6,
   },
   savePriceTxt: { color: C.primary.void, fontSize: 12, fontWeight: '800' },
-  addBtn: { borderRadius: 17, overflow: 'hidden' },
+  addBtn: { borderRadius: T.borderRadius.sm, overflow: 'hidden' },
   addBtnGrad: {
     width: 34,
     height: 34,

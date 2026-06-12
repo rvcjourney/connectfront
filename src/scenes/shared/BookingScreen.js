@@ -798,7 +798,7 @@ const styles = StyleSheet.create({
   backBtn: {
     width: 40,
     height: 40,
-    borderRadius: 20,
+    borderRadius: T.borderRadius.md,
     backgroundColor: PANEL_BG,
     borderWidth: 1,
     borderColor: GLASS_BORDER,
@@ -853,7 +853,7 @@ const styles = StyleSheet.create({
   promptChip: {
     paddingHorizontal: 12,
     paddingVertical: 8,
-    borderRadius: 999,
+    borderRadius: T.borderRadius.chip,
     backgroundColor: S.accentGold,
     borderWidth: 1,
     borderColor: 'rgba(240,216,117,0.25)',

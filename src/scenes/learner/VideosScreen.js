@@ -8,10 +8,9 @@ import {
   Image,
   ActivityIndicator,
   RefreshControl,
-  ScrollView,
   Modal,
-  useWindowDimensions,
   AppState,
+  Animated,
 } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
@@ -20,6 +19,10 @@ import RazorpayCheckout from 'react-native-razorpay';
 import Toast from 'react-native-simple-toast';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { UNIFIED_THEME } from '../../unifiedTheme';
+import {
+  getFloatingTabBarHeight,
+  getFloatingTabBarContentInset,
+} from '../../components/CosmicBottomTabBar';
 import CosmicButton from '../../components/CosmicButton';
 import { videoApi } from '../../api/videoApi';
 import { homeApi } from '../../api/homeApi';
@@ -36,16 +39,116 @@ const PURPLE_LINK = B.nebulaGradient[0];
 const GOLD = C.accent.primary;
 const TEAL = C.accent.secondary;
 const PANEL_BG = '#161432';
-const INPUT_BG = '#0f0e2a';
 const SHEET_BG = '#0f0e2a';
 const GLASS_BORDER = 'rgba(167,139,250,0.22)';
 
-const FILTERS = [
-  { key: 'all',        label: 'All',        icon: 'apps' },
-  { key: 'free',       label: 'Free',       icon: 'play-circle-filled' },
-  { key: 'locked',     label: 'Locked',     icon: 'lock' },
-  { key: 'subscribed', label: 'Subscribed', icon: 'check-circle' },
-];
+function SkeletonBone({ style }) {
+  const anim = useRef(new Animated.Value(0)).current;
+  useEffect(() => {
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(anim, { toValue: 1, duration: 900, useNativeDriver: true }),
+        Animated.timing(anim, { toValue: 0, duration: 900, useNativeDriver: true }),
+      ]),
+    ).start();
+  }, [anim]);
+  const opacity = anim.interpolate({ inputRange: [0, 1], outputRange: [0.12, 0.38] });
+  return <Animated.View style={[sk.bone, style, { opacity }]} />;
+}
+
+function VideosSkeleton({ bottomInset }) {
+  return (
+    <View style={sk.root}>
+      <SkeletonBone style={sk.shimmerVideo} />
+      <View style={[sk.shimmerDock, { paddingBottom: bottomInset }]}>
+        <View style={sk.shimmerPanel}>
+          <View style={sk.shimmerMentorRow}>
+            <SkeletonBone style={sk.shimmerName} />
+            <SkeletonBone style={sk.shimmerBadge} />
+          </View>
+          <SkeletonBone style={sk.shimmerTitle} />
+          <SkeletonBone style={sk.shimmerDesc} />
+        </View>
+      </View>
+    </View>
+  );
+}
+
+function StatusBadge({ item, isUnlocked, onLockPress }) {
+  if (item.is_free) {
+    return (
+      <View style={s.statusPill}>
+        <MaterialIcons name="play-circle-filled" size={11} color={TEAL} />
+        <Text style={s.statusFree}>Free</Text>
+      </View>
+    );
+  }
+  if (isUnlocked) {
+    return (
+      <View style={s.statusPill}>
+        <MaterialIcons name="verified" size={11} color={C.accent.success} />
+        <Text style={s.statusSubscribed}>Subscribed</Text>
+      </View>
+    );
+  }
+  return (
+    <TouchableOpacity style={[s.statusPill, s.statusPillCta]} onPress={() => onLockPress(item)} activeOpacity={0.85}>
+      <MaterialIcons name="lock" size={11} color={GOLD} />
+      <Text style={s.statusLocked}>Subscribe</Text>
+    </TouchableOpacity>
+  );
+}
+
+function PauseMentorHeader({ item, onViewProfile, badge }) {
+  const name = item.profiles?.name || 'Connectiqo';
+  const spec = item.mentor_profiles?.specialization;
+  const canPress = !!item.mentor_id && onViewProfile;
+
+  const profileBlock = (
+    <>
+      <LinearGradient colors={B.premiumGradient} style={s.pauseAvatarRing}>
+        <View style={s.pauseAvatarInner}>
+          {item.profiles?.avatar_url ? (
+            <Image source={{ uri: item.profiles.avatar_url }} style={s.pauseAvatar} />
+          ) : (
+            <View style={[s.pauseAvatar, s.pauseAvatarFallback]}>
+              <MaterialIcons name="person" size={22} color="#fff" />
+            </View>
+          )}
+        </View>
+      </LinearGradient>
+      <View style={s.pauseMentorText}>
+        <Text style={s.pauseMentorName} numberOfLines={1}>{name}</Text>
+        {spec ? (
+          <Text style={s.pauseMentorSpec} numberOfLines={1}>{spec}</Text>
+        ) : null}
+        {canPress ? (
+          <View style={s.viewProfileInline}>
+            <Text style={s.viewProfileText}>View profile</Text>
+            <MaterialIcons name="arrow-forward" size={12} color={TEAL} />
+          </View>
+        ) : null}
+      </View>
+    </>
+  );
+
+  return (
+    <View style={s.pauseMentorRow}>
+      {canPress ? (
+        <TouchableOpacity
+          style={s.pauseMentorMain}
+          onPress={() => onViewProfile(item.mentor_id)}
+          activeOpacity={0.85}
+        >
+          {profileBlock}
+        </TouchableOpacity>
+      ) : (
+        <View style={s.pauseMentorMain}>{profileBlock}</View>
+      )}
+      {badge}
+    </View>
+  );
+}
 
 // ─── Unlock bottom sheet ──────────────────────────────────────────────────────
 function UnlockSheet({ video, onClose, onUnlocked }) {
@@ -164,13 +267,25 @@ const u = StyleSheet.create({
     backgroundColor: SHEET_BG,
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
-    padding: 24,
-    paddingBottom: 36,
+    padding: T.spacing.lg,
+    paddingBottom: T.spacing.xxxl,
     borderTopWidth: 1,
     borderColor: GLASS_BORDER,
   },
-  handle: { width: 40, height: 4, backgroundColor: 'rgba(255,255,255,0.2)', borderRadius: 2, alignSelf: 'center', marginBottom: 20 },
-  mentorRow: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 16 },
+  handle: {
+    width: 40,
+    height: 4,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    borderRadius: 2,
+    alignSelf: 'center',
+    marginBottom: T.spacing.lg,
+  },
+  mentorRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: T.spacing.md,
+    marginBottom: T.spacing.lg,
+  },
   avatarRing: { padding: 2, borderRadius: 26, borderWidth: 1, borderColor: 'rgba(255,255,255,0.35)' },
   avatarInner: { borderRadius: 24, overflow: 'hidden' },
   avatar: { width: 48, height: 48, borderRadius: 24 },
@@ -179,25 +294,62 @@ const u = StyleSheet.create({
   mentorSpec: { color: GOLD, fontSize: 12, marginTop: 2, fontWeight: '600' },
   pricePill: { backgroundColor: S.accentTeal, borderRadius: 10, paddingHorizontal: 10, paddingVertical: 5, borderWidth: 1, borderColor: 'rgba(94,234,212,0.25)' },
   priceText: { color: TEAL, fontSize: 14, fontWeight: '800' },
-  divider: { height: 1, backgroundColor: 'rgba(167,139,250,0.18)', marginBottom: 16 },
-  title: { color: C.text.primary, fontSize: 18, fontWeight: '800', marginBottom: 6 },
-  sub: { color: C.text.muted, fontSize: 13, lineHeight: 19, marginBottom: 16 },
-  perks: { gap: 10, marginBottom: 24, backgroundColor: PANEL_BG, borderRadius: 14, padding: 14, borderWidth: 1, borderColor: GLASS_BORDER },
-  perkRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  divider: {
+    height: 1,
+    backgroundColor: 'rgba(167,139,250,0.18)',
+    marginBottom: T.spacing.lg,
+  },
+  title: {
+    color: C.text.primary,
+    fontSize: 18,
+    fontWeight: '800',
+    marginBottom: T.spacing.xs,
+  },
+  sub: {
+    color: C.text.muted,
+    fontSize: 13,
+    lineHeight: 19,
+    marginBottom: T.spacing.lg,
+  },
+  perks: {
+    gap: T.spacing.sm,
+    marginBottom: T.spacing.xl,
+    backgroundColor: PANEL_BG,
+    borderRadius: 14,
+    padding: T.spacing.md,
+    borderWidth: 1,
+    borderColor: GLASS_BORDER,
+  },
+  perkRow: { flexDirection: 'row', alignItems: 'center', gap: T.spacing.sm },
   perkText: { color: C.text.secondary, fontSize: 13 },
-  payBtn: { marginBottom: 8, marginVertical: 0 },
+  payBtn: { marginBottom: T.spacing.sm, marginVertical: 0 },
   cancelBtnWrap: { marginVertical: 0 },
 });
 
 // ─── Single short card (full-screen reel) ─────────────────────────────────────
-function ShortCard({ item, isActive, height, isUnlocked, expiresAt, onLockPress, onViewProfile, forcePaused }) {
+function ShortCard({
+  item,
+  isActive,
+  height,
+  bottomInset,
+  isUnlocked,
+  expiresAt,
+  onLockPress,
+  onViewProfile,
+  forcePaused,
+}) {
   const [paused, setPaused] = useState(false);
   const canPlay = item.is_free || isUnlocked;
 
   const effectivePaused = !isActive || paused || forcePaused;
+  const showPauseDetail = canPlay && isActive && paused;
+
+  useEffect(() => {
+    if (!isActive && paused) setPaused(false);
+  }, [isActive, paused]);
 
   return (
-    <View style={{ height, width: '100%', backgroundColor: '#000' }}>
+    <View style={{ height, width: '100%', backgroundColor: C.primary.void }}>
       {/* Thumbnail background */}
       {item.thumbnail_url ? (
         <Image
@@ -220,23 +372,35 @@ function ShortCard({ item, isActive, height, isUnlocked, expiresAt, onLockPress,
           resizeMode="cover"
           paused={effectivePaused}
           repeat
+          controls={false}
           ignoreSilentSwitch="obey"
         />
       ) : null}
 
       {/* Lock overlay for paid+locked */}
       {!canPlay && (
-        <TouchableOpacity
-          style={s.lockOverlay}
-          onPress={() => onLockPress(item)}
-          activeOpacity={0.85}
-        >
-          <View style={s.lockCircle}>
-            <MaterialIcons name="lock" size={30} color="#fff" />
+        <View style={s.lockOverlay}>
+          <LinearGradient
+            colors={['rgba(0,0,0,0.15)', 'rgba(0,0,0,0.5)', 'rgba(0,0,0,0.88)']}
+            style={StyleSheet.absoluteFill}
+          />
+          <View style={s.lockCard}>
+            <View style={s.lockIconWrap}>
+              <MaterialIcons name="lock" size={26} color="#fff" />
+            </View>
+            <Text style={s.lockTitle}>Premium content</Text>
+            <Text style={s.lockSub}>
+              Subscribe to {item.profiles?.name || 'this mentor'}'s library
+            </Text>
+            <CosmicButton
+              label={`Unlock · ₹${item.mentor_profiles?.unlock_price || 299}/mo`}
+              variant="nebula"
+              size="compact"
+              onPress={() => onLockPress(item)}
+              style={s.lockBtn}
+            />
           </View>
-          <Text style={s.lockLabel}>Tap to subscribe</Text>
-          <Text style={s.lockPrice}>₹{item.mentor_profiles?.unlock_price || 299}/mo</Text>
-        </TouchableOpacity>
+        </View>
       )}
 
       {/* Tap-to-pause — absolute overlay, does not block FlatList scroll */}
@@ -251,97 +415,64 @@ function ShortCard({ item, isActive, height, isUnlocked, expiresAt, onLockPress,
       {/* Pause indicator */}
       {canPlay && isActive && paused && (
         <View style={s.pauseIcon} pointerEvents="none">
-          <MaterialIcons name="play-arrow" size={56} color="rgba(255,255,255,0.8)" />
+          <View style={s.pauseBackdrop}>
+            <MaterialIcons name="play-arrow" size={44} color="#fff" style={s.pauseArrow} />
+          </View>
         </View>
       )}
 
-      {/* Bottom gradient — only for playable videos */}
-      {canPlay && (
-        <LinearGradient
-          colors={['transparent', 'rgba(0,0,0,0.25)', 'rgba(0,0,0,0.82)']}
-          locations={[0.3, 0.6, 1]}
-          style={StyleSheet.absoluteFill}
-          pointerEvents="none"
-        />
-      )}
+      {showPauseDetail && (
+        <>
+          <LinearGradient
+            colors={['transparent', 'rgba(0,0,0,0.35)', 'rgba(0,0,0,0.82)', 'rgba(0,0,0,0.95)']}
+            locations={[0.3, 0.55, 0.8, 1]}
+            style={[s.bottomGradient, s.bottomGradientExpanded]}
+            pointerEvents="none"
+          />
 
-      {/* ── Top-left: mentor info — shown when paused or locked ─────────── */}
-      {(paused || !canPlay) && (
-        <TouchableOpacity
-          style={s.mentorTopRow}
-          onPress={() => item.mentor_id && onViewProfile(item.mentor_id)}
-          activeOpacity={0.75}
-        >
-          {item.profiles?.avatar_url ? (
-            <Image source={{ uri: item.profiles.avatar_url }} style={s.avatar} />
-          ) : (
-            <View style={[s.avatar, s.avatarFallback]}>
-              <MaterialIcons name="person" size={18} color="#fff" />
+          <View style={[s.infoDock, { paddingBottom: bottomInset }]}>
+            <View style={s.glassPanel}>
+              <PauseMentorHeader
+                item={item}
+                onViewProfile={onViewProfile}
+                badge={(
+                  <StatusBadge
+                    item={item}
+                    isUnlocked={isUnlocked}
+                    onLockPress={onLockPress}
+                  />
+                )}
+              />
+              <View style={s.panelDivider} />
+              <Text style={s.pauseVideoTitle} numberOfLines={2}>{item.title}</Text>
+              {item.description ? (
+                <Text style={s.pauseVideoDesc}>{item.description}</Text>
+              ) : null}
+              {expiresAt && isUnlocked && !item.is_free ? (
+                <Text style={s.expiryText}>
+                  Renews {new Date(expiresAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}
+                </Text>
+              ) : null}
             </View>
-          )}
-          <View style={s.mentorInfo}>
-            <Text style={s.mentorName} numberOfLines={1}>{item.profiles?.name || 'Mentor'}</Text>
-            {item.mentor_profiles?.specialization ? (
-              <Text style={s.mentorSpec} numberOfLines={1}>{item.mentor_profiles.specialization}</Text>
-            ) : null}
           </View>
-        </TouchableOpacity>
+        </>
       )}
-
-      {/* ── Bottom: title + badge ─────────────────────────────────────────── */}
-      <View style={s.cardBottom}>
-        <Text style={s.cardTitle} numberOfLines={2}>{item.title}</Text>
-        {item.description ? (
-          <Text style={s.cardDesc} numberOfLines={2}>{item.description}</Text>
-        ) : null}
-
-        {!item.is_free && (
-          <View style={s.badgeRow}>
-            {isUnlocked ? (
-              <>
-                <View style={s.unlockedBadge}>
-                  <MaterialIcons name="check-circle" size={10} color={C.accent.success} />
-                  <Text style={s.unlockedBadgeText}>SUBSCRIBED</Text>
-                </View>
-                {expiresAt ? (
-                  <Text style={s.expiryText}>
-                    Expires {new Date(expiresAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}
-                  </Text>
-                ) : null}
-              </>
-            ) : (
-              <TouchableOpacity style={s.unlockBadge} onPress={() => onLockPress(item)} activeOpacity={0.85}>
-                <MaterialIcons name="lock-open" size={10} color={C.accent.primary} />
-                <Text style={s.unlockBadgeText}>SUBSCRIBE</Text>
-              </TouchableOpacity>
-            )}
-          </View>
-        )}
-      </View>
     </View>
   );
 }
-
-const FILTER_BAR_H = 50;
-// CosmicBottomTabBar is position:absolute (floats over content).
-// React Navigation does NOT reduce screen height for it, so we subtract manually.
-// 88 = bar content height above safe area (matches SafeScreen's bottomTabHeight constant).
-const BOTTOM_TAB_H = 88;
 
 // ─── Main screen ──────────────────────────────────────────────────────────────
 export default function VideosScreen({ navigation, route }) {
   const { user } = useAuth();
   const insets = useSafeAreaInsets();
-  const { height: windowHeight } = useWindowDimensions();
-
-  // Subtract filter bar + tab bar + device bottom inset so reels don't hide behind nav.
-  const reelHeight = windowHeight - FILTER_BAR_H - BOTTOM_TAB_H - insets.bottom;
+  const [containerHeight, setContainerHeight] = useState(0);
+  const bottomTabHeight = getFloatingTabBarHeight(insets);
+  const metadataBottomInset = getFloatingTabBarContentInset(insets);
 
   const [videos, setVideos]         = useState([]);
   const [unlocksMap, setUnlocksMap] = useState(new Map());
   const [loading, setLoading]       = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [filter, setFilter]         = useState('all');
   const [activeIndex, setActiveIndex] = useState(0);
   const [lockSheetVideo, setLockSheetVideo] = useState(null);
 
@@ -375,7 +506,9 @@ export default function VideosScreen({ navigation, route }) {
   }, [navigation]);
 
   const onViewableItemsChanged = useCallback(({ viewableItems }) => {
-    if (viewableItems[0] != null) setActiveIndex(viewableItems[0].index ?? 0);
+    if (viewableItems[0] != null) {
+      setActiveIndex(viewableItems[0].index ?? 0);
+    }
   }, []);
 
   const viewabilityConfigCallbackPairs = useRef([{
@@ -445,71 +578,48 @@ export default function VideosScreen({ navigation, route }) {
     navigation?.navigate(SCREEN_NAMES.MentorProfile, { mentorId });
   }, [navigation]);
 
-  const filtered = videos.filter(v => {
-    if (filter === 'free')       return v.is_free;
-    if (filter === 'locked')     return !v.is_free && !unlocksMap.has(v.mentor_id);
-    if (filter === 'subscribed') return unlocksMap.has(v.mentor_id);
-    return true;
-  });
+  const onContainerLayout = useCallback((e) => {
+    const h = Math.round(e.nativeEvent.layout.height);
+    if (h > 0) setContainerHeight(h);
+  }, []);
 
   return (
-    <View style={[s.root, { height: windowHeight - BOTTOM_TAB_H - insets.bottom }]}>
-
-      {/* ── Filter chips ──────────────────────────────────────────────────────── */}
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        style={[s.filterScroll, { height: FILTER_BAR_H }]}
-        contentContainerStyle={s.filterRow}
-      >
-        {FILTERS.map(f => (
-          <TouchableOpacity
-            key={f.key}
-            style={[s.chip, filter === f.key && s.chipActive]}
-            onPress={() => { setFilter(f.key); setActiveIndex(0); }}
-            activeOpacity={0.8}
-          >
-            <MaterialIcons name={f.icon} size={13} color={filter === f.key ? PURPLE_LINK : C.text.muted} />
-            <Text style={[s.chipText, filter === f.key && s.chipTextActive]}>{f.label}</Text>
-          </TouchableOpacity>
-        ))}
-      </ScrollView>
-
-      {/* ── Reel feed ─────────────────────────────────────────────────────────── */}
-      {loading ? (
-        <View style={[s.center, { height: reelHeight }]}>
+    <View style={s.root} onLayout={onContainerLayout}>
+      {containerHeight === 0 ? (
+        <View style={s.center}>
           <ActivityIndicator size="large" color={TEAL} />
-          <Text style={s.loadingText}>Loading shorts…</Text>
         </View>
-      ) : filtered.length === 0 ? (
-        <View style={[s.center, s.emptyPanel, { height: reelHeight }]}>
-          <MaterialIcons
-            name={filter === 'subscribed' ? 'subscriptions' : 'videocam-off'}
-            size={44}
-            color={PURPLE_LINK}
-          />
-          <Text style={s.emptyTitle}>
-            {filter === 'subscribed' ? 'No subscriptions yet' : 'No videos here'}
-          </Text>
-          {filter === 'all' && (
+      ) : loading ? (
+        <VideosSkeleton bottomInset={metadataBottomInset} />
+      ) : videos.length === 0 ? (
+        <View style={[s.center, { paddingHorizontal: T.spacing.lg, paddingBottom: bottomTabHeight }]}>
+          <View style={s.emptyPanel}>
+            <View style={s.emptyIconRing}>
+              <MaterialIcons name="videocam-off" size={40} color={PURPLE_LINK} />
+            </View>
+            <Text style={s.emptyTitle}>No videos here</Text>
             <Text style={s.emptySubtitle}>Mentors will post short videos here</Text>
-          )}
+          </View>
         </View>
       ) : (
-        <View style={{ height: reelHeight }}>
+        <View style={s.reelWrap}>
           <FlatList
             ref={flatListRef}
-            key={filter}
-            style={{ flex: 1 }}
-            data={filtered}
+            style={s.reelList}
+            data={videos}
             keyExtractor={v => v.id}
             pagingEnabled
             showsVerticalScrollIndicator={false}
             decelerationRate="fast"
+            removeClippedSubviews
+            windowSize={3}
+            maxToRenderPerBatch={2}
+            initialNumToRender={1}
             renderItem={({ item, index }) => (
               <ShortCard
                 item={item}
-                height={reelHeight}
+                height={containerHeight}
+                bottomInset={metadataBottomInset}
                 isActive={index === activeIndex}
                 isUnlocked={unlocksMap.has(item.mentor_id)}
                 expiresAt={unlocksMap.get(item.mentor_id)?.expiresAt}
@@ -520,8 +630,8 @@ export default function VideosScreen({ navigation, route }) {
             )}
             viewabilityConfigCallbackPairs={viewabilityConfigCallbackPairs.current}
             getItemLayout={(_, index) => ({
-              length: reelHeight,
-              offset: reelHeight * index,
+              length: containerHeight,
+              offset: containerHeight * index,
               index,
             })}
             refreshControl={
@@ -533,13 +643,6 @@ export default function VideosScreen({ navigation, route }) {
             }
           />
 
-          {/* Swipe hint */}
-          {filtered.length > 1 && activeIndex === 0 && (
-            <View style={s.swipeHint} pointerEvents="none">
-              <MaterialIcons name="keyboard-arrow-up" size={20} color="rgba(255,255,255,0.45)" />
-              <Text style={s.swipeHintText}>Swipe up for next</Text>
-            </View>
-          )}
         </View>
       )}
 
@@ -555,67 +658,56 @@ export default function VideosScreen({ navigation, route }) {
 const s = StyleSheet.create({
   root: {
     flex: 1,
-    backgroundColor: '#000',
+    backgroundColor: C.primary.void,
   },
-
-  // ── Filter ────────────────────────────────────────────────────────────────
-  filterScroll: {
-    flexGrow: 0,
-    backgroundColor: INPUT_BG,
-    borderBottomWidth: 1,
-    borderBottomColor: GLASS_BORDER,
-  },
-  filterRow: {
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    gap: 8,
-  },
-  chip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
-    paddingHorizontal: 14,
-    paddingVertical: 7,
-    borderRadius: 999,
-    backgroundColor: PANEL_BG,
-    borderWidth: 1,
-    borderColor: GLASS_BORDER,
-  },
-  chipActive: {
-    backgroundColor: S.accentViolet,
-    borderColor: 'rgba(167,139,250,0.35)',
-  },
-  chipText: { color: C.text.muted, fontSize: 12, fontWeight: '600' },
-  chipTextActive: { color: PURPLE_LINK, fontWeight: '800' },
-
-  // ── States ────────────────────────────────────────────────────────────────
   center: {
+    flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 12,
-    backgroundColor: '#000',
+    gap: T.spacing.md,
+    backgroundColor: C.primary.void,
   },
   emptyPanel: {
-    marginHorizontal: 24,
-    padding: 24,
+    width: '100%',
+    alignItems: 'center',
+    paddingVertical: T.spacing.xxxl,
+    paddingHorizontal: T.spacing.lg,
     borderRadius: 16,
     borderWidth: 1,
     borderColor: GLASS_BORDER,
-    backgroundColor: PANEL_BG,
+    backgroundColor: 'rgba(255,255,255,0.07)',
   },
-  loadingText: { color: C.text.muted, fontSize: 14 },
-  emptyTitle: { color: C.text.primary, fontSize: 16, fontWeight: '600' },
-  emptySubtitle: { color: C.text.muted, fontSize: 13 },
-
-  // ── Swipe hint ────────────────────────────────────────────────────────────
-  swipeHint: {
-    position: 'absolute',
-    bottom: 72,
-    alignSelf: 'center',
+  emptyIconRing: {
+    width: 88,
+    height: 88,
+    borderRadius: 44,
+    backgroundColor: S.accentViolet,
+    borderWidth: 1,
+    borderColor: 'rgba(167,139,250,0.35)',
+    justifyContent: 'center',
     alignItems: 'center',
+    marginBottom: T.spacing.lg,
   },
-  swipeHintText: { color: 'rgba(255,255,255,0.45)', fontSize: 11, marginTop: 2 },
+  emptyTitle: {
+    color: C.text.primary,
+    fontSize: 17,
+    fontWeight: '800',
+    textAlign: 'center',
+    marginBottom: T.spacing.sm,
+  },
+  emptySubtitle: {
+    color: C.text.muted,
+    fontSize: 13,
+    textAlign: 'center',
+    lineHeight: 20,
+  },
 
+  reelWrap: {
+    flex: 1,
+  },
+  reelList: {
+    flex: 1,
+  },
   // ── Short card internals ──────────────────────────────────────────────────
   tapArea: {
     ...StyleSheet.absoluteFillObject,
@@ -625,74 +717,262 @@ const s = StyleSheet.create({
     ...StyleSheet.absoluteFillObject,
     justifyContent: 'center',
     alignItems: 'center',
-    zIndex: 2,
+    zIndex: 6,
+    paddingHorizontal: T.spacing.xl,
   },
-  lockCircle: {
-    width: 72,
-    height: 72,
-    borderRadius: 36,
-    backgroundColor: 'rgba(0,0,0,0.6)',
-    borderWidth: 1.5,
-    borderColor: 'rgba(255,255,255,0.25)',
+  lockCard: {
+    width: '100%',
+    maxWidth: 300,
+    alignItems: 'center',
+    backgroundColor: 'rgba(15,14,42,0.92)',
+    borderRadius: 20,
+    padding: T.spacing.xl,
+    borderWidth: 1,
+    borderColor: GLASS_BORDER,
+  },
+  lockIconWrap: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: 'rgba(255,255,255,0.08)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.18)',
     alignItems: 'center',
     justifyContent: 'center',
+    marginBottom: T.spacing.md,
   },
-  lockLabel: { color: '#fff', fontWeight: '700', fontSize: 13, marginTop: 10 },
-  lockPrice: { color: TEAL, fontSize: 12, fontWeight: '700', marginTop: 4 },
+  lockTitle: {
+    color: C.text.primary,
+    fontSize: 17,
+    fontWeight: '800',
+    marginBottom: T.spacing.xs,
+  },
+  lockSub: {
+    color: C.text.muted,
+    fontSize: 13,
+    textAlign: 'center',
+    lineHeight: 19,
+    marginBottom: T.spacing.lg,
+  },
+  lockBtn: {
+    width: '100%',
+    marginVertical: 0,
+  },
 
   pauseIcon: {
     ...StyleSheet.absoluteFillObject,
     justifyContent: 'center',
     alignItems: 'center',
-    zIndex: 2,
+    zIndex: 5,
+  },
+  pauseBackdrop: {
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    backgroundColor: 'rgba(0,0,0,0.45)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.2)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  pauseArrow: {
+    marginLeft: 4,
   },
 
-  cardBottom: {
+  bottomGradient: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    height: '42%',
+    zIndex: 2,
+  },
+  bottomGradientExpanded: {
+    height: '58%',
+  },
+
+  pauseMentorRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    gap: T.spacing.sm,
+    marginBottom: T.spacing.sm,
+  },
+  pauseMentorMain: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: T.spacing.md,
+    minWidth: 0,
+  },
+  pauseAvatarRing: {
+    padding: 2,
+    borderRadius: 24,
+  },
+  pauseAvatarInner: {
+    borderRadius: 22,
+    overflow: 'hidden',
+  },
+  pauseAvatar: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+  },
+  pauseAvatarFallback: {
+    backgroundColor: 'rgba(255,255,255,0.12)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  pauseMentorText: {
+    flex: 1,
+    minWidth: 0,
+  },
+  pauseMentorName: {
+    color: C.text.primary,
+    fontSize: 16,
+    fontWeight: '800',
+    letterSpacing: -0.2,
+    lineHeight: 21,
+  },
+  pauseMentorSpec: {
+    color: GOLD,
+    fontSize: 12,
+    fontWeight: '600',
+    marginTop: 2,
+    lineHeight: 16,
+  },
+  viewProfileInline: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+    marginTop: 4,
+  },
+  viewProfileText: {
+    color: TEAL,
+    fontSize: 11,
+    fontWeight: '700',
+  },
+  panelDivider: {
+    height: 1,
+    backgroundColor: 'rgba(255,255,255,0.1)',
+    marginBottom: T.spacing.sm,
+  },
+  pauseVideoTitle: {
+    color: C.text.primary,
+    fontSize: 15,
+    fontWeight: '800',
+    lineHeight: 20,
+    marginBottom: T.spacing.xs,
+    letterSpacing: -0.15,
+  },
+  pauseVideoDesc: {
+    color: 'rgba(255,255,255,0.82)',
+    fontSize: 13,
+    lineHeight: 19,
+  },
+
+  infoDock: {
     position: 'absolute',
     bottom: 0,
     left: 0,
     right: 0,
-    padding: 16,
-    paddingBottom: 20,
     zIndex: 3,
+    paddingHorizontal: T.spacing.md,
   },
-  mentorTopRow: {
-    position: 'absolute',
-    top: 14,
-    left: 14,
+  glassPanel: {
+    backgroundColor: 'rgba(10,8,28,0.88)',
+    borderRadius: 16,
+    paddingHorizontal: T.spacing.md,
+    paddingVertical: T.spacing.lg,
+    borderWidth: 1,
+    borderColor: 'rgba(167,139,250,0.22)',
+  },
+  statusPill: {
     flexDirection: 'row',
     alignItems: 'center',
-    zIndex: 4,
-    maxWidth: '70%',
-    backgroundColor: 'rgba(0,0,0,0.55)',
-    borderRadius: 30,
-    paddingVertical: 6,
-    paddingHorizontal: 10,
-    paddingRight: 14,
-  },
-  avatar: {
-    width: 40,
-    height: 40,
+    gap: 4,
+    backgroundColor: 'rgba(255,255,255,0.08)',
     borderRadius: 20,
-    marginRight: 10,
-    borderWidth: 2,
-    borderColor: 'rgba(255,255,255,0.75)',
+    paddingHorizontal: T.spacing.sm,
+    paddingVertical: 4,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.12)',
   },
-  avatarFallback: {
-    backgroundColor: '#333',
-    alignItems: 'center',
-    justifyContent: 'center',
+  statusPillCta: {
+    borderColor: 'rgba(240,216,117,0.35)',
+    backgroundColor: 'rgba(240,216,117,0.1)',
   },
-  mentorInfo: { flex: 1 },
-  mentorName: { color: '#fff', fontWeight: '700', fontSize: 14 },
-  mentorSpec: { color: 'rgba(255,255,255,0.6)', fontSize: 11, marginTop: 1 },
-  cardTitle: { color: '#fff', fontSize: 15, fontWeight: '700', marginBottom: 3 },
-  cardDesc: { color: 'rgba(255,255,255,0.65)', fontSize: 12, lineHeight: 17, marginBottom: 8 },
+  statusFree: {
+    color: TEAL,
+    fontSize: 10,
+    fontWeight: '800',
+  },
+  statusSubscribed: {
+    color: C.accent.success,
+    fontSize: 10,
+    fontWeight: '800',
+  },
+  statusLocked: {
+    color: GOLD,
+    fontSize: 10,
+    fontWeight: '800',
+  },
+  expiryText: {
+    color: 'rgba(255,255,255,0.45)',
+    fontSize: 10,
+    fontWeight: '600',
+    marginTop: T.spacing.xs,
+  },
+});
 
-  badgeRow: { flexDirection: 'row', alignItems: 'center', gap: 8, flexWrap: 'wrap' },
-  unlockedBadge: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: 'rgba(10,6,30,0.75)', borderRadius: 6, paddingHorizontal: 8, paddingVertical: 4, borderWidth: 1, borderColor: 'rgba(74,222,128,0.35)' },
-  unlockedBadgeText: { color: C.accent.success, fontSize: 9, fontWeight: '800', letterSpacing: 0.6 },
-  unlockBadge: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: 'rgba(10,6,30,0.75)', borderRadius: 6, paddingHorizontal: 8, paddingVertical: 4, borderWidth: 1, borderColor: 'rgba(240,216,117,0.4)' },
-  unlockBadgeText: { color: GOLD, fontSize: 9, fontWeight: '800', letterSpacing: 0.6 },
-  expiryText: { color: 'rgba(255,255,255,0.5)', fontSize: 10 },
+const sk = StyleSheet.create({
+  root: {
+    flex: 1,
+    backgroundColor: C.primary.void,
+  },
+  bone: {
+    backgroundColor: 'rgba(255,255,255,0.14)',
+    borderRadius: 8,
+  },
+  shimmerVideo: {
+    ...StyleSheet.absoluteFillObject,
+    borderRadius: 0,
+  },
+  shimmerDock: {
+    position: 'absolute',
+    left: T.spacing.md,
+    right: T.spacing.md,
+    bottom: 0,
+  },
+  shimmerPanel: {
+    borderRadius: 16,
+    padding: T.spacing.md,
+    gap: T.spacing.sm,
+    backgroundColor: 'rgba(255,255,255,0.06)',
+  },
+  shimmerMentorRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  shimmerName: {
+    width: 100,
+    height: 12,
+    borderRadius: 6,
+  },
+  shimmerBadge: {
+    width: 64,
+    height: 20,
+    borderRadius: 10,
+  },
+  shimmerTitle: {
+    width: '75%',
+    height: 16,
+    borderRadius: 8,
+  },
+  shimmerDesc: {
+    width: '55%',
+    height: 12,
+    borderRadius: 6,
+  },
 });

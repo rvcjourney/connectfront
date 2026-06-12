@@ -18,6 +18,7 @@ export const UnifiedTabNavigator = () => {
       screenOptions={{
         headerShown: false,
         tabBarShowLabel: true,
+        lazy: true,
         tabBarStyle: {
           position: 'absolute',
           left: 0,

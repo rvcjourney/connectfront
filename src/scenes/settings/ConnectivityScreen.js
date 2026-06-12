@@ -126,7 +126,7 @@ const styles = StyleSheet.create({
   backBtn: {
     width: 40,
     height: 40,
-    borderRadius: 20,
+    borderRadius: T.borderRadius.md,
     backgroundColor: PANEL_BG,
     borderWidth: 1,
     borderColor: 'rgba(167,139,250,0.22)',

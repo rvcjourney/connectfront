@@ -2,7 +2,7 @@ import React from 'react';
 import { createMaterialTopTabNavigator } from '@react-navigation/material-top-tabs';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import { SCREEN_NAMES } from './screenNames';
-import { CapsuleTabBar } from '../components/CapsuleTabBar';
+import { CosmicTopTabBar } from '../components/CapsuleTabBar';
 import LearnerHomeScreen from '../scenes/learner/HomeScreen';
 import LearnerVideosScreen from '../scenes/learner/VideosScreen';
 import LearnerBookingsScreen from '../scenes/learner/BookingsScreen';
@@ -23,10 +23,12 @@ const tabIcon =
 export const LearnerSectionNavigator = () => {
   return (
     <TopTab.Navigator
-      tabBar={props => <CapsuleTabBar {...props} compact />}
+      tabBar={props => <CosmicTopTabBar {...props} compact />}
       screenOptions={{
         swipeEnabled: true,
         lazy: true,
+        lazyPreloadDistance: 1,
+        animationEnabled: false,
       }}
       style={{ backgroundColor: 'transparent' }}
       sceneContainerStyle={{ backgroundColor: 'transparent' }}

@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
+import { useFocusEffect, useIsFocused } from '@react-navigation/native';
 import {
   View,
   Text,
@@ -155,6 +156,7 @@ function ScheduleTimeChip({ label, selected, booked, disabled, onPress }) {
 
 export default function MentorAvailabilityScreen() {
   const { profile } = useAuth();
+  const isFocused = useIsFocused();
   const insets = useSafeAreaInsets();
   const [loading, setLoading] = useState(false);
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -166,13 +168,11 @@ export default function MentorAvailabilityScreen() {
   const mentorInitial = (profile?.name || 'M').charAt(0).toUpperCase();
   const mentorName = profile?.name || 'Mentor';
 
-  useEffect(() => {
-    if (profile?.id) {
-      loadAvailability();
+  const loadAvailability = useCallback(async () => {
+    if (!profile?.id) {
+      setLoading(false);
+      return;
     }
-  }, [profile?.id]);
-
-  const loadAvailability = async () => {
     try {
       setLoading(true);
       const availability = await availabilityApi.getAvailabilityForMentor(profile.id);
@@ -203,7 +203,18 @@ export default function MentorAvailabilityScreen() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [profile?.id, selectedDate]);
+
+  useFocusEffect(
+    useCallback(() => {
+      if (!profile?.id) {
+        setLoading(false);
+        return undefined;
+      }
+      loadAvailability();
+      return undefined;
+    }, [profile?.id, loadAvailability]),
+  );
 
   const handleSelectDate = date => {
     layoutSpring();
@@ -453,7 +464,7 @@ export default function MentorAvailabilityScreen() {
         />
       </View>
 
-      <LoadingOverlay visible={loading} message="Updating your schedule…" />
+      <LoadingOverlay visible={isFocused && loading} message="Updating your schedule…" />
     </View>
   );
 }
@@ -475,7 +486,7 @@ const styles = StyleSheet.create({
   timeSlot: {
     paddingVertical: 10,
     paddingHorizontal: 12,
-    borderRadius: 999,
+    borderRadius: T.borderRadius.chip,
     backgroundColor: 'rgba(255,255,255,0.08)',
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.1)',
@@ -488,7 +499,7 @@ const styles = StyleSheet.create({
     gap: 5,
     paddingVertical: 10,
     paddingHorizontal: 12,
-    borderRadius: 20,
+    borderRadius: T.borderRadius.md,
     borderWidth: 1,
     borderColor: B.successBorder,
   },
@@ -498,7 +509,7 @@ const styles = StyleSheet.create({
     gap: 4,
     paddingVertical: 10,
     paddingHorizontal: 12,
-    borderRadius: 20,
+    borderRadius: T.borderRadius.md,
     backgroundColor: S.accentWarning,
     borderWidth: 1,
     borderColor: B.warningBorder,
@@ -514,7 +525,7 @@ const styles = StyleSheet.create({
     marginTop: T.spacing.md,
     paddingVertical: 10,
     paddingHorizontal: T.spacing.md,
-    borderRadius: 999,
+    borderRadius: T.borderRadius.chip,
     backgroundColor: S.accentSuccess,
     borderWidth: 1,
     borderColor: B.successBorder,

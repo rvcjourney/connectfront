@@ -21,10 +21,9 @@ const GOLD = C.accent.primary;
 const TEAL = C.accent.secondary;
 
 /**
- * Material top tabs — cosmic “sector” layout: aurora edges, nebula wash on active,
- * stellar icon ring, full-width column beam (not a segmented capsule).
+ * Material top tabs — cosmic sector layout with glass bar and rounded icon tiles.
  */
-export const CapsuleTabBar = ({ state, descriptors, navigation, compact = false }) => {
+export const CosmicTopTabBar = ({ state, descriptors, navigation, compact = false }) => {
   const insets = useSafeAreaInsets();
   const useScroll = state.routes.length > 4;
 
@@ -340,7 +339,7 @@ const styles = StyleSheet.create({
   iconRing: {
     width: 40,
     height: 40,
-    borderRadius: 20,
+    borderRadius: T.borderRadius.md,
     padding: 2,
     justifyContent: 'center',
     alignItems: 'center',
@@ -348,7 +347,7 @@ const styles = StyleSheet.create({
   iconRingInner: {
     flex: 1,
     width: '100%',
-    borderRadius: 18,
+    borderRadius: T.borderRadius.sm,
     backgroundColor: C.surface.sheet,
     borderWidth: 1,
     borderColor: TB.rimBorder,
@@ -411,8 +410,11 @@ const styles = StyleSheet.create({
   compactDot: {
     width: 4,
     height: 4,
-    borderRadius: 2,
+    borderRadius: T.borderRadius.sm / 4,
     backgroundColor: PURPLE_LINK,
     marginLeft: 2,
   },
 });
+
+/** @deprecated Use CosmicTopTabBar */
+export const CapsuleTabBar = CosmicTopTabBar;

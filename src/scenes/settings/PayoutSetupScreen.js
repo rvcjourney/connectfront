@@ -47,7 +47,7 @@ function StatusBadge({ status }) {
 }
 
 const badge = StyleSheet.create({
-  wrap: { flexDirection: 'row', alignItems: 'center', gap: 5, borderRadius: 20, borderWidth: 1, paddingHorizontal: 10, paddingVertical: 4, alignSelf: 'flex-start' },
+  wrap: { flexDirection: 'row', alignItems: 'center', gap: 5, borderRadius: T.borderRadius.chip, borderWidth: 1, paddingHorizontal: 10, paddingVertical: 4, alignSelf: 'flex-start' },
   text: { fontSize: 12, fontWeight: '700' },
 });
 
@@ -300,7 +300,7 @@ const s = StyleSheet.create({
     justifyContent: 'space-between', marginBottom: T.spacing.lg,
   },
   backBtn: {
-    width: 40, height: 40, borderRadius: 20,
+    width: 40, height: 40, borderRadius: T.borderRadius.md,
     backgroundColor: PANEL_BG,
     borderWidth: 1, borderColor: 'rgba(167,139,250,0.22)',
     justifyContent: 'center', alignItems: 'center',

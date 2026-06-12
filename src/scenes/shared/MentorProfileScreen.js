@@ -1203,7 +1203,7 @@ const styles = StyleSheet.create({
   heroCircleBtn: {
     width: 40,
     height: 40,
-    borderRadius: 20,
+    borderRadius: T.borderRadius.md,
     backgroundColor: 'rgba(12,12,40,0.55)',
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.12)',
@@ -1283,7 +1283,7 @@ const styles = StyleSheet.create({
   tagChip: {
     paddingVertical: 4,
     paddingHorizontal: T.spacing.sm,
-    borderRadius: 999,
+    borderRadius: T.borderRadius.chip,
     backgroundColor: 'rgba(255,255,255,0.08)',
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.1)',

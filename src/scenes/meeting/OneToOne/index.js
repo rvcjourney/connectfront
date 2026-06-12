@@ -50,6 +50,7 @@ import recording_lottie from "../../../assets/animation/recording_lottie.json";
 import Blink from "../../../components/Blink";
 import VideosdkRPK from "../../../../VideosdkRPK";
 import ParticipantStatsViewer from "../Components/ParticipantStatsViewer";
+import { startOneToOneRecording } from "../../../utils/recordingConfig";
 
 export default function OneToOneMeetingViewer({ isHost }) {
   const {
@@ -316,7 +317,7 @@ export default function OneToOneMeetingViewer({ isHost }) {
             ts: Date.now(),
           });
           if (isHost) {
-            startRecording();
+            startOneToOneRecording(startRecording);
           }
           Toast.show("Both agreed. Starting recording...");
         } else {
@@ -336,7 +337,7 @@ export default function OneToOneMeetingViewer({ isHost }) {
           !recordingState ||
           recordingState === Constants.recordingEvents.RECORDING_STOPPED
         ) {
-          startRecording();
+          startOneToOneRecording(startRecording);
           Toast.show("Recording started.");
         }
         return;

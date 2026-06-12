@@ -2,7 +2,7 @@ import React from 'react'; // eslint-disable-line
 import { createMaterialTopTabNavigator } from '@react-navigation/material-top-tabs';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import { SCREEN_NAMES } from './screenNames';
-import { CapsuleTabBar } from '../components/CapsuleTabBar';
+import { CosmicTopTabBar } from '../components/CapsuleTabBar';
 import MentorDashboardScreen from '../scenes/mentor/HomeScreen';
 import MentorCallsScreen from '../scenes/mentor/CallsScreen';
 import MentorEarningsScreen from '../scenes/mentor/EarningsScreen';
@@ -24,10 +24,12 @@ const tabIcon =
 export const MentorSectionNavigator = () => {
   return (
     <TopTab.Navigator
-      tabBar={props => <CapsuleTabBar {...props} compact />}
+      tabBar={props => <CosmicTopTabBar {...props} compact />}
       screenOptions={{
         swipeEnabled: true,
         lazy: true,
+        lazyPreloadDistance: 1,
+        animationEnabled: false,
       }}
       style={{ backgroundColor: 'transparent' }}
       sceneContainerStyle={{ backgroundColor: 'transparent' }}

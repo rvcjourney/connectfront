@@ -4,10 +4,10 @@ import {
   Text,
   ScrollView,
   StyleSheet,
-  TouchableOpacity,
+  Pressable,
   RefreshControl,
   Animated,
-  Platform,
+  Easing,
 } from 'react-native';
 import Toast from 'react-native-simple-toast';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
@@ -27,7 +27,6 @@ const B = C.buttons;
 const S = C.surface;
 
 const PURPLE_LINK = B.nebulaGradient[0];
-const GOLD = C.accent.primary;
 const TEAL = C.accent.secondary;
 
 const CATEGORY_ICONS_FALLBACK = {
@@ -94,10 +93,12 @@ function SkeletonImageCard() {
 function SkeletonCategoryRow() {
   return (
     <View style={sk.section}>
-      {/* section header placeholder */}
       <View style={sk.headerRow}>
-        <SkeletonBone style={sk.iconBox} />
-        <SkeletonBone style={sk.sectionTitle} />
+        <View style={sk.headerLeft}>
+          <SkeletonBone style={sk.iconBox} />
+          <SkeletonBone style={sk.sectionTitle} />
+        </View>
+        <SkeletonBone style={sk.seeAll} />
       </View>
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={sk.row}>
         {[0, 1, 2, 3].map(i => <SkeletonImageCard key={i} />)}
@@ -126,13 +127,148 @@ const sk = StyleSheet.create({
   headerRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: T.spacing.sm,
+    justifyContent: 'space-between',
     marginBottom: T.spacing.md,
   },
-  iconBox: { width: 26, height: 26, borderRadius: 7 },
+  headerLeft: { flexDirection: 'row', alignItems: 'center', gap: T.spacing.sm, flex: 1 },
+  iconBox: { width: 26, height: 26, borderRadius: 8 },
   sectionTitle: { height: 14, width: 110, borderRadius: T.borderRadius.sm },
-  row: { gap: T.spacing.sm, paddingBottom: T.spacing.sm },
+  seeAll: { height: 14, width: 56, borderRadius: T.borderRadius.sm },
+  row: { gap: 10, paddingBottom: T.spacing.sm },
 });
+
+function SectionHeader({ title, icon, onSeeAll }) {
+  const scale = useRef(new Animated.Value(1)).current;
+  const chevronX = useRef(new Animated.Value(0)).current;
+
+  const onPressIn = () => {
+    Animated.parallel([
+      Animated.spring(scale, {
+        toValue: 0.94,
+        friction: 6,
+        tension: 140,
+        useNativeDriver: true,
+      }),
+      Animated.timing(chevronX, {
+        toValue: 4,
+        duration: 120,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  };
+
+  const onPressOut = () => {
+    Animated.parallel([
+      Animated.spring(scale, {
+        toValue: 1,
+        friction: 5,
+        tension: 120,
+        useNativeDriver: true,
+      }),
+      Animated.spring(chevronX, {
+        toValue: 0,
+        friction: 6,
+        tension: 120,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  };
+
+  return (
+    <View style={styles.secHdrRow}>
+      <View style={styles.secHdrLeft}>
+        {icon ? (
+          <View style={styles.categoryIconBox}>
+            <MaterialIcons name={icon} size={14} color={PURPLE_LINK} />
+          </View>
+        ) : null}
+        <Text style={styles.secHdrTitle} numberOfLines={1}>{title}</Text>
+      </View>
+      {onSeeAll ? (
+        <Animated.View style={{ transform: [{ scale }] }}>
+          <Pressable
+            style={styles.seeAllBtn}
+            onPress={onSeeAll}
+            onPressIn={onPressIn}
+            onPressOut={onPressOut}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          >
+            <Text style={styles.seeAllTxt}>See all</Text>
+            <Animated.View style={{ transform: [{ translateX: chevronX }] }}>
+              <MaterialIcons name="chevron-right" size={18} color={PURPLE_LINK} />
+            </Animated.View>
+          </Pressable>
+        </Animated.View>
+      ) : null}
+    </View>
+  );
+}
+
+function AnimatedPageHeader({ isSearching }) {
+  const opacity = useRef(new Animated.Value(0)).current;
+  const translateY = useRef(new Animated.Value(-8)).current;
+
+  useEffect(() => {
+    Animated.parallel([
+      Animated.timing(opacity, {
+        toValue: 1,
+        duration: 380,
+        easing: Easing.out(Easing.cubic),
+        useNativeDriver: true,
+      }),
+      Animated.spring(translateY, {
+        toValue: 0,
+        friction: 8,
+        tension: 90,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  }, [opacity, translateY]);
+
+  return (
+    <Animated.View style={[styles.pageHeader, { opacity, transform: [{ translateY }] }]}>
+      <Text style={styles.pageTitle}>
+        {isSearching ? 'Search results' : 'Discover'}
+      </Text>
+      <Text style={styles.pageSubtitle}>
+        {isSearching
+          ? 'Mentors matching your search'
+          : 'Browse mentors by skill and category'}
+      </Text>
+    </Animated.View>
+  );
+}
+
+function AnimatedCategorySection({ sectionIndex, children }) {
+  const opacity = useRef(new Animated.Value(0)).current;
+  const translateY = useRef(new Animated.Value(18)).current;
+  const delay = sectionIndex * 70;
+
+  useEffect(() => {
+    Animated.parallel([
+      Animated.timing(opacity, {
+        toValue: 1,
+        duration: 360,
+        delay,
+        easing: Easing.out(Easing.cubic),
+        useNativeDriver: true,
+      }),
+      Animated.spring(translateY, {
+        toValue: 0,
+        friction: 8,
+        tension: 85,
+        delay,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  }, [delay, opacity, translateY]);
+
+  return (
+    <Animated.View style={[styles.section, { opacity, transform: [{ translateY }] }]}>
+      {children}
+    </Animated.View>
+  );
+}
 
 export default function LearnerHomeScreen({ navigation }) {
   const { profile } = useAuth();
@@ -225,58 +361,36 @@ export default function LearnerHomeScreen({ navigation }) {
   const isSearching = searchQuery.trim().length > 0;
   const groupedMentors = getFilteredMentors();
   const filteredCategories = groupedMentors ? Object.keys(groupedMentors).sort() : [];
-  const totalMentors = isSearching
-    ? (searchResults?.length ?? 0)
-    : filteredCategories.reduce((sum, c) => sum + groupedMentors[c].length, 0);
 
-  const renderCategorySection = (category, mentors, isSearch = false) => (
-    <View key={category} style={styles.section}>
-      <View style={styles.sectionHeaderRow}>
-        <View style={styles.categoryLabel}>
-          <View style={styles.categoryIconBox}>
-            <MaterialIcons
-              name={getCategoryIcon(category, categoryIconMap)}
-              size={14}
-              color={PURPLE_LINK}
-            />
-          </View>
-          <Text style={styles.categoryTitle}>{category}</Text>
-          {!isSearch && (
-            <View style={styles.countPill}>
-              <Text style={styles.countPillTxt}>{mentors.length}</Text>
-            </View>
-          )}
-        </View>
-        {!isSearch && (
-          <TouchableOpacity
-            style={styles.seeAllBtn}
-            onPress={() => navigation.navigate(SCREEN_NAMES.CategoryMentors, { category })}
-            activeOpacity={0.7}
-            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-          >
-            <Text style={styles.seeAllTxt}>See all &gt;</Text>
-          </TouchableOpacity>
-        )}
-        {isSearch && (
-          <View style={styles.resultBadge}>
-            <Text style={styles.resultBadgeTxt}>{mentors.length} found</Text>
-          </View>
-        )}
-      </View>
+  const renderCategorySection = (category, mentors, isSearch = false, sectionIndex = 0) => (
+    <AnimatedCategorySection
+      key={isSearch ? `search-${searchQuery.trim()}` : category}
+      sectionIndex={sectionIndex}
+    >
+      <SectionHeader
+        title={isSearch ? 'Results' : category}
+        icon={isSearch ? 'search' : getCategoryIcon(category, categoryIconMap)}
+        onSeeAll={
+          isSearch
+            ? null
+            : () => navigation.navigate(SCREEN_NAMES.CategoryMentors, { category })
+        }
+      />
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={styles.mentorsRow}
       >
-        {mentors.map(mentor => (
+        {mentors.map((mentor, cardIndex) => (
           <MentorImageCard
             key={mentor.id}
             mentor={mentor}
             onPress={setSelectedMentor}
+            entranceDelay={sectionIndex * 70 + cardIndex * 55}
           />
         ))}
       </ScrollView>
-    </View>
+    </AnimatedCategorySection>
   );
 
   return (
@@ -293,22 +407,14 @@ export default function LearnerHomeScreen({ navigation }) {
         />
       }
     >
-      <View style={styles.searchWrap}>
-        <View style={styles.searchLabelRow}>
-          <MaterialIcons name="explore" size={15} color={PURPLE_LINK} />
-          <Text style={styles.searchLabel}>
-            {isSearching
-              ? 'Search results'
-              : `${filteredCategories.length} topics · ${totalMentors} mentors`}
-          </Text>
-        </View>
-        <SearchBar
-          value={searchQuery}
-          onChangeText={handleSearchChange}
-          placeholder="Search by name, @username or skill…"
-          containerStyle={styles.searchBarInner}
-        />
-      </View>
+      <AnimatedPageHeader isSearching={isSearching} />
+
+      <SearchBar
+        value={searchQuery}
+        onChangeText={handleSearchChange}
+        placeholder="Search by name, @username or skill"
+        containerStyle={styles.searchBar}
+      />
 
       {loading ? (
         <HomeScreenSkeleton />
@@ -317,12 +423,12 @@ export default function LearnerHomeScreen({ navigation }) {
           <HomeScreenSkeleton />
         ) : searchResults && searchResults.length > 0 ? (
           <View style={styles.content}>
-            {renderCategorySection('Search Results', searchResults, true)}
+            {renderCategorySection('Search Results', searchResults, true, 0)}
           </View>
         ) : (
           <View style={styles.emptyPanel}>
             <View style={styles.emptyIconRing}>
-              <MaterialIcons name="travel-explore" size={30} color={PURPLE_LINK} />
+              <MaterialIcons name="travel-explore" size={40} color={PURPLE_LINK} />
             </View>
             <Text style={styles.emptyTitle}>No mentors found</Text>
             <Text style={styles.emptySubtitle}>
@@ -332,14 +438,14 @@ export default function LearnerHomeScreen({ navigation }) {
         )
       ) : filteredCategories.length > 0 ? (
         <View style={styles.content}>
-          {filteredCategories.map(category =>
-            renderCategorySection(category, groupedMentors[category]),
+          {filteredCategories.map((category, index) =>
+            renderCategorySection(category, groupedMentors[category], false, index),
           )}
         </View>
       ) : (
         <View style={styles.emptyPanel}>
           <View style={styles.emptyIconRing}>
-            <MaterialIcons name="travel-explore" size={30} color={PURPLE_LINK} />
+            <MaterialIcons name="travel-explore" size={40} color={PURPLE_LINK} />
           </View>
           <Text style={styles.emptyTitle}>No mentors available</Text>
           <Text style={styles.emptySubtitle}>
@@ -366,41 +472,39 @@ export default function LearnerHomeScreen({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-  searchWrap: {
-    marginBottom: T.spacing.lg,
+  pageHeader: {
+    marginBottom: T.spacing.md,
   },
-  searchLabelRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: T.spacing.xs,
-    marginBottom: T.spacing.sm,
-    paddingHorizontal: 2,
+  pageTitle: {
+    fontSize: 22,
+    fontWeight: '800',
+    color: C.text.primary,
+    letterSpacing: -0.3,
+    marginBottom: 4,
   },
-  searchLabel: {
-    fontSize: 12,
+  pageSubtitle: {
+    fontSize: 13,
     color: C.text.muted,
     fontWeight: '600',
-    letterSpacing: 0.2,
+    lineHeight: 18,
   },
-  searchBarInner: {
-    marginBottom: 0,
+  searchBar: {
+    marginBottom: T.spacing.lg,
   },
 
   content: {
-    flex: 1,
-    paddingBottom: 80,
+    paddingBottom: T.spacing.xxxl,
   },
   section: {
-    marginBottom: T.spacing.xxl,
+    marginBottom: T.spacing.xl,
   },
-  sectionHeaderRow: {
+  secHdrRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginTop: T.spacing.xs,
-    marginBottom: 2,
+    marginBottom: T.spacing.sm,
   },
-  categoryLabel: {
+  secHdrLeft: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: T.spacing.sm,
@@ -417,56 +521,29 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  categoryTitle: {
+  secHdrTitle: {
     fontSize: 15,
-    color: C.text.primary,
     fontWeight: '800',
+    color: C.text.primary,
     flexShrink: 1,
   },
-  countPill: {
-    minWidth: 26,
-    height: 26,
-    paddingHorizontal: 8,
-    borderRadius: 999,
-    backgroundColor: S.accentViolet,
-    borderWidth: 1,
-    borderColor: 'rgba(167,139,250,0.35)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  countPillTxt: {
-    fontSize: 11,
-    color: PURPLE_LINK,
-    fontWeight: '800',
-  },
   seeAllBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
     paddingVertical: 4,
     paddingLeft: T.spacing.sm,
+    marginLeft: T.spacing.xs,
   },
   seeAllTxt: {
     fontSize: 13,
     color: PURPLE_LINK,
     fontWeight: '700',
   },
-  resultBadge: {
-    paddingHorizontal: T.spacing.sm,
-    paddingVertical: 4,
-    borderRadius: 999,
-    backgroundColor: S.accentTeal,
-    borderWidth: 1,
-    borderColor: 'rgba(94,234,212,0.25)',
-  },
-  resultBadgeTxt: {
-    fontSize: 11,
-    color: TEAL,
-    fontWeight: '700',
-  },
 
   mentorsRow: {
-    paddingRight: T.spacing.lg,
-    paddingTop: 6,
-    paddingBottom: T.spacing.sm,
     gap: 10,
+    paddingRight: T.spacing.lg,
+    paddingBottom: T.spacing.xs,
   },
   emptyPanel: {
     alignItems: 'center',
@@ -478,9 +555,9 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255,255,255,0.07)',
   },
   emptyIconRing: {
-    width: 72,
-    height: 72,
-    borderRadius: 36,
+    width: 88,
+    height: 88,
+    borderRadius: 44,
     backgroundColor: S.accentViolet,
     borderWidth: 1,
     borderColor: 'rgba(167,139,250,0.35)',

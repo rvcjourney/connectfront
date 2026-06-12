@@ -18,9 +18,15 @@ export const AuthProvider = ({ children }) => {
     const bootstrapSession = async () => {
       try {
         console.log('📱 Restoring auth session...');
+        const sessionResult = await Promise.race([
+          supabase.auth.getSession(),
+          new Promise((_, reject) =>
+            setTimeout(() => reject(new Error('Session restore timed out')), 12_000),
+          ),
+        ]);
         const {
           data: { session: initialSession },
-        } = await supabase.auth.getSession();
+        } = sessionResult;
 
         if (!active) return;
 
