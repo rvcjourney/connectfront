@@ -19,7 +19,7 @@ export const AuthProvider = ({ children }) => {
       try {
         const {
           data: { session: initialSession },
-        } = await supabase.auth.getSession();
+        } = sessionResult;
 
         if (!active) return;
 

@@ -19,7 +19,7 @@ export const SafeScreen = ({
 }) => {
   const insets = useSafeAreaInsets();
 
-  // Floating capsule height + margins (safe area added separately below)
+  // Floating tab bar reserve (safe area added separately below)
   const bottomTabHeight = hasBottomTabs
     ? (UNIFIED_THEME.colors.tabBar.floating?.contentReserve ?? 78)
     : 0;
@@ -57,9 +57,11 @@ export const SafeScreen = ({
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
+    position: 'relative',
   },
   container: {
     flex: 1,
     justifyContent: 'flex-start',
+    position: 'relative',
   },
 });

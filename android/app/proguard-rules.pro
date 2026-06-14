@@ -24,3 +24,7 @@
 -dontwarn com.jiangdg.utils.XLogWrapper
 -dontwarn com.jiangdg.uvc.IFrameCallback
 -dontwarn com.jiangdg.uvc.UVCCamera
+
+# Google Play Services / Firebase (R8 stack-map warnings on auth libs)
+-keep class com.google.android.gms.** { *; }
+-dontwarn com.google.android.gms.**

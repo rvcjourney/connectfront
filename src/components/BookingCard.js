@@ -1,11 +1,12 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import {
   View,
   Text,
   Image,
-  TouchableOpacity,
+  Pressable,
   StyleSheet,
   Platform,
+  Animated,
 } from 'react-native';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import { UNIFIED_THEME } from '../unifiedTheme';
@@ -55,8 +56,52 @@ export const BookingCard = ({
   onPressDownload = null,
   onPressRate = null,
   statusLabel = null,
+  entranceDelay = null,
+  pressScale = false,
 }) => {
   const showLearnerDetails = isMentor || showLearnerInfo;
+  const scale = useRef(new Animated.Value(1)).current;
+  const opacity = useRef(new Animated.Value(entranceDelay != null ? 0 : 1)).current;
+  const translateY = useRef(new Animated.Value(entranceDelay != null ? 12 : 0)).current;
+
+  useEffect(() => {
+    if (entranceDelay == null) return;
+    Animated.parallel([
+      Animated.timing(opacity, {
+        toValue: 1,
+        duration: 340,
+        delay: entranceDelay,
+        useNativeDriver: true,
+      }),
+      Animated.spring(translateY, {
+        toValue: 0,
+        friction: 8,
+        tension: 90,
+        delay: entranceDelay,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  }, [entranceDelay, opacity, translateY]);
+
+  const onPressIn = () => {
+    if (!pressScale) return;
+    Animated.spring(scale, {
+      toValue: 0.98,
+      friction: 6,
+      tension: 140,
+      useNativeDriver: true,
+    }).start();
+  };
+
+  const onPressOut = () => {
+    if (!pressScale) return;
+    Animated.spring(scale, {
+      toValue: 1,
+      friction: 5,
+      tension: 120,
+      useNativeDriver: true,
+    }).start();
+  };
 
   const getOtherUserInfo = () => {
     if (showLearnerDetails) {
@@ -106,7 +151,7 @@ export const BookingCard = ({
   const hasActions =
     canJoin || canCancel || canViewRecording || canDownloadRecording || onPressRate;
 
-  return (
+  const card = (
     <View
       style={[
         styles.card,
@@ -230,6 +275,23 @@ export const BookingCard = ({
       ) : null}
     </View>
   );
+
+  return (
+    <Animated.View
+      style={{
+        opacity,
+        transform: [{ translateY }, ...(pressScale ? [{ scale }] : [])],
+      }}
+    >
+      {pressScale ? (
+        <Pressable onPressIn={onPressIn} onPressOut={onPressOut}>
+          {card}
+        </Pressable>
+      ) : (
+        card
+      )}
+    </Animated.View>
+  );
 };
 
 const styles = StyleSheet.create({
@@ -300,7 +362,7 @@ const styles = StyleSheet.create({
     gap: 4,
     paddingHorizontal: 8,
     paddingVertical: 5,
-    borderRadius: 999,
+    borderRadius: UNIFIED_THEME.borderRadius.chip,
     borderWidth: 1,
     backgroundColor: 'rgba(255,255,255,0.06)',
     maxWidth: '36%',

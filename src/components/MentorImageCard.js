@@ -1,9 +1,10 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import {
   View,
   Text,
   Image,
-  TouchableOpacity,
+  Pressable,
+  Animated,
   StyleSheet,
   Platform,
 } from 'react-native';
@@ -19,7 +20,7 @@ const S = C.surface;
 const PURPLE_LINK = B.nebulaGradient[0];
 const GOLD = C.accent.primary;
 
-export function MentorImageCard({ mentor, onPress, style }) {
+export function MentorImageCard({ mentor, onPress, style, entranceDelay }) {
   const name       = mentor.profiles?.name || 'Unknown';
   const initial    = name.charAt(0).toUpperCase();
   const avatarUrl  = mentor.profiles?.avatar_url;
@@ -27,14 +28,67 @@ export function MentorImageCard({ mentor, onPress, style }) {
   const sessions   = mentor.total_sessions ?? 0;
   const spec       = mentor.specialization || null;
 
+  const scale = useRef(new Animated.Value(1)).current;
+  const opacity = useRef(new Animated.Value(entranceDelay != null ? 0 : 1)).current;
+  const translateY = useRef(new Animated.Value(entranceDelay != null ? 14 : 0)).current;
+
+  useEffect(() => {
+    if (entranceDelay == null) return;
+    Animated.parallel([
+      Animated.timing(opacity, {
+        toValue: 1,
+        duration: 340,
+        delay: entranceDelay,
+        useNativeDriver: true,
+      }),
+      Animated.spring(translateY, {
+        toValue: 0,
+        friction: 8,
+        tension: 90,
+        delay: entranceDelay,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  }, [entranceDelay, opacity, translateY]);
+
+  const onPressIn = () => {
+    Animated.spring(scale, {
+      toValue: 0.96,
+      friction: 6,
+      tension: 140,
+      useNativeDriver: true,
+    }).start();
+  };
+
+  const onPressOut = () => {
+    Animated.spring(scale, {
+      toValue: 1,
+      friction: 5,
+      tension: 120,
+      useNativeDriver: true,
+    }).start();
+  };
+
+  const hasCustomSize = style?.width != null;
+  const wrapperStyle = [
+    hasCustomSize ? style : styles.defaultSize,
+    {
+      opacity,
+      transform: [{ translateY }, { scale }],
+    },
+    !hasCustomSize ? style : null,
+  ];
+
   return (
-    <TouchableOpacity
-      style={[styles.card, style]}
-      onPress={() => onPress(mentor)}
-      activeOpacity={0.88}
-      accessibilityRole="button"
-      accessibilityLabel={`${name}, ${spec || 'mentor'}`}
-    >
+    <Animated.View style={wrapperStyle}>
+      <Pressable
+        style={[styles.card, styles.cardFill]}
+        onPress={() => onPress(mentor)}
+        onPressIn={onPressIn}
+        onPressOut={onPressOut}
+        accessibilityRole="button"
+        accessibilityLabel={`${name}, ${spec || 'mentor'}`}
+      >
       {/* Full-bleed photo */}
       {avatarUrl ? (
         <Image source={{ uri: avatarUrl }} style={styles.img} resizeMode="cover" />
@@ -67,14 +121,21 @@ export function MentorImageCard({ mentor, onPress, style }) {
           <Text style={styles.sessions}>{sessions} sessions</Text>
         </View>
       </LinearGradient>
-    </TouchableOpacity>
+      </Pressable>
+    </Animated.View>
   );
 }
 
 const styles = StyleSheet.create({
-  card: {
+  defaultSize: {
     width: 120,
     height: 172,
+  },
+  cardFill: {
+    width: '100%',
+    height: '100%',
+  },
+  card: {
     borderRadius: 16,
     overflow: 'hidden',
     backgroundColor: 'rgba(255,255,255,0.07)',
@@ -113,7 +174,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 3,
     backgroundColor: S.accentGold,
-    borderRadius: 999,
+    borderRadius: T.borderRadius.chip,
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderWidth: 1,

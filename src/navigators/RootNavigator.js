@@ -21,8 +21,8 @@ import MentorVideosScreen from '../scenes/mentor/MentorVideosScreen';
 import LearnerVideosScreen from '../scenes/learner/VideosScreen';
 import PayoutSetupScreen from '../scenes/settings/PayoutSetupScreen';
 import ConnectivityScreen from '../scenes/settings/ConnectivityScreen';
+import NotificationsScreen from '../scenes/settings/NotificationsScreen';
 import MentorStatsScreen from '../scenes/mentor/MentorStatsScreen';
-
 const RootStack = createStackNavigator();
 
 export const RootNavigator = () => {
@@ -40,7 +40,7 @@ export const RootNavigator = () => {
       initialRouteName={showAuth ? 'Auth' : SCREEN_NAMES.RootUnifiedTabs}
       screenOptions={{
         headerShown: false,
-        animationEnabled: true,
+        animationEnabled: false,
         cardStyle: { backgroundColor: UNIFIED_THEME.colors.primary.void },
       }}
     >
@@ -57,7 +57,12 @@ export const RootNavigator = () => {
             component={UnifiedTabNavigator}
             options={{ animationEnabled: false }}
           />
-          <RootStack.Group screenOptions={{ presentation: 'modal' }}>
+          <RootStack.Group
+            screenOptions={{
+              presentation: 'modal',
+              animationEnabled: false,
+            }}
+          >
             <RootStack.Screen
               name={SCREEN_NAMES.EditProfile}
               component={EditProfileScreen}
@@ -111,6 +116,10 @@ export const RootNavigator = () => {
               component={ConnectivityScreen}
             />
             <RootStack.Screen
+              name={SCREEN_NAMES.Notifications}
+              component={NotificationsScreen}
+            />
+            <RootStack.Screen
               name={SCREEN_NAMES.MentorStats}
               component={MentorStatsScreen}
             />
@@ -123,7 +132,7 @@ export const RootNavigator = () => {
           <RootStack.Screen
             name={SCREEN_NAMES.RecordingPlayer}
             component={RecordingPlayerScreen}
-            options={{ animationEnabled: true }}
+            options={{ animationEnabled: false }}
           />
         </>
       )}

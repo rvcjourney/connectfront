@@ -1,4 +1,5 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useRef, useState } from 'react';
+import { useFocusEffect, useIsFocused } from '@react-navigation/native';
 import {
   View,
   Text,
@@ -113,24 +114,24 @@ function StatSegment({ icon, iconColor, value, label }) {
 
 export default function MentorEarningsScreen() {
   const { profile } = useAuth();
+  const isFocused = useIsFocused();
   const [activePeriod, setActivePeriod] = useState('month');
   const [totalEarnings, setTotalEarnings] = useState(0);
   const [periodEarnings, setPeriodEarnings] = useState([]);
   const [chartData, setChartData] = useState(null);
   const [allEarnings, setAllEarnings] = useState([]);
   const [shownCount, setShownCount] = useState(6);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [periodLoading, setPeriodLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [totalPayouts, setTotalPayouts] = useState(0);
   const hasLoadedRef = useRef(false);
 
-  useEffect(() => {
-    if (profile?.id) loadEarningsData();
-  }, [profile?.id, activePeriod]);
-
-  const loadEarningsData = async () => {
-    if (!profile?.id) return;
+  const loadEarningsData = useCallback(async () => {
+    if (!profile?.id) {
+      setLoading(false);
+      return;
+    }
     try {
       if (!hasLoadedRef.current) {
         setLoading(true);
@@ -199,7 +200,18 @@ export default function MentorEarningsScreen() {
       setLoading(false);
       setPeriodLoading(false);
     }
-  };
+  }, [profile?.id, activePeriod]);
+
+  useFocusEffect(
+    useCallback(() => {
+      if (!profile?.id) {
+        setLoading(false);
+        return undefined;
+      }
+      loadEarningsData();
+      return undefined;
+    }, [profile?.id, loadEarningsData]),
+  );
 
   const handleRefresh = async () => { setRefreshing(true); await loadEarningsData(); setRefreshing(false); };
 
@@ -326,7 +338,7 @@ export default function MentorEarningsScreen() {
         )}
       </ScrollView>
 
-      <LoadingOverlay visible={loading} message="Loading earnings..." />
+      <LoadingOverlay visible={isFocused && loading} message="Loading earnings..." />
     </SafeScreen>
   );
 }
@@ -455,7 +467,7 @@ const styles = StyleSheet.create({
   periodRow: {
     flexDirection: 'row',
     backgroundColor: 'rgba(255,255,255,0.07)',
-    borderRadius: 999,
+    borderRadius: T.borderRadius.chip,
     borderWidth: 1,
     borderColor: 'rgba(167,139,250,0.22)',
     padding: 3,
@@ -464,7 +476,7 @@ const styles = StyleSheet.create({
   periodTab: {
     flex: 1,
     paddingVertical: T.spacing.sm,
-    borderRadius: 999,
+    borderRadius: T.borderRadius.chip,
     alignItems: 'center',
   },
   periodTabActive: {
@@ -524,7 +536,7 @@ const styles = StyleSheet.create({
     minWidth: 26,
     height: 26,
     paddingHorizontal: 8,
-    borderRadius: 999,
+    borderRadius: T.borderRadius.chip,
     backgroundColor: S.accentViolet,
     borderWidth: 1,
     borderColor: 'rgba(167,139,250,0.35)',
@@ -556,7 +568,7 @@ const styles = StyleSheet.create({
   txnIcon: {
     width: 40,
     height: 40,
-    borderRadius: 20,
+    borderRadius: T.borderRadius.md,
     backgroundColor: S.accentTeal,
     borderWidth: 1,
     borderColor: 'rgba(94,234,212,0.25)',

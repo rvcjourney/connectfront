@@ -8,6 +8,7 @@ import {
   Animated,
   Easing,
   Platform,
+  Pressable,
   TouchableOpacity,
   Modal,
   useWindowDimensions,
@@ -18,10 +19,14 @@ import {
 import Video from 'react-native-video';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { SCREEN_NAMES } from '../../navigators/screenNames';
+import { useNotification } from '../../hooks/useNotification';
+import { notificationApi } from '../../api/notificationApi';
+import { useAuth } from '../../hooks/useAuth';
 import { homeApi } from '../../api/homeApi';
 import { videoApi } from '../../api/videoApi';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { SafeScreen } from '../../components/SafeScreen';
+import { ThunderTransition } from '../../components/ThunderTransition';
 import { UNIFIED_THEME } from '../../unifiedTheme';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import LinearGradient from 'react-native-linear-gradient';
@@ -34,25 +39,312 @@ const TB = C.tabBar;
 /** Match mentor profile accent cycle (reserved for future category chips) */
 const PURPLE_LINK = B.nebulaGradient[0];
 const GOLD = C.accent.primary;
-const RAIL_CARD_W = 138;
+const SESSION_CARD_W = 160;
 const THUMB_PLACEHOLDER = ['#3d3666', '#16122c'];
 
-function VideoTileCard({ item, onPress }) {
-  const thumbH = Math.round(RAIL_CARD_W * 1.35);
+const HOW_IT_WORKS_STEPS = [
+  { icon: 'travel-explore', label: 'Discover' },
+  { icon: 'event-available', label: 'Book' },
+  { icon: 'groups', label: 'Connect' },
+];
+
+function usePressScale(down = 0.96) {
+  const scale = useRef(new Animated.Value(1)).current;
+
+  const onInteractIn = useCallback(() => {
+    Animated.spring(scale, {
+      toValue: down,
+      friction: 6,
+      tension: 140,
+      useNativeDriver: true,
+    }).start();
+  }, [scale, down]);
+
+  const onInteractOut = useCallback(() => {
+    Animated.spring(scale, {
+      toValue: 1,
+      friction: 5,
+      tension: 120,
+      useNativeDriver: true,
+    }).start();
+  }, [scale]);
+
+  return { scale, onInteractIn, onInteractOut };
+}
+
+function AnimatedPressable({
+  children,
+  style,
+  onPress,
+  scaleDown = 0.96,
+  accessibilityRole = 'button',
+  accessibilityLabel,
+  hitSlop,
+}) {
+  const { scale, onInteractIn, onInteractOut } = usePressScale(scaleDown);
 
   return (
-    <TouchableOpacity
-      style={[styles.tile, { width: RAIL_CARD_W }]}
-      onPress={() => onPress(item)}
-      activeOpacity={0.88}
-      accessibilityRole="button"
-      accessibilityLabel={`Browse ${item.label}`}
-    >
-      <View style={[styles.tileThumb, { height: thumbH }]}>
+    <Animated.View style={{ transform: [{ scale }] }}>
+      <Pressable
+        onPress={onPress}
+        onPressIn={onInteractIn}
+        onPressOut={onInteractOut}
+        onHoverIn={onInteractIn}
+        onHoverOut={onInteractOut}
+        style={style}
+        accessibilityRole={accessibilityRole}
+        accessibilityLabel={accessibilityLabel}
+        hitSlop={hitSlop}
+      >
+        {children}
+      </Pressable>
+    </Animated.View>
+  );
+}
+
+function TrustIcon({ name, color, delay = 0 }) {
+  const floatY = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    const loop = Animated.loop(
+      Animated.sequence([
+        Animated.delay(delay),
+        Animated.timing(floatY, {
+          toValue: 1,
+          duration: 1600,
+          easing: Easing.inOut(Easing.sin),
+          useNativeDriver: true,
+        }),
+        Animated.timing(floatY, {
+          toValue: 0,
+          duration: 1600,
+          easing: Easing.inOut(Easing.sin),
+          useNativeDriver: true,
+        }),
+      ]),
+    );
+    loop.start();
+    return () => loop.stop();
+  }, [floatY, delay]);
+
+  const translateY = floatY.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0, -3],
+  });
+
+  return (
+    <Animated.View style={{ transform: [{ translateY }] }}>
+      <MaterialIcons name={name} size={20} color={color} />
+    </Animated.View>
+  );
+}
+
+function SectionHeaderRow({ title, onSeeAll, icon }) {
+  return (
+    <View style={styles.secHdrRow}>
+      <View style={styles.secHdrLeft}>
+        {icon ? (
+          <View style={styles.secHdrIcon}>
+            <MaterialIcons name={icon} size={14} color={PURPLE_LINK} />
+          </View>
+        ) : null}
+        <Text style={styles.secHdrTitle}>{title}</Text>
+      </View>
+      {onSeeAll ? (
+        <AnimatedPressable
+          onPress={onSeeAll}
+          scaleDown={0.94}
+          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          accessibilityLabel={`See all ${title}`}
+        >
+          <Text style={styles.secHdrLink}>See all &gt;</Text>
+        </AnimatedPressable>
+      ) : null}
+    </View>
+  );
+}
+
+function HowItWorksCard({ video, onPress }) {
+  const stepLine = HOW_IT_WORKS_STEPS.map(s => s.label).join(' · ');
+  const cardScale = useRef(new Animated.Value(1)).current;
+  const breathe = useRef(new Animated.Value(0)).current;
+  const navigatingRef = useRef(false);
+
+  useEffect(() => {
+    const glowLoop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(breathe, {
+          toValue: 1,
+          duration: 2200,
+          easing: Easing.inOut(Easing.sin),
+          useNativeDriver: true,
+        }),
+        Animated.timing(breathe, {
+          toValue: 0,
+          duration: 2200,
+          easing: Easing.inOut(Easing.sin),
+          useNativeDriver: true,
+        }),
+      ]),
+    );
+    glowLoop.start();
+    return () => glowLoop.stop();
+  }, [breathe]);
+
+  const haloOpacity = breathe.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0.12, 0.38],
+  });
+  const haloScale = breathe.interpolate({
+    inputRange: [0, 1],
+    outputRange: [1, 1.02],
+  });
+  const playGlowOpacity = breathe.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0.22, 0.58],
+  });
+  const playGlowScale = breathe.interpolate({
+    inputRange: [0, 1],
+    outputRange: [1, 1.18],
+  });
+
+  const onInteractIn = () => {
+    Animated.spring(cardScale, {
+      toValue: 0.97,
+      friction: 6,
+      tension: 140,
+      useNativeDriver: true,
+    }).start();
+  };
+
+  const onInteractOut = () => {
+    if (navigatingRef.current) return;
+    Animated.spring(cardScale, {
+      toValue: 1,
+      friction: 5,
+      tension: 120,
+      useNativeDriver: true,
+    }).start();
+  };
+
+  const handlePress = () => {
+    if (navigatingRef.current) return;
+    navigatingRef.current = true;
+    Animated.sequence([
+      Animated.timing(cardScale, { toValue: 0.95, duration: 90, useNativeDriver: true }),
+      Animated.spring(cardScale, { toValue: 1.02, friction: 4, tension: 160, useNativeDriver: true }),
+      Animated.timing(cardScale, {
+        toValue: 1,
+        duration: 120,
+        easing: Easing.out(Easing.cubic),
+        useNativeDriver: true,
+      }),
+    ]).start(() => {
+      navigatingRef.current = false;
+      onPress();
+    });
+  };
+
+  return (
+    <View style={styles.howItWorksOuter}>
+      <Animated.View
+        pointerEvents="none"
+        style={[
+          styles.howItWorksHalo,
+          { opacity: haloOpacity, transform: [{ scale: haloScale }] },
+        ]}
+      >
+        <LinearGradient
+          colors={['rgba(167,139,250,0.5)', 'rgba(240,216,117,0.25)', 'rgba(94,234,212,0.15)']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={StyleSheet.absoluteFill}
+        />
+      </Animated.View>
+      <Animated.View style={{ transform: [{ scale: cardScale }] }}>
+        <Pressable
+          onPress={handlePress}
+          onPressIn={onInteractIn}
+          onPressOut={onInteractOut}
+          onHoverIn={onInteractIn}
+          onHoverOut={onInteractOut}
+          accessibilityRole="button"
+          accessibilityLabel={`Play ${video.title}`}
+          style={styles.howItWorksPressable}
+        >
+          <Animated.View
+            pointerEvents="none"
+            style={[styles.howItWorksBorderRing, { opacity: haloOpacity }]}
+          />
+          <View style={styles.howItWorksCard}>
+          <LinearGradient
+            colors={['rgba(124,58,237,0.2)', 'rgba(12,12,40,0.72)', 'rgba(94,234,212,0.08)']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.howItWorksGrad}
+          >
+            <View style={styles.howItWorksPlayWrap}>
+              <Animated.View
+                pointerEvents="none"
+                style={[
+                  styles.howItWorksPlayGlow,
+                  { opacity: playGlowOpacity, transform: [{ scale: playGlowScale }] },
+                ]}
+              >
+                <LinearGradient
+                  colors={[PURPLE_LINK, GOLD, C.accent.secondary]}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                  style={styles.howItWorksPlayGlowGrad}
+                />
+              </Animated.View>
+              <LinearGradient
+                colors={B.nebulaGradient}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={styles.howItWorksPlay}
+              >
+                <MaterialIcons name="play-arrow" size={18} color={B.nebulaText} style={{ marginLeft: 2 }} />
+              </LinearGradient>
+            </View>
+            <View style={styles.howItWorksCopy}>
+              <Text style={styles.howItWorksEyebrowTxt}>Connectiqo intro</Text>
+              <Text style={styles.howItWorksTitle} numberOfLines={1}>
+                {video.title}
+              </Text>
+              <Text style={styles.howItWorksStepsLine} numberOfLines={1}>
+                {stepLine}
+              </Text>
+            </View>
+          <MaterialIcons name="chevron-right" size={20} color={PURPLE_LINK} />
+        </LinearGradient>
+          </View>
+        </Pressable>
+      </Animated.View>
+    </View>
+  );
+}
+
+function SessionOverlayCard({ item, onPress }) {
+  const cardH = Math.round(SESSION_CARD_W * 1.28);
+  const { scale, onInteractIn, onInteractOut } = usePressScale(0.95);
+
+  return (
+    <Animated.View style={{ transform: [{ scale }] }}>
+      <Pressable
+        style={[styles.sessionCard, { width: SESSION_CARD_W, height: cardH }]}
+        onPress={() => onPress(item)}
+        onPressIn={onInteractIn}
+        onPressOut={onInteractOut}
+        onHoverIn={onInteractIn}
+        onHoverOut={onInteractOut}
+        accessibilityRole="button"
+        accessibilityLabel={`Browse ${item.label}`}
+      >
         {item.thumbnail_url ? (
           <Image
             source={{ uri: item.thumbnail_url }}
-            style={styles.tileThumbImg}
+            style={styles.sessionCardImg}
             resizeMode="cover"
           />
         ) : (
@@ -60,42 +352,29 @@ function VideoTileCard({ item, onPress }) {
             colors={THUMB_PLACEHOLDER}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
-            style={styles.tileThumbPlaceholder}
+            style={styles.sessionCardImg}
           >
-            <MaterialIcons name="videocam" size={32} color="rgba(255,255,255,0.38)" />
+            <MaterialIcons name="videocam" size={30} color="rgba(255,255,255,0.32)" />
           </LinearGradient>
         )}
         <LinearGradient
-          colors={['transparent', 'rgba(3,2,12,0.92)']}
-          style={styles.tileThumbFade}
+          colors={['transparent', 'rgba(3,2,12,0.88)']}
+          style={styles.sessionCardGrad}
           pointerEvents="none"
         />
-        <View style={styles.tilePlayBadge}>
-          <MaterialIcons name="play-arrow" size={18} color={C.text.primary} />
+        <View style={styles.sessionCardPlay} pointerEvents="none">
+          <MaterialIcons name="play-circle-outline" size={26} color="rgba(255,255,255,0.92)" />
         </View>
-      </View>
-      <View style={styles.tileBody}>
-        <Text style={styles.tileTitle} numberOfLines={2}>
-          {item.title || item.label}
-        </Text>
-        <Text style={styles.tileSub} numberOfLines={1}>
-          {item.profiles?.name || 'Featured'}
-        </Text>
-      </View>
-    </TouchableOpacity>
-  );
-}
-
-function SectionHeaderRow({ title, onSeeAll }) {
-  return (
-    <View style={styles.secHdrRow}>
-      <Text style={styles.secHdrTitle}>{title}</Text>
-      {onSeeAll ? (
-        <TouchableOpacity onPress={onSeeAll} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-          <Text style={styles.secHdrLink}>See all &gt;</Text>
-        </TouchableOpacity>
-      ) : null}
-    </View>
+        <View style={styles.sessionCardMeta} pointerEvents="none">
+          <Text style={styles.sessionCardTitle} numberOfLines={2}>
+            {item.title || item.label}
+          </Text>
+          <Text style={styles.sessionCardSub} numberOfLines={1}>
+            {item.profiles?.name || 'Featured'}
+          </Text>
+        </View>
+      </Pressable>
+    </Animated.View>
   );
 }
 const SLIDE_H = 200;
@@ -160,14 +439,24 @@ function HomeSkeleton({ screenWidth }) {
         }}
       />
       <View style={{ paddingHorizontal: T.spacing.lg }}>
-        <SkeletonBox style={{ height: 70, borderRadius: 14, marginTop: T.spacing.lg, marginBottom: T.spacing.lg }} />
+        <SkeletonBox
+          style={{
+            height: 64,
+            borderRadius: T.borderRadius.md,
+            marginTop: T.spacing.lg,
+            marginBottom: T.spacing.lg,
+          }}
+        />
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: T.spacing.md }}>
           <SkeletonBox style={{ width: 130, height: 14, borderRadius: 6 }} />
           <SkeletonBox style={{ width: 44, height: 12, borderRadius: 6 }} />
         </View>
         <View style={{ flexDirection: 'row', gap: T.spacing.md }}>
           {[0, 1, 2].map(i => (
-            <SkeletonBox key={i} style={{ width: 148, height: 186, borderRadius: T.borderRadius.lg }} />
+            <SkeletonBox
+              key={i}
+              style={{ width: SESSION_CARD_W, height: Math.round(SESSION_CARD_W * 1.28), borderRadius: T.borderRadius.lg }}
+            />
           ))}
         </View>
       </View>
@@ -223,35 +512,50 @@ function HeroSlide({ slide, slideWidth, isRemote }) {
   );
 }
 
+function HeroDot({ active, onPress, index, count }) {
+  const { scale, onInteractIn, onInteractOut } = usePressScale(0.88);
+
+  return (
+    <Animated.View style={{ transform: [{ scale }] }}>
+      <Pressable
+        onPress={onPress}
+        onPressIn={onInteractIn}
+        onPressOut={onInteractOut}
+        onHoverIn={onInteractIn}
+        onHoverOut={onInteractOut}
+        style={styles.heroDotHit}
+        accessibilityRole="tab"
+        accessibilityState={{ selected: active }}
+        accessibilityLabel={`Banner ${index + 1} of ${count}`}
+      >
+        {active ? (
+          <LinearGradient
+            colors={TB.topNavActiveWash}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.heroDotActive}
+          />
+        ) : (
+          <View style={styles.heroDot} />
+        )}
+      </Pressable>
+    </Animated.View>
+  );
+}
+
 function HeroPagination({ count, activeIndex, onSelect }) {
   if (count <= 1) return null;
   return (
     <View style={styles.heroDots} accessibilityRole="tablist">
-      {Array.from({ length: count }).map((_, i) => {
-        const active = i === activeIndex;
-        return (
-          <TouchableOpacity
-            key={i}
-            onPress={() => onSelect(i)}
-            style={styles.heroDotHit}
-            activeOpacity={0.85}
-            accessibilityRole="tab"
-            accessibilityState={{ selected: active }}
-            accessibilityLabel={`Banner ${i + 1} of ${count}`}
-          >
-            {active ? (
-              <LinearGradient
-                colors={TB.topNavActiveWash}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={styles.heroDotActive}
-              />
-            ) : (
-              <View style={styles.heroDot} />
-            )}
-          </TouchableOpacity>
-        );
-      })}
+      {Array.from({ length: count }).map((_, i) => (
+        <HeroDot
+          key={i}
+          active={i === activeIndex}
+          index={i}
+          count={count}
+          onPress={() => onSelect(i)}
+        />
+      ))}
     </View>
   );
 }
@@ -390,8 +694,68 @@ function useEntrance() {
   return { o, y, style: { opacity: o, transform: [{ translateY: y }] } };
 }
 
+const BORDER_SPIN_COLORS = [
+  B.premiumGradient[0],
+  GOLD,
+  C.accent.secondary,
+  '#f9a8d4',
+  B.premiumGradient[0],
+];
+
+function RotatingBorderIconButton({ onPress, accessibilityLabel, children }) {
+  const spin = useRef(new Animated.Value(0)).current;
+  const { scale, onInteractIn, onInteractOut } = usePressScale(0.92);
+
+  useEffect(() => {
+    const loop = Animated.loop(
+      Animated.timing(spin, {
+        toValue: 1,
+        duration: 3200,
+        easing: Easing.linear,
+        useNativeDriver: true,
+      }),
+    );
+    loop.start();
+    return () => loop.stop();
+  }, [spin]);
+
+  const rotate = spin.interpolate({
+    inputRange: [0, 1],
+    outputRange: ['0deg', '360deg'],
+  });
+
+  return (
+    <Animated.View style={{ transform: [{ scale }] }}>
+      <Pressable
+        onPress={onPress}
+        onPressIn={onInteractIn}
+        onPressOut={onInteractOut}
+        onHoverIn={onInteractIn}
+        onHoverOut={onInteractOut}
+        accessibilityRole="button"
+        accessibilityLabel={accessibilityLabel}
+        style={styles.appBarBtnShell}
+      >
+        <Animated.View style={[styles.appBarBtnSpinner, { transform: [{ rotate }] }]}>
+          <LinearGradient
+            colors={BORDER_SPIN_COLORS}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.appBarBtnGradientPlate}
+          />
+        </Animated.View>
+        <View style={styles.appBarBtn}>
+          {children}
+        </View>
+      </Pressable>
+    </Animated.View>
+  );
+}
+
 export default function HomeScreen() {
   const navigation = useNavigation();
+  const { profile } = useAuth();
+  const { unreadCount, syncUnreadCount } = useNotification();
   const insets = useSafeAreaInsets();
   const { width, height } = useWindowDimensions();
   const [playerVisible, setPlayerVisible] = useState(false);
@@ -403,6 +767,11 @@ export default function HomeScreen() {
   const [heroSlides, setHeroSlides] = useState(FALLBACK_SLIDES);
   const [introVideo, setIntroVideo] = useState(null);
   const [sessionVideos, setSessionVideos] = useState([]);
+  const [thunderVisible, setThunderVisible] = useState(false);
+  const [thunderOrigin, setThunderOrigin] = useState(null);
+  const thunderBusy = useRef(false);
+  const thunderBtnRef = useRef(null);
+  const boltPulse = useRef(new Animated.Value(1)).current;
 
   const s0 = useEntrance(); // app bar
   const s1 = useEntrance(); // hero
@@ -455,7 +824,59 @@ export default function HomeScreen() {
     });
   }, []);
 
-  useFocusEffect(useCallback(() => { loadHome(false); }, [loadHome]));
+  useFocusEffect(
+    useCallback(() => {
+      loadHome(false);
+      if (profile?.id) {
+        notificationApi.getNotifications(profile.id).then(syncUnreadCount).catch(() => {});
+      }
+      return () => {
+        setPlayerVisible(false);
+        setUrlPlayback(null);
+        setPlayerError(false);
+      };
+    }, [loadHome, profile?.id, syncUnreadCount]),
+  );
+
+  const openNotificationsWithThunder = useCallback(() => {
+    if (thunderBusy.current) return;
+    thunderBusy.current = true;
+    Animated.sequence([
+      Animated.timing(boltPulse, {
+        toValue: 1.45,
+        duration: 60,
+        easing: Easing.out(Easing.back(1.8)),
+        useNativeDriver: true,
+      }),
+      Animated.timing(boltPulse, {
+        toValue: 1,
+        duration: 100,
+        useNativeDriver: true,
+      }),
+    ]).start();
+
+    const launch = (origin) => {
+      setThunderOrigin(origin);
+      setThunderVisible(true);
+    };
+
+    if (thunderBtnRef.current?.measureInWindow) {
+      thunderBtnRef.current.measureInWindow((x, y, w, h) => {
+        launch({ x: x + w / 2, y: y + h / 2 });
+      });
+    } else {
+      launch(null);
+    }
+  }, [boltPulse]);
+
+  const handleThunderStrike = useCallback(() => {
+    navigation.navigate(SCREEN_NAMES.Notifications);
+  }, [navigation]);
+
+  const handleThunderDismiss = useCallback(() => {
+    setThunderVisible(false);
+    thunderBusy.current = false;
+  }, []);
 
   return (
     <SafeScreen scrollable={false} padding={0} hasBottomTabs={false}>
@@ -464,8 +885,7 @@ export default function HomeScreen() {
           styles.page,
           {
             paddingTop: insets.top + T.spacing.lg,
-            paddingBottom:
-              insets.bottom + (TB.floating?.contentReserve ?? 78) + T.spacing.lg,
+            paddingBottom: insets.bottom + 52,
           },
         ]}
         showsVerticalScrollIndicator={false}
@@ -481,15 +901,13 @@ export default function HomeScreen() {
 
         {/* ── APP BAR ── */}
         <Animated.View style={[styles.appBar, s0.style]}>
-          <LinearGradient colors={B.premiumGradient} style={styles.logoRing}>
-            <View style={styles.logoTile}>
-              <Image
-                source={require('../../assets/images/logo.png')}
-                style={styles.logoMark}
-                resizeMode="contain"
-              />
-            </View>
-          </LinearGradient>
+          <View style={styles.logoWrap}>
+            <Image
+              source={require('../../assets/images/logo.png')}
+              style={styles.logoMark}
+              resizeMode="cover"
+            />
+          </View>
           <View style={styles.appBarTitles}>
             <Text style={styles.appName} numberOfLines={1}>
               Connectiqo
@@ -498,15 +916,23 @@ export default function HomeScreen() {
               Connect · Learn · Grow
             </Text>
           </View>
-          <TouchableOpacity
-            style={styles.appBarBtn}
-            onPress={() => navigation.navigate(SCREEN_NAMES.UnifiedSettings)}
-            activeOpacity={0.75}
-            accessibilityRole="button"
-            accessibilityLabel="Settings"
-          >
-            <MaterialIcons name="bolt" size={22} color={C.text.primary} />
-          </TouchableOpacity>
+          <View ref={thunderBtnRef} collapsable={false}>
+            <RotatingBorderIconButton
+              onPress={openNotificationsWithThunder}
+              accessibilityLabel="Notifications"
+            >
+              <Animated.View style={[styles.appBarBtnIconPulse, { transform: [{ scale: boltPulse }] }]}>
+                <MaterialIcons name="bolt" size={22} color={GOLD} />
+              </Animated.View>
+              {unreadCount > 0 ? (
+                <View style={styles.notifBadge}>
+                  <Text style={styles.notifBadgeText}>
+                    {unreadCount > 9 ? '9+' : unreadCount}
+                  </Text>
+                </View>
+              ) : null}
+            </RotatingBorderIconButton>
+          </View>
         </Animated.View>
 
         {!dataLoaded ? <HomeSkeleton screenWidth={width} /> : (
@@ -520,38 +946,15 @@ export default function HomeScreen() {
         <View style={{ paddingHorizontal: T.spacing.lg }}>
         {/* ── WATCH HOW IT WORKS ── */}
         {introVideo && (
-        <Animated.View style={s2.style}>
-          <TouchableOpacity
-            style={styles.videoCard}
-            activeOpacity={0.88}
+        <Animated.View style={[styles.introSection, s2.style]}>
+          <HowItWorksCard
+            video={introVideo}
             onPress={() => {
               setUrlPlayback(introVideo.video_url);
               setPlayerError(false);
               setPlayerVisible(true);
             }}
-          >
-            <View style={styles.videoCardInner}>
-              <View style={styles.videoPlayBtn}>
-                <LinearGradient
-                  colors={B.nebulaGradient}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 1 }}
-                  style={styles.videoPlayGrad}
-                >
-                  <MaterialIcons name="play-arrow" size={28} color={B.nebulaText} style={{ marginLeft: 3 }} />
-                </LinearGradient>
-              </View>
-              <View style={styles.videoCardText}>
-                <Text style={styles.videoCardTitle} numberOfLines={1}>
-                  {introVideo.title}
-                </Text>
-                <Text style={styles.videoCardLabel} numberOfLines={1}>
-                  {introVideo.label}
-                </Text>
-              </View>
-              <MaterialIcons name="chevron-right" size={22} color={PURPLE_LINK} />
-            </View>
-          </TouchableOpacity>
+          />
         </Animated.View>
         )}
 
@@ -560,6 +963,7 @@ export default function HomeScreen() {
         <Animated.View style={[styles.catSection, s2b.style]}>
           <SectionHeaderRow
             title="Recent Sessions"
+            icon="history"
             onSeeAll={() =>
               navigation.navigate(SCREEN_NAMES.LearnerSection, {
                 screen: SCREEN_NAMES.LearnerVideos,
@@ -574,7 +978,7 @@ export default function HomeScreen() {
             contentContainerStyle={styles.tileRow}
           >
             {sessionVideos.map(item => (
-              <VideoTileCard
+              <SessionOverlayCard
                 key={item.id}
                 item={item}
                 onPress={cat => {
@@ -595,7 +999,11 @@ export default function HomeScreen() {
           {TRUST.map((t, i) => (
             <React.Fragment key={t.label}>
               <View style={styles.trustItem}>
-                <MaterialIcons name={t.icon} size={20} color={i % 2 === 0 ? C.accent.primary : C.accent.secondary} />
+                <TrustIcon
+                  name={t.icon}
+                  color={i % 2 === 0 ? C.accent.primary : C.accent.secondary}
+                  delay={i * 220}
+                />
                 <Text style={styles.trustLabel}>{t.label}</Text>
               </View>
               {i < TRUST.length - 1 ? <View style={styles.trustDivider} /> : null}
@@ -626,6 +1034,8 @@ export default function HomeScreen() {
               style={{ width, height }}
               controls
               resizeMode="contain"
+              playInBackground={false}
+              playWhenInactive={false}
               onError={() => setPlayerError(true)}
             />
           ) : null}
@@ -650,44 +1060,41 @@ export default function HomeScreen() {
         </View>
       </Modal>
 
-
+      <ThunderTransition
+        visible={thunderVisible}
+        origin={thunderOrigin}
+        onStrike={handleThunderStrike}
+        onDismiss={handleThunderDismiss}
+      />
     </SafeScreen>
   );
 }
 
 const styles = StyleSheet.create({
   page: {
-    flexGrow: 1,
+    flexGrow: 0,
   },
 
-  // App bar
+  // App bar — logo height matches title block (headingSm + tagline ≈ 44px) and action button
   appBar: {
     flexDirection: 'row',
     alignItems: 'center',
-    minHeight: 56,
+    minHeight: 60,
     paddingHorizontal: T.spacing.lg,
-    marginBottom: T.spacing.md,
-    gap: T.spacing.md,
+    marginBottom: T.spacing.sm,
+    gap: T.spacing.sm + 2,
   },
-  logoRing: {
-    padding: 2,
-    borderRadius: T.borderRadius.md + 2,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.35)',
-    ...Platform.select({ ios: T.shadows.small, android: { elevation: 4 } }),
-  },
-  logoTile: {
-    width: 44,
-    height: 44,
-    borderRadius: T.borderRadius.md,
-    backgroundColor: C.primary.void,
-    justifyContent: 'center',
-    alignItems: 'center',
+  logoWrap: {
+    width: 56,
+    height: 56,
+    borderRadius: 14,
     overflow: 'hidden',
   },
   logoMark: {
-    width: 30,
-    height: 30,
+    width: '112%',
+    height: '112%',
+    marginLeft: '-6%',
+    marginTop: '-6%',
   },
   appBarTitles: {
     flex: 1,
@@ -707,15 +1114,57 @@ const styles = StyleSheet.create({
     letterSpacing: 0.2,
     marginTop: 2,
   },
+  appBarBtnShell: {
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    overflow: 'hidden',
+    alignItems: 'center',
+    justifyContent: 'center',
+    ...Platform.select({ ios: T.shadows.small, android: { elevation: 3 } }),
+  },
+  appBarBtnSpinner: {
+    position: 'absolute',
+    width: '130%',
+    height: '130%',
+    left: '-15%',
+    top: '-15%',
+  },
+  appBarBtnGradientPlate: {
+    flex: 1,
+  },
   appBarBtn: {
     width: 40,
     height: 40,
     borderRadius: 20,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: 'rgba(12,12,40,0.55)',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.12)',
+    backgroundColor: 'rgba(12,12,40,0.92)',
+    position: 'relative',
+  },
+  appBarBtnIconPulse: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  notifBadge: {
+    position: 'absolute',
+    top: 2,
+    right: 2,
+    minWidth: 16,
+    height: 16,
+    borderRadius: 8,
+    paddingHorizontal: 4,
+    backgroundColor: C.accent.error,
+    borderWidth: 1.5,
+    borderColor: 'rgba(12,12,40,0.95)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  notifBadgeText: {
+    fontSize: 9,
+    fontWeight: '800',
+    color: '#fff',
+    lineHeight: 11,
   },
 
   heroSection: {
@@ -805,7 +1254,22 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     marginTop: T.spacing.xs,
-    marginBottom: 2,
+    marginBottom: T.spacing.sm,
+  },
+  secHdrLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    flex: 1,
+    minWidth: 0,
+  },
+  secHdrIcon: {
+    width: 26,
+    height: 26,
+    borderRadius: 8,
+    backgroundColor: 'rgba(167,139,250,0.14)',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   secHdrTitle: {
     fontSize: 15,
@@ -818,72 +1282,163 @@ const styles = StyleSheet.create({
     color: PURPLE_LINK,
   },
 
-  // Video categories
-  catSection: {
-    marginBottom: T.spacing.xl,
+  introSection: {
+    marginBottom: T.spacing.sm,
   },
-  tileRow: {
-    gap: 10,
-    paddingRight: T.spacing.xs,
-    paddingTop: 6,
-    paddingBottom: T.spacing.sm,
+  howItWorksOuter: {
+    position: 'relative',
   },
-  tile: {
-    borderRadius: 16,
+  howItWorksPressable: {
+    position: 'relative',
+  },
+  howItWorksHalo: {
+    position: 'absolute',
+    top: -2,
+    left: -2,
+    right: -2,
+    bottom: -2,
+    borderRadius: T.borderRadius.md + 2,
     overflow: 'hidden',
-    backgroundColor: 'rgba(255,255,255,0.07)',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.14)',
     ...Platform.select({
-      ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.25, shadowRadius: 6 },
+      ios: {
+        shadowColor: PURPLE_LINK,
+        shadowOffset: { width: 0, height: 0 },
+        shadowOpacity: 0.35,
+        shadowRadius: 10,
+      },
       android: { elevation: 4 },
     }),
   },
-  tileThumb: {
-    width: '100%',
-    overflow: 'hidden',
-    position: 'relative',
-  },
-  tileThumbImg: {
+  howItWorksBorderRing: {
     ...StyleSheet.absoluteFillObject,
+    borderRadius: T.borderRadius.md,
+    borderWidth: 1,
+    borderColor: 'rgba(240,216,117,0.55)',
+    zIndex: 2,
   },
-  tileThumbPlaceholder: {
+  howItWorksCard: {
+    borderRadius: T.borderRadius.md,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: 'rgba(167,139,250,0.22)',
+  },
+  howItWorksGrad: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: T.spacing.sm + 2,
+    paddingVertical: 10,
+    paddingHorizontal: T.spacing.sm + 2,
+  },
+  howItWorksPlayWrap: {
+    width: 36,
+    height: 36,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  howItWorksPlayGlow: {
+    position: 'absolute',
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    overflow: 'hidden',
+    ...Platform.select({
+      ios: {
+        shadowColor: GOLD,
+        shadowOffset: { width: 0, height: 0 },
+        shadowOpacity: 0.65,
+        shadowRadius: 8,
+      },
+      android: { elevation: 6 },
+    }),
+  },
+  howItWorksPlayGlowGrad: {
+    flex: 1,
+    borderRadius: 18,
+  },
+  howItWorksPlay: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 1,
+  },
+  howItWorksCopy: {
+    flex: 1,
+    minWidth: 0,
+    gap: 1,
+  },
+  howItWorksEyebrowTxt: {
+    fontSize: 9,
+    fontWeight: '700',
+    color: GOLD,
+    letterSpacing: 0.35,
+    textTransform: 'uppercase',
+  },
+  howItWorksTitle: {
+    fontSize: 13,
+    fontWeight: '800',
+    color: C.text.primary,
+    lineHeight: 17,
+  },
+  howItWorksStepsLine: {
+    fontSize: 10,
+    fontWeight: '600',
+    color: C.text.muted,
+    marginTop: 1,
+  },
+
+  catSection: {
+    marginBottom: T.spacing.sm,
+  },
+  tileRow: {
+    gap: 12,
+    paddingRight: T.spacing.xs,
+    paddingTop: 2,
+  },
+  sessionCard: {
+    borderRadius: T.borderRadius.lg,
+    overflow: 'hidden',
+    backgroundColor: C.primary.dark,
+    ...Platform.select({
+      ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.28, shadowRadius: 8 },
+      android: { elevation: 5 },
+    }),
+  },
+  sessionCardImg: {
     ...StyleSheet.absoluteFillObject,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  tileThumbFade: {
+  sessionCardGrad: {
     position: 'absolute',
     left: 0,
     right: 0,
     bottom: 0,
-    top: '35%',
+    height: '62%',
   },
-  tilePlayBadge: {
+  sessionCardPlay: {
     position: 'absolute',
-    alignSelf: 'center',
-    top: '38%',
-    width: 34,
-    height: 34,
-    borderRadius: 17,
-    backgroundColor: 'rgba(0,0,0,0.45)',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.25)',
-    justifyContent: 'center',
-    alignItems: 'center',
+    top: 10,
+    right: 10,
   },
-  tileBody: {
-    paddingHorizontal: 8,
-    paddingVertical: 10,
+  sessionCardMeta: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    paddingHorizontal: 10,
+    paddingBottom: 10,
+    paddingTop: T.spacing.md,
   },
-  tileTitle: {
+  sessionCardTitle: {
     color: C.text.primary,
-    fontWeight: '700',
+    fontWeight: '800',
     fontSize: 12,
     lineHeight: 16,
     marginBottom: 3,
   },
-  tileSub: {
+  sessionCardSub: {
     fontSize: 10,
     color: C.text.muted,
     fontWeight: '600',
@@ -919,55 +1474,6 @@ const styles = StyleSheet.create({
     alignSelf: 'stretch',
   },
 
-  // Video card
-  videoCard: {
-    borderRadius: 14,
-    overflow: 'hidden',
-    borderWidth: 1,
-    borderColor: 'rgba(167,139,250,0.22)',
-    backgroundColor: 'rgba(255,255,255,0.07)',
-    marginBottom: T.spacing.lg,
-    ...Platform.select({ ios: T.shadows.small, android: { elevation: 3 } }),
-  },
-  videoCardInner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: T.spacing.md,
-    padding: T.spacing.md,
-  },
-  videoPlayBtn: {
-    width: 52,
-    height: 52,
-    borderRadius: 26,
-    overflow: 'hidden',
-    // borderWidth: 1,
-    borderColor: C.border.light,
-    ...Platform.select({
-      ios: { shadowColor: C.accent.primary, shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.45, shadowRadius: 6 },
-      android: { elevation: 5 },
-    }),
-  },
-  videoPlayGrad: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  videoCardText: {
-    flex: 1,
-    minWidth: 0,
-    justifyContent: 'center',
-  },
-  videoCardTitle: {
-    ...T.typography.labelMd,
-    color: C.text.primary,
-    fontWeight: '800',
-  },
-  videoCardLabel: {
-    marginTop: 2,
-    color: GOLD,
-    fontWeight: '700',
-    fontSize: 12,
-  },
   // Player modal
   playerScreen: {
     flex: 1,

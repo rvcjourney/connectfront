@@ -12,7 +12,7 @@ export function pickRecordingRow(booking) {
 }
 
 export function meetingIdFromBooking(booking) {
-  return pickRecordingRow(booking)?.meeting_id ?? null;
+  return pickRecordingRow(booking)?.meeting_id ?? booking?.meeting_id ?? null;
 }
 
 /** Public playback/file URL for UI (ignores placeholder rows). */
@@ -48,16 +48,42 @@ export const recordingsApi = {
     }
   },
 
-  updateRecordingUrls: async ({ bookingId, recordingUrl, recordingPlaybackUrl }) => {
+  updateRecordingUrls: async ({
+    bookingId,
+    recordingUrl,
+    recordingPlaybackUrl,
+    mentorId,
+    learnerId,
+    meetingId,
+  }) => {
     try {
       const url = recordingUrl || RECORDING_URL_PLACEHOLDER;
+      const patch = {
+        recording_url: url,
+        recording_playback_url: recordingPlaybackUrl ?? recordingUrl ?? null,
+        updated_at: new Date().toISOString(),
+      };
+      if (meetingId != null) {
+        patch.meeting_id = meetingId;
+      }
+
+      if (mentorId && learnerId) {
+        const { error } = await supabase.from('recordings').upsert(
+          {
+            booking_id: bookingId,
+            mentor_id: mentorId,
+            learner_id: learnerId,
+            ...patch,
+          },
+          { onConflict: 'booking_id' },
+        );
+        if (error) throw error;
+        return;
+      }
+
       const { error } = await supabase
         .from('recordings')
-        .update({
-          recording_url: url,
-          recording_playback_url: recordingPlaybackUrl ?? recordingUrl ?? null,
-          updated_at: new Date().toISOString(),
-        })
+        .update(patch)
         .eq('booking_id', bookingId);
       if (error) throw error;
     } catch (error) {

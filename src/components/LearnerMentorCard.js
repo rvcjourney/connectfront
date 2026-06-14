@@ -206,7 +206,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 2,
     backgroundColor: S.accentGold,
-    borderRadius: 999,
+    borderRadius: T.borderRadius.chip,
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderWidth: 1,
@@ -219,7 +219,7 @@ const styles = StyleSheet.create({
   },
   expBadge: {
     backgroundColor: S.accentTeal,
-    borderRadius: 999,
+    borderRadius: T.borderRadius.chip,
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderWidth: 1,

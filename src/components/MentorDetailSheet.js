@@ -4,12 +4,13 @@ import {
   Text,
   Image,
   Modal,
-  TouchableOpacity,
+  Pressable,
   TouchableWithoutFeedback,
   StyleSheet,
   Animated,
   ScrollView,
   Platform,
+  Easing,
 } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
@@ -28,6 +29,43 @@ const SHEET_HEIGHT = 520;
 const SHEET_BG = '#0f0e2a';
 const PANEL_BG = '#161432';
 
+function PressScale({ onPress, style, hitSlop, children, accessibilityLabel }) {
+  const scale = useRef(new Animated.Value(1)).current;
+
+  const onPressIn = () => {
+    Animated.spring(scale, {
+      toValue: 0.92,
+      friction: 6,
+      tension: 140,
+      useNativeDriver: true,
+    }).start();
+  };
+
+  const onPressOut = () => {
+    Animated.spring(scale, {
+      toValue: 1,
+      friction: 5,
+      tension: 120,
+      useNativeDriver: true,
+    }).start();
+  };
+
+  return (
+    <Animated.View style={[{ transform: [{ scale }] }, style]}>
+      <Pressable
+        onPress={onPress}
+        onPressIn={onPressIn}
+        onPressOut={onPressOut}
+        hitSlop={hitSlop}
+        accessibilityRole="button"
+        accessibilityLabel={accessibilityLabel}
+      >
+        {children}
+      </Pressable>
+    </Animated.View>
+  );
+}
+
 function StatSegment({ icon, iconColor, value, label }) {
   return (
     <View style={styles.statSeg}>
@@ -44,12 +82,90 @@ function StatSegment({ icon, iconColor, value, label }) {
   );
 }
 
-export function MentorDetailSheet({ mentor, visible, onClose, onBook, onViewProfile }) {
-  const slideAnim = useRef(new Animated.Value(SHEET_HEIGHT)).current;
-  const backdropAnim = useRef(new Animated.Value(0)).current;
+function SheetReveal({ visible, delay = 0, offsetY = 18, style, children }) {
+  const opacity = useRef(new Animated.Value(0)).current;
+  const translateY = useRef(new Animated.Value(offsetY)).current;
 
   useEffect(() => {
     if (visible) {
+      opacity.setValue(0);
+      translateY.setValue(offsetY);
+      Animated.parallel([
+        Animated.timing(opacity, {
+          toValue: 1,
+          duration: 340,
+          delay,
+          easing: Easing.out(Easing.cubic),
+          useNativeDriver: true,
+        }),
+        Animated.spring(translateY, {
+          toValue: 0,
+          friction: 8,
+          tension: 90,
+          delay,
+          useNativeDriver: true,
+        }),
+      ]).start();
+    } else {
+      opacity.setValue(0);
+      translateY.setValue(offsetY);
+    }
+  }, [visible, delay, offsetY, opacity, translateY]);
+
+  return (
+    <Animated.View style={[style, { opacity, transform: [{ translateY }] }]}>
+      {children}
+    </Animated.View>
+  );
+}
+
+function AvatarReveal({ visible, children }) {
+  const opacity = useRef(new Animated.Value(0)).current;
+  const scale = useRef(new Animated.Value(0.82)).current;
+
+  useEffect(() => {
+    if (visible) {
+      opacity.setValue(0);
+      scale.setValue(0.82);
+      Animated.parallel([
+        Animated.timing(opacity, {
+          toValue: 1,
+          duration: 300,
+          delay: 90,
+          easing: Easing.out(Easing.cubic),
+          useNativeDriver: true,
+        }),
+        Animated.spring(scale, {
+          toValue: 1,
+          friction: 6,
+          tension: 120,
+          delay: 90,
+          useNativeDriver: true,
+        }),
+      ]).start();
+    } else {
+      opacity.setValue(0);
+      scale.setValue(0.82);
+    }
+  }, [visible, opacity, scale]);
+
+  return (
+    <Animated.View style={{ opacity, transform: [{ scale }] }}>
+      {children}
+    </Animated.View>
+  );
+}
+
+export function MentorDetailSheet({ mentor, visible, onClose, onBook, onViewProfile }) {
+  const slideAnim = useRef(new Animated.Value(SHEET_HEIGHT)).current;
+  const backdropAnim = useRef(new Animated.Value(0)).current;
+  const actionsSlide = useRef(new Animated.Value(48)).current;
+  const actionsOpacity = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    if (visible) {
+      actionsSlide.setValue(48);
+      actionsOpacity.setValue(0);
       Animated.parallel([
         Animated.spring(slideAnim, {
           toValue: 0,
@@ -62,8 +178,27 @@ export function MentorDetailSheet({ mentor, visible, onClose, onBook, onViewProf
           duration: 220,
           useNativeDriver: true,
         }),
+        Animated.sequence([
+          Animated.delay(160),
+          Animated.parallel([
+            Animated.spring(actionsSlide, {
+              toValue: 0,
+              friction: 7,
+              tension: 95,
+              useNativeDriver: true,
+            }),
+            Animated.timing(actionsOpacity, {
+              toValue: 1,
+              duration: 280,
+              easing: Easing.out(Easing.cubic),
+              useNativeDriver: true,
+            }),
+          ]),
+        ]),
       ]).start();
     } else {
+      actionsSlide.setValue(48);
+      actionsOpacity.setValue(0);
       Animated.parallel([
         Animated.timing(slideAnim, {
           toValue: SHEET_HEIGHT,
@@ -77,7 +212,7 @@ export function MentorDetailSheet({ mentor, visible, onClose, onBook, onViewProf
         }),
       ]).start();
     }
-  }, [visible, slideAnim, backdropAnim]);
+  }, [visible, mentor?.id, slideAnim, backdropAnim, actionsSlide, actionsOpacity]);
 
   if (!mentor) return null;
 
@@ -107,13 +242,16 @@ export function MentorDetailSheet({ mentor, visible, onClose, onBook, onViewProf
       <Animated.View style={[styles.sheet, { transform: [{ translateY: slideAnim }] }]}>
         <View style={styles.handle} />
 
-        <TouchableOpacity
-          style={styles.closeBtn}
+        <PressScale
           onPress={onClose}
           hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          style={styles.closeBtnWrap}
+          accessibilityLabel="Close profile"
         >
-          <MaterialIcons name="close" size={20} color={C.text.primary} />
-        </TouchableOpacity>
+          <View style={styles.closeBtn}>
+            <MaterialIcons name="close" size={20} color={C.text.primary} />
+          </View>
+        </PressScale>
 
         <ScrollView
           showsVerticalScrollIndicator={false}
@@ -121,16 +259,26 @@ export function MentorDetailSheet({ mentor, visible, onClose, onBook, onViewProf
           bounces={false}
         >
           <View style={styles.header}>
-            <LinearGradient colors={B.premiumGradient} style={styles.avatarRing}>
-              <View style={styles.avatarInner}>
-                {avatarUrl ? (
-                  <Image source={{ uri: avatarUrl }} style={styles.avatar} />
-                ) : (
-                  <Text style={styles.avatarInitial}>{initial}</Text>
-                )}
-              </View>
-            </LinearGradient>
-            <View style={styles.headerInfo}>
+            <AvatarReveal visible={visible} key={`avatar-${mentor.id}`}>
+              <PressScale
+                onPress={() => {
+                  onClose();
+                  onViewProfile(mentor);
+                }}
+                accessibilityLabel={`View ${name} full profile`}
+              >
+                <LinearGradient colors={B.premiumGradient} style={styles.avatarRing}>
+                  <View style={styles.avatarInner}>
+                    {avatarUrl ? (
+                      <Image source={{ uri: avatarUrl }} style={styles.avatar} />
+                    ) : (
+                      <Text style={styles.avatarInitial}>{initial}</Text>
+                    )}
+                  </View>
+                </LinearGradient>
+              </PressScale>
+            </AvatarReveal>
+            <SheetReveal visible={visible} delay={130} offsetY={14} style={styles.headerInfo} key={`info-${mentor.id}`}>
               <Text style={styles.name}>{name}</Text>
               {spec ? (
                 <Text style={styles.spec} numberOfLines={2}>
@@ -141,51 +289,64 @@ export function MentorDetailSheet({ mentor, visible, onClose, onBook, onViewProf
                 <MaterialIcons name="verified" size={14} color={TEAL} />
                 <Text style={styles.verifiedTxt}>Verified Mentor</Text>
               </View>
-            </View>
+            </SheetReveal>
           </View>
 
-          <View style={styles.statsBar}>
-            <StatSegment icon="star" iconColor={GOLD} value={rating} label="Rating" />
-            <View style={styles.statDivider} />
-            <StatSegment icon="history-edu" iconColor={TEAL} value={String(sessions)} label="Sessions" />
-            <View style={styles.statDivider} />
-            <StatSegment icon="workspace-premium" iconColor={PURPLE_LINK} value={expYears} label="Exp" />
-            <View style={styles.statDivider} />
-            <StatSegment icon="payments" iconColor={GOLD} value={priceLabel} label="Rate" />
-          </View>
+          <SheetReveal visible={visible} delay={190} offsetY={20} key={`stats-${mentor.id}`}>
+            <View style={styles.statsBar}>
+              <StatSegment icon="star" iconColor={GOLD} value={rating} label="Rating" />
+              <View style={styles.statDivider} />
+              <StatSegment icon="history-edu" iconColor={TEAL} value={String(sessions)} label="Sessions" />
+              <View style={styles.statDivider} />
+              <StatSegment icon="workspace-premium" iconColor={PURPLE_LINK} value={expYears} label="Exp" />
+              <View style={styles.statDivider} />
+              <StatSegment icon="payments" iconColor={GOLD} value={priceLabel} label="Rate" />
+            </View>
+          </SheetReveal>
 
           {bio ? (
-            <View style={styles.bioWrap}>
-              <Text style={styles.bioLabel}>About</Text>
-              <Text style={styles.bioText}>{bio}</Text>
-            </View>
+            <SheetReveal visible={visible} delay={250} offsetY={20} key={`bio-${mentor.id}`}>
+              <View style={styles.bioWrap}>
+                <Text style={styles.bioLabel}>About</Text>
+                <Text style={styles.bioText}>{bio}</Text>
+              </View>
+            </SheetReveal>
           ) : null}
         </ScrollView>
 
-        <View style={styles.actions}>
+        <Animated.View
+          style={[
+            styles.actions,
+            {
+              opacity: actionsOpacity,
+              transform: [{ translateY: actionsSlide }],
+            },
+          ]}
+        >
           <CosmicButton
-            label="Profile"
+            label="View Profile"
             icon="person-outline"
-            variant="goldOutline"
-            size="compact"
+            variant="outline"
+            pressScale
             onPress={() => {
               onClose();
               onViewProfile(mentor);
             }}
-            style={styles.profileBtnThemed}
+            style={styles.actionBtn}
           />
 
           <CosmicButton
             label="Book Session"
-            icon="event"
+            icon="event-available"
             variant="nebula"
+            pressScale
             onPress={() => {
               onClose();
               onBook(mentor);
             }}
-            style={styles.bookBtnThemed}
+            style={styles.actionBtn}
           />
-        </View>
+        </Animated.View>
       </Animated.View>
     </Modal>
   );
@@ -230,10 +391,13 @@ const styles = StyleSheet.create({
     marginBottom: T.spacing.sm,
     zIndex: 1,
   },
-  closeBtn: {
+  closeBtnWrap: {
     position: 'absolute',
     top: T.spacing.md,
     right: T.spacing.lg,
+    zIndex: 2,
+  },
+  closeBtn: {
     width: 36,
     height: 36,
     borderRadius: 18,
@@ -242,7 +406,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderWidth: 1,
     borderColor: 'rgba(167,139,250,0.22)',
-    zIndex: 2,
   },
   scrollContent: {
     paddingHorizontal: T.spacing.lg,
@@ -373,14 +536,22 @@ const styles = StyleSheet.create({
   },
   actions: {
     flexDirection: 'row',
-    gap: T.spacing.sm,
+    alignItems: 'stretch',
+    gap: T.spacing.md,
     paddingHorizontal: T.spacing.lg,
-    paddingTop: T.spacing.md,
+    paddingTop: T.spacing.lg,
+    paddingBottom: T.spacing.xs,
     borderTopWidth: 1,
     borderTopColor: 'rgba(167,139,250,0.22)',
     backgroundColor: SHEET_BG,
     zIndex: 1,
   },
-  profileBtnThemed: { flex: 1, marginVertical: 0 },
-  bookBtnThemed: { flex: 2, marginVertical: 0 },
+  actionBtn: {
+    flex: 1,
+    minWidth: 0,
+    marginVertical: 0,
+    minHeight: 48,
+    borderRadius: 14,
+    alignSelf: 'stretch',
+  },
 });

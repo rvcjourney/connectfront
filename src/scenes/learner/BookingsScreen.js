@@ -6,13 +6,15 @@ import {
   FlatList,
   RefreshControl,
   ActivityIndicator,
-  TouchableOpacity,
+  Pressable,
   Animated,
-  Platform,
+  Easing,
 } from 'react-native';
 import Toast from 'react-native-simple-toast';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { SafeScreen } from '../../components/SafeScreen';
+import { getFloatingTabBarContentInset } from '../../components/CosmicBottomTabBar';
 import { UNIFIED_THEME } from '../../unifiedTheme';
 import { BookingCard } from '../../components/BookingCard';
 import { useAuth } from '../../hooks/useAuth';
@@ -61,15 +63,15 @@ function SkeletonBookingCard() {
 function SkeletonSectionHeader() {
   return (
     <View style={sk.sectionHeader}>
+      <SkeletonBone style={sk.sectionIcon} />
       <SkeletonBone style={sk.sectionTitle} />
-      <SkeletonBone style={sk.sectionCount} />
     </View>
   );
 }
 
 function BookingsSkeleton() {
   return (
-    <View style={sk.wrap}>
+    <>
       <SkeletonSectionHeader />
       <SkeletonBookingCard />
       <SkeletonBookingCard />
@@ -77,7 +79,7 @@ function BookingsSkeleton() {
       <SkeletonBookingCard />
       <SkeletonBookingCard />
       <SkeletonBookingCard />
-    </View>
+    </>
   );
 }
 
@@ -93,12 +95,12 @@ const sk = StyleSheet.create({
   sectionHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
+    gap: UNIFIED_THEME.spacing.sm,
     marginTop: UNIFIED_THEME.spacing.sm,
     marginBottom: UNIFIED_THEME.spacing.xs,
   },
+  sectionIcon: { width: 26, height: 26, borderRadius: 8 },
   sectionTitle: { height: 14, width: 140, borderRadius: 6 },
-  sectionCount: { height: 22, width: 28, borderRadius: 8 },
   card: {
     backgroundColor: 'rgba(255,255,255,0.07)',
     borderRadius: 16,
@@ -135,24 +137,97 @@ const S = C.surface;
 
 const PURPLE_LINK = B.nebulaGradient[0];
 const TEAL = C.accent.secondary;
+const GLASS_BORDER = 'rgba(167,139,250,0.22)';
 
 const PAGE_SIZE = 6;
+const ENTRANCE_STEP_MS = 45;
 
-function SectionHeaderRow({ title, count }) {
+function FadeSlideIn({ delay = 0, children, style }) {
+  const opacity = useRef(new Animated.Value(0)).current;
+  const translateY = useRef(new Animated.Value(14)).current;
+  const played = useRef(false);
+
+  useEffect(() => {
+    if (played.current) return;
+    played.current = true;
+    Animated.parallel([
+      Animated.timing(opacity, {
+        toValue: 1,
+        duration: 340,
+        delay,
+        easing: Easing.out(Easing.cubic),
+        useNativeDriver: true,
+      }),
+      Animated.spring(translateY, {
+        toValue: 0,
+        friction: 8,
+        tension: 88,
+        delay,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  }, [delay, opacity, translateY]);
+
   return (
-    <View style={styles.secHdrRow}>
-      <Text style={styles.secHdrTitle}>{title}</Text>
-      {count != null ? (
-        <View style={styles.secHdrCount}>
-          <Text style={styles.secHdrCountText}>{count}</Text>
+    <Animated.View style={[style, { opacity, transform: [{ translateY }] }]}>
+      {children}
+    </Animated.View>
+  );
+}
+
+function PressScale({ onPress, children, style, disabled }) {
+  const scale = useRef(new Animated.Value(1)).current;
+
+  const onPressIn = () => {
+    Animated.spring(scale, {
+      toValue: 0.96,
+      friction: 6,
+      tension: 140,
+      useNativeDriver: true,
+    }).start();
+  };
+
+  const onPressOut = () => {
+    Animated.spring(scale, {
+      toValue: 1,
+      friction: 5,
+      tension: 120,
+      useNativeDriver: true,
+    }).start();
+  };
+
+  return (
+    <Animated.View style={{ transform: [{ scale }] }}>
+      <Pressable
+        onPress={onPress}
+        onPressIn={onPressIn}
+        onPressOut={onPressOut}
+        disabled={disabled}
+        style={[styles.pressScaleHit, style]}
+      >
+        {children}
+      </Pressable>
+    </Animated.View>
+  );
+}
+
+function SectionHeader({ title, icon, isFirst, delay }) {
+  return (
+    <FadeSlideIn delay={delay} style={[styles.secHdrRow, isFirst && styles.secHdrRowFirst]}>
+      <View style={styles.secHdrLeft}>
+        <View style={styles.secIconBox}>
+          <MaterialIcons name={icon} size={14} color={PURPLE_LINK} />
         </View>
-      ) : null}
-    </View>
+        <Text style={styles.secHdrTitle}>{title}</Text>
+      </View>
+    </FadeSlideIn>
   );
 }
 
 export default function LearnerBookingsScreen({ navigation }) {
   const { profile } = useAuth();
+  const insets = useSafeAreaInsets();
+  const bottomListPad = getFloatingTabBarContentInset(insets) + T.spacing.md;
   const [upcomingAll, setUpcomingAll] = useState([]);
   const [upcomingShown, setUpcomingShown] = useState(PAGE_SIZE);
   const [history, setHistory] = useState([]);
@@ -310,7 +385,7 @@ export default function LearnerBookingsScreen({ navigation }) {
     saveRecordingToGallery(url);
   };
 
-  const renderBooking = (item, isUpcoming) => {
+  const renderBooking = (item, isUpcoming, entranceDelay) => {
     let statusLabel;
     if (item.isExpired) {
       statusLabel = 'Expired';
@@ -347,6 +422,8 @@ export default function LearnerBookingsScreen({ navigation }) {
             : null
         }
         statusLabel={statusLabel}
+        entranceDelay={entranceDelay}
+        pressScale
       />
     );
   };
@@ -357,32 +434,75 @@ export default function LearnerBookingsScreen({ navigation }) {
 
   // Build FlatList data: upcoming section + history section
   const listData = [];
+  let animStep = 0;
+  const nextDelay = () => {
+    const delay = animStep * ENTRANCE_STEP_MS;
+    animStep += 1;
+    return delay;
+  };
 
   if (fullyEmpty) {
-    listData.push({ type: 'empty', key: 'empty' });
+    listData.push({ type: 'empty', key: 'empty', delay: nextDelay() });
   } else {
-    listData.push({ type: 'section_header', key: 'upcoming_header', title: 'Upcoming Sessions', subtitle: 'Join sessions at their scheduled time.', count: upcomingAll.length });
+    listData.push({
+      type: 'section_header',
+      key: 'upcoming_header',
+      title: 'Upcoming',
+      icon: 'event',
+      isFirst: true,
+      delay: nextDelay(),
+    });
     if (upcomingAll.length === 0) {
-      listData.push({ type: 'empty_section', key: 'upcoming_empty', icon: 'event-available', text: 'No upcoming sessions' });
+      listData.push({
+        type: 'empty_section',
+        key: 'upcoming_empty',
+        icon: 'event-available',
+        text: 'No upcoming sessions',
+        delay: nextDelay(),
+      });
     } else {
-      visibleUpcoming.forEach(b => listData.push({ type: 'booking', key: b.id, item: b, isUpcoming: true }));
+      visibleUpcoming.forEach(b => listData.push({
+        type: 'booking',
+        key: b.id,
+        item: b,
+        isUpcoming: true,
+        delay: nextDelay(),
+      }));
       if (hasMoreUpcoming) {
-        listData.push({ type: 'load_more_upcoming', key: 'load_more_upcoming' });
+        listData.push({ type: 'load_more_upcoming', key: 'load_more_upcoming', delay: nextDelay() });
       }
     }
 
     const visibleHistory = history.slice(0, historyShown);
     const hasMoreHistoryToShow = historyShown < history.length || hasMoreHistory;
 
-    listData.push({ type: 'section_header', key: 'history_header', title: 'Session History', subtitle: 'A record of your past sessions.', count: history.length });
+    listData.push({
+      type: 'section_header',
+      key: 'history_header',
+      title: 'History',
+      icon: 'history',
+      delay: nextDelay(),
+    });
     if (visibleHistory.length === 0 && !loadingMore) {
-      listData.push({ type: 'empty_section', key: 'history_empty', icon: 'history', text: 'No past sessions yet' });
+      listData.push({
+        type: 'empty_section',
+        key: 'history_empty',
+        icon: 'history',
+        text: 'No past sessions yet',
+        delay: nextDelay(),
+      });
     } else {
-      visibleHistory.forEach(b => listData.push({ type: 'booking', key: b.id, item: b, isUpcoming: false }));
+      visibleHistory.forEach(b => listData.push({
+        type: 'booking',
+        key: b.id,
+        item: b,
+        isUpcoming: false,
+        delay: nextDelay(),
+      }));
     }
 
     if (hasMoreHistoryToShow) {
-      listData.push({ type: 'load_more', key: 'load_more' });
+      listData.push({ type: 'load_more', key: 'load_more', delay: nextDelay() });
     }
   }
 
@@ -390,59 +510,72 @@ export default function LearnerBookingsScreen({ navigation }) {
     switch (item.type) {
       case 'section_header':
         return (
-          <View style={styles.sectionTop}>
-            <SectionHeaderRow title={item.title} count={item.count} />
-          </View>
+          <SectionHeader
+            title={item.title}
+            icon={item.icon}
+            isFirst={item.isFirst}
+            delay={item.delay}
+          />
         );
 
       case 'empty_section':
         return (
-          <View style={[styles.placeholderCard, styles.sectionItem]}>
-            <MaterialIcons name={item.icon} size={22} color={PURPLE_LINK} />
-            <Text style={styles.placeholderText}>{item.text}</Text>
-          </View>
+          <FadeSlideIn delay={item.delay} style={styles.sectionItem}>
+            <View style={styles.placeholderCard}>
+              <View style={styles.placeholderIconRing}>
+                <MaterialIcons name={item.icon} size={20} color={PURPLE_LINK} />
+              </View>
+              <Text style={styles.placeholderText}>{item.text}</Text>
+            </View>
+          </FadeSlideIn>
         );
 
       case 'booking':
         return (
           <View style={styles.sectionItem}>
-            {renderBooking(item.item, item.isUpcoming)}
+            {renderBooking(item.item, item.isUpcoming, item.delay)}
           </View>
         );
 
       case 'load_more_upcoming':
         return (
-          <TouchableOpacity style={styles.loadMoreBtn} onPress={loadMoreUpcoming} activeOpacity={0.7}>
-            <MaterialIcons name="expand-more" size={20} color={PURPLE_LINK} />
-            <Text style={styles.loadMoreTxt}>Load more upcoming</Text>
-          </TouchableOpacity>
+          <FadeSlideIn delay={item.delay}>
+            <PressScale onPress={loadMoreUpcoming} style={styles.loadMoreBtn}>
+              <Text style={styles.loadMoreTxt}>Show more upcoming</Text>
+              <MaterialIcons name="expand-more" size={18} color={PURPLE_LINK} />
+            </PressScale>
+          </FadeSlideIn>
         );
 
       case 'load_more':
         return (
-          <TouchableOpacity style={styles.loadMoreBtn} onPress={loadMoreHistory} activeOpacity={0.7}>
-            {loadingMore ? (
-              <ActivityIndicator size="small" color={TEAL} />
-            ) : (
-              <>
-                <MaterialIcons name="expand-more" size={20} color={PURPLE_LINK} />
-                <Text style={styles.loadMoreTxt}>Load more history</Text>
-              </>
-            )}
-          </TouchableOpacity>
+          <FadeSlideIn delay={item.delay}>
+            <PressScale onPress={loadMoreHistory} disabled={loadingMore} style={styles.loadMoreBtn}>
+              {loadingMore ? (
+                <ActivityIndicator size="small" color={TEAL} />
+              ) : (
+                <>
+                  <Text style={styles.loadMoreTxt}>Show more history</Text>
+                  <MaterialIcons name="expand-more" size={18} color={PURPLE_LINK} />
+                </>
+              )}
+            </PressScale>
+          </FadeSlideIn>
         );
 
       case 'empty':
         return (
-          <View style={styles.emptyWrap}>
-            <View style={styles.emptyIconRing}>
-              <MaterialIcons name="calendar-month" size={40} color={PURPLE_LINK} />
+          <FadeSlideIn delay={item.delay}>
+            <View style={styles.emptyWrap}>
+              <View style={styles.emptyIconRing}>
+                <MaterialIcons name="calendar-month" size={40} color={PURPLE_LINK} />
+              </View>
+              <Text style={styles.emptyTitle}>No bookings yet</Text>
+              <Text style={styles.emptySubtitle}>
+                Browse mentors from Discover and book your first session.
+              </Text>
             </View>
-            <Text style={styles.emptyTitle}>No bookings yet</Text>
-            <Text style={styles.emptySubtitle}>
-              Browse mentors from Discover and book your first session.
-            </Text>
-          </View>
+          </FadeSlideIn>
         );
 
       default:
@@ -453,14 +586,16 @@ export default function LearnerBookingsScreen({ navigation }) {
   return (
     <SafeScreen scrollable={false} padding={0} hasBottomTabs={false} includeTopInset={false}>
       {loading ? (
-        <BookingsSkeleton />
+        <View style={[sk.wrap, { paddingBottom: bottomListPad }]}>
+          <BookingsSkeleton />
+        </View>
       ) : (
         <FlatList
           style={{ flex: 1 }}
           data={listData}
           keyExtractor={item => item.key}
           renderItem={renderItem}
-          contentContainerStyle={styles.listContent}
+          contentContainerStyle={[styles.listContent, { paddingBottom: bottomListPad }]}
           showsVerticalScrollIndicator={false}
           refreshControl={
             <RefreshControl
@@ -477,75 +612,85 @@ export default function LearnerBookingsScreen({ navigation }) {
 
 const styles = StyleSheet.create({
   listContent: {
-    padding: T.spacing.lg,
-    paddingBottom: T.spacing.xxxl,
-  },
-  sectionTop: {
-    marginTop: T.spacing.md,
-    marginBottom: T.spacing.sm,
+    paddingHorizontal: T.spacing.lg,
+    paddingTop: T.spacing.md,
   },
   secHdrRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    marginTop: T.spacing.xs,
-    marginBottom: 2,
+    marginTop: T.spacing.xl,
+    marginBottom: T.spacing.sm,
   },
-  secHdrTitle: {
-    fontSize: 15,
-    fontWeight: '800',
-    color: C.text.primary,
+  secHdrRowFirst: {
+    marginTop: 0,
+  },
+  secHdrLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: T.spacing.sm,
     flex: 1,
     minWidth: 0,
   },
-  secHdrCount: {
-    minWidth: 26,
+  secIconBox: {
+    width: 26,
     height: 26,
-    paddingHorizontal: 8,
-    borderRadius: 999,
+    borderRadius: 8,
     backgroundColor: S.accentViolet,
     borderWidth: 1,
     borderColor: 'rgba(167,139,250,0.35)',
     justifyContent: 'center',
     alignItems: 'center',
   },
-  secHdrCountText: {
-    fontSize: 11,
+  secHdrTitle: {
+    fontSize: 15,
     fontWeight: '800',
-    color: PURPLE_LINK,
+    color: C.text.primary,
+    letterSpacing: -0.1,
   },
   sectionItem: {
-    marginBottom: T.spacing.md,
+    marginBottom: T.spacing.sm,
   },
   placeholderCard: {
-    flexDirection: 'row',
     alignItems: 'center',
-    gap: T.spacing.md,
-    backgroundColor: 'rgba(255,255,255,0.07)',
+    justifyContent: 'center',
+    gap: T.spacing.sm,
+    backgroundColor: 'rgba(255,255,255,0.06)',
     borderRadius: 16,
-    paddingVertical: T.spacing.lg,
+    paddingVertical: T.spacing.xl,
     paddingHorizontal: T.spacing.lg,
     borderWidth: 1,
-    borderColor: 'rgba(167,139,250,0.22)',
+    borderColor: GLASS_BORDER,
+  },
+  placeholderIconRing: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: S.accentViolet,
+    borderWidth: 1,
+    borderColor: 'rgba(167,139,250,0.3)',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   placeholderText: {
-    fontSize: 14,
+    fontSize: 13,
     color: C.text.muted,
-    flex: 1,
     fontWeight: '600',
+    textAlign: 'center',
+  },
+  pressScaleHit: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 4,
   },
   loadMoreBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: T.spacing.sm,
-    paddingVertical: T.spacing.md,
-    marginTop: T.spacing.sm,
-    marginBottom: T.spacing.lg,
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: 'rgba(167,139,250,0.22)',
-    backgroundColor: 'rgba(255,255,255,0.07)',
+    gap: 4,
+    paddingVertical: T.spacing.sm,
+    marginTop: T.spacing.xs,
+    marginBottom: T.spacing.md,
   },
   loadMoreTxt: {
     fontSize: 13,
@@ -557,7 +702,7 @@ const styles = StyleSheet.create({
     paddingVertical: T.spacing.xxxl,
     paddingHorizontal: T.spacing.lg,
     borderWidth: 1,
-    borderColor: 'rgba(167,139,250,0.22)',
+    borderColor: GLASS_BORDER,
     borderRadius: 16,
     backgroundColor: 'rgba(255,255,255,0.07)',
   },

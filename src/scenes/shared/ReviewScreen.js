@@ -151,7 +151,7 @@ const styles = StyleSheet.create({
     marginBottom: T.spacing.xl,
   },
   closeBtn: {
-    width: 38, height: 38, borderRadius: 19,
+    width: 38, height: 38, borderRadius: T.borderRadius.md,
     backgroundColor: T.colors.component.card,
     borderWidth: 1, borderColor: T.colors.border.light,
     justifyContent: 'center', alignItems: 'center',

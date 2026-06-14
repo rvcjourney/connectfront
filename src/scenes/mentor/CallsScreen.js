@@ -10,7 +10,7 @@ import {
   TouchableOpacity,
   Platform,
 } from 'react-native';
-import { useFocusEffect } from '@react-navigation/native';
+import { useFocusEffect, useIsFocused } from '@react-navigation/native';
 import Toast from 'react-native-simple-toast';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import { UNIFIED_THEME } from '../../unifiedTheme';
@@ -97,11 +97,12 @@ function EmptyBlock({ icon, text }) {
 
 export default function MentorCallsScreen({ navigation }) {
   const { profile } = useAuth();
+  const isFocused = useIsFocused();
   const [upcomingAll, setUpcomingAll] = useState([]);
   const [upcomingShown, setUpcomingShown] = useState(PAGE_SIZE);
   const [history, setHistory] = useState([]);
   const [historyShown, setHistoryShown] = useState(PAGE_SIZE);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [historyPage, setHistoryPage] = useState(0);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -109,9 +110,32 @@ export default function MentorCallsScreen({ navigation }) {
   const sessionsLoaderShownRef = useRef(false);
   const lastProfileIdRef = useRef(profile?.id);
 
+  const scheduleReminders = useCallback((upcomingBookings = []) => {
+    if (!upcomingBookings.length) return;
+    void requestNotificationPermission()
+      .then(() =>
+        Promise.all(
+          upcomingBookings.map(b =>
+            scheduleSessionReminder({
+              bookingId: b.id,
+              sessionDate: b.availability_slots?.date,
+              sessionTime: b.availability_slots?.start_time,
+              mentorName: b.profiles?.name || 'Learner',
+              isMentor: true,
+            }).catch(() => {}),
+          ),
+        ),
+      )
+      .catch(() => {});
+  }, []);
+
   const loadInitial = useCallback(async (opts = {}) => {
     const silent = opts.silent === true;
-    if (!profile?.id) return;
+    if (!profile?.id) {
+      if (!silent) setLoading(false);
+      return;
+    }
+    let upcomingForReminders = [];
     try {
       if (!silent) setLoading(true);
       setUpcomingShown(PAGE_SIZE);
@@ -138,25 +162,14 @@ export default function MentorCallsScreen({ navigation }) {
       setHistory(merged);
       setHistoryPage(1);
       setHasMoreHistory(historyNorm.length === PAGE_SIZE);
-
-      await requestNotificationPermission();
-      await Promise.all(
-        upcomingNorm.map(b =>
-          scheduleSessionReminder({
-            bookingId: b.id,
-            sessionDate: b.availability_slots?.date,
-            sessionTime: b.availability_slots?.start_time,
-            mentorName: b.profiles?.name || 'Learner',
-            isMentor: true,
-          }).catch(() => {}),
-        ),
-      );
+      upcomingForReminders = upcomingNorm;
     } catch {
       if (!opts.quietErrors) Toast.show('Could not load');
     } finally {
       if (!silent) setLoading(false);
     }
-  }, [profile?.id]);
+    scheduleReminders(upcomingForReminders);
+  }, [profile?.id, scheduleReminders]);
 
   const refreshUpcoming = useCallback(async () => {
     if (!profile?.id) return;
@@ -180,7 +193,10 @@ export default function MentorCallsScreen({ navigation }) {
 
   useFocusEffect(
     useCallback(() => {
-      if (!profile?.id) return undefined;
+      if (!profile?.id) {
+        setLoading(false);
+        return undefined;
+      }
       if (lastProfileIdRef.current !== profile.id) {
         lastProfileIdRef.current = profile.id;
         sessionsLoaderShownRef.current = false;
@@ -434,7 +450,7 @@ export default function MentorCallsScreen({ navigation }) {
           />
         }
       />
-      <LoadingOverlay visible={loading && !refreshing} message="" />
+      <LoadingOverlay visible={isFocused && loading && !refreshing} message="" />
     </SafeScreen>
   );
 }
@@ -510,7 +526,7 @@ const styles = StyleSheet.create({
     minWidth: 26,
     height: 26,
     paddingHorizontal: 8,
-    borderRadius: 999,
+    borderRadius: T.borderRadius.chip,
     backgroundColor: S.accentViolet,
     borderWidth: 1,
     borderColor: 'rgba(167,139,250,0.35)',

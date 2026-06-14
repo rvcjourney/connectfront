@@ -121,8 +121,15 @@ export default function VideoCallScreen({ navigation, route }) {
       if (isHost) {
         // Host: create new meeting
         meetingId = await createMeeting({ token });
-        // Save meeting ID to booking
+        booking = await bookingApi.getBooking(bookingId);
+        // Save meeting ID to booking + recordings row (Recorded lectures reads from recordings)
         await bookingApi.setMeetingId({ bookingId, meetingId });
+        await recordingsApi.upsertSessionForBooking({
+          bookingId,
+          mentorId: booking?.mentor_id || profile.id,
+          learnerId: booking?.learner_id,
+          meetingId,
+        });
       } else {
         // Guest: get meeting ID from booking
         booking = await bookingApi.getBooking(bookingId);
@@ -180,10 +187,14 @@ export default function VideoCallScreen({ navigation, route }) {
 
           if (recordingUrl) {
             try {
+              const bookingRow = await bookingApi.getBooking(bookingId);
               await recordingsApi.updateRecordingUrls({
                 bookingId,
                 recordingUrl,
                 recordingPlaybackUrl: recordingUrl,
+                mentorId: bookingRow?.mentor_id || profile.id,
+                learnerId: bookingRow?.learner_id,
+                meetingId: callParams.meetingId,
               });
             } catch (recErr) {
               console.warn('⚠️ Recording URL save skipped (recordings table not set up):', recErr);
@@ -247,6 +258,7 @@ export default function VideoCallScreen({ navigation, route }) {
     return (
       <View style={{
         flex: 1,
+        position: 'relative',
         paddingTop: insets.top,
         paddingBottom: insets.bottom,
         backgroundColor: UNIFIED_THEME.colors.primary.dark,
@@ -260,6 +272,7 @@ export default function VideoCallScreen({ navigation, route }) {
     return (
       <View style={{
         flex: 1,
+        position: 'relative',
         paddingTop: insets.top,
         paddingBottom: insets.bottom,
         backgroundColor: UNIFIED_THEME.colors.primary.dark,

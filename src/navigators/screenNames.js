@@ -55,6 +55,9 @@ export const SCREEN_NAMES = {
   /** Network / connectivity (UI shell; wire NetInfo later) */
   Connectivity: "Connectivity_Screen",
 
+  /** In-app notification center */
+  Notifications: "Notifications_Screen",
+
   // Learner video player
   VideoPlayer: "VideoPlayer_Screen",
 

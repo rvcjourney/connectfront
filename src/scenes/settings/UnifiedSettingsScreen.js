@@ -1,5 +1,5 @@
 import { SafeScreen } from '../../components/SafeScreen';
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import {
   View,
   Text,
@@ -74,26 +74,37 @@ export default function UnifiedSettingsScreen({ navigation }) {
   const [loading, setLoading] = useState(false);
   const [subsLoading, setSubsLoading] = useState(false);
   const [subscriptions, setSubscriptions] = useState([]);
+  const subsLoadedRef = useRef(false);
 
   useEffect(() => {
     setAvatarUrl(profile?.avatar_url || '');
   }, [profile?.avatar_url]);
 
+  useEffect(() => {
+    subsLoadedRef.current = false;
+  }, [profile?.id]);
+
   const loadSubscriptions = useCallback(async () => {
     if (!profile?.id) {
       setSubscriptions([]);
+      subsLoadedRef.current = false;
       return;
     }
-    setSubsLoading(true);
+    if (!subsLoadedRef.current) {
+      setSubsLoading(true);
+    }
     try {
       const rows = await videoApi.getLearnerActiveSubscriptionsDetail(profile.id);
       setSubscriptions(Array.isArray(rows) ? rows : []);
     } catch (e) {
       console.warn('UnifiedSettings: subscriptions load failed', e?.message || e);
-      setSubscriptions([]);
-      Toast.show('Could not load subscriptions');
+      if (!subsLoadedRef.current) {
+        setSubscriptions([]);
+        Toast.show('Could not load subscriptions');
+      }
     } finally {
       setSubsLoading(false);
+      subsLoadedRef.current = true;
     }
   }, [profile?.id]);
 
@@ -264,7 +275,12 @@ export default function UnifiedSettingsScreen({ navigation }) {
             label="Edit Profile"
             onPress={() => navigation.navigate(SCREEN_NAMES.EditProfile)}
           />
-          <MenuRow icon="notifications" accent="purple" label="Notifications" />
+          <MenuRow
+            icon="notifications"
+            accent="purple"
+            label="Notifications"
+            onPress={() => navigation.navigate(SCREEN_NAMES.Notifications)}
+          />
           <MenuRow
             icon="account-balance-wallet"
             accent="gold"
@@ -338,7 +354,7 @@ const styles = StyleSheet.create({
     minWidth: 26,
     paddingHorizontal: 8,
     paddingVertical: 3,
-    borderRadius: 999,
+    borderRadius: T.borderRadius.chip,
     backgroundColor: S.accentViolet,
     borderWidth: 1,
     borderColor: 'rgba(167,139,250,0.35)',
@@ -423,7 +439,7 @@ const styles = StyleSheet.create({
     backgroundColor: S.accentGold,
     paddingHorizontal: T.spacing.md,
     paddingVertical: T.spacing.xs,
-    borderRadius: 999,
+    borderRadius: T.borderRadius.chip,
     borderWidth: 1,
     borderColor: 'rgba(240,216,117,0.25)',
   },
